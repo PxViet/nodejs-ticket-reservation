@@ -119,6 +119,18 @@ the application skeleton over a designed schema.
   reset). Movies, booking, wallet, tickets and profile still read Supabase directly, so
   `apps/mobile/src/services/supabase/client.ts` stays until those features migrate; until
   then `useAuthStore().user.id` is an `@movea/api` id that will not match Supabase rows.
+- **Mobile showtimes and halls read the API; the client's cinema concept is gone from the
+  booking path.** The showtime screen calls `GET /showtimes` (filtered by `movieId`, `date` and
+  an optional `hallId`) and `GET /halls`, through
+  `apps/mobile/src/features/booking/services/showtimes.ts`. The API has no cinema entity — a
+  showtime belongs to a hall and nothing above it — so the screen now groups showtimes by hall
+  and a `HallDropdown` fed by `GET /halls` took over from the GPS `LocationDropdown`, which
+  reverse-geocoded the device and narrowed nothing. `schemas/showtime.ts` holds the API-shaped
+  type; the legacy `schemas/cinema.ts` stays because the still-Supabase ticket, wallet and
+  booking reads traverse `cinemaHall.cinema`. Deliberately left behind: the seat map is still
+  fabricated client-side (`src/utils/data.ts`) rather than read from
+  `GET /showtimes/:id/seats`, and `LocationDropdown` plus `services/cinema.ts` with its tag and
+  layer are kept in the tree although nothing references them any more.
 
 ## Keeping this current
 
