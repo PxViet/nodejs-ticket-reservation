@@ -15,11 +15,11 @@ let mockSelectedMovie: any = {
 
 let mockSelectedShowtime: any = {
   id: 'showtime1',
-  price: 50000,
-  cinemaHall: {
-    cinema: {
-      name: 'Test Cinema',
-    },
+  basePrice: 50000,
+  hall: {
+    id: 'hall1',
+    name: 'Hall 1',
+    hallType: 'IMAX',
   },
 };
 
@@ -94,11 +94,11 @@ describe('SeatsScreen', () => {
     };
     mockSelectedShowtime = {
       id: 'showtime1',
-      price: 50000,
-      cinemaHall: {
-        cinema: {
-          name: 'Test Cinema',
-        },
+      basePrice: 50000,
+      hall: {
+        id: 'hall1',
+        name: 'Hall 1',
+        hallType: 'IMAX',
       },
     };
     mockSelectedSeats = [];
@@ -115,9 +115,9 @@ describe('SeatsScreen', () => {
       expect(getByText('Test Movie')).toBeTruthy();
     });
 
-    it('should render cinema name', () => {
+    it('should render hall name', () => {
       const { getByText } = render(<SeatsScreen />);
-      expect(getByText('Test Cinema')).toBeTruthy();
+      expect(getByText('Hall 1')).toBeTruthy();
     });
 
     it('should render status colors', () => {
@@ -199,7 +199,7 @@ describe('SeatsScreen', () => {
     it('should handle missing showtime price', () => {
       mockSelectedShowtime = {
         ...mockSelectedShowtime,
-        price: undefined,
+        basePrice: undefined,
       };
       mockSelectedSeats = ['A1'];
       const { getByText } = render(<SeatsScreen />);
@@ -279,15 +279,15 @@ describe('SeatsScreen', () => {
       expect(queryByText('Test Movie')).toBeNull();
     });
 
-    it('should handle missing cinema name', () => {
+    it('should handle missing hall name', () => {
       mockSelectedShowtime = {
         ...mockSelectedShowtime,
-        cinemaHall: null,
+        hall: null,
       };
       const { queryByText } = render(<SeatsScreen />);
 
-      // Should not crash, but cinema name won't be displayed
-      expect(queryByText('Test Cinema')).toBeNull();
+      // Should not crash, but the hall name won't be displayed
+      expect(queryByText('Hall 1')).toBeNull();
     });
 
     it('should handle multiple seat selections', () => {

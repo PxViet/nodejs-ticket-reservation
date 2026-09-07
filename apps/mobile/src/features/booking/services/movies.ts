@@ -1,11 +1,9 @@
-// Supabase — still backs the showtime reads until the showtimes migration
-import { supabase } from '@/services/supabase/client';
-
 // Effect
 import { Effect } from 'effect';
 
 // HTTP
 import { apiRequest } from '@/services/api/client';
+import { messageOf, toQuery } from '@/services/api/helpers';
 
 // Types
 import type {
@@ -13,15 +11,10 @@ import type {
   PaginatedGenres,
   PaginatedMovies,
 } from '@movea/api-contract';
-import { ShowtimeStatus } from '@/features/booking/schemas/cinema';
 import { Movie, MovieStatus } from '../schemas/movie';
-
-// Utils
-import { keysToCamel } from '@/utils/convert';
 
 // Constants
 import { PAGINATION } from '@/constants';
-import { SHOWTIME_STATUS } from '@/constants/status';
 
 // Error
 import { MovieError } from '@/features/booking/error/movie';
@@ -30,20 +23,6 @@ import { MovieError } from '@/features/booking/error/movie';
 // paging, so a bigger page keeps the "now playing" / "coming soon" carousels
 // full (see useMovieData).
 const PAGE_LIMIT = PAGINATION.PAGE_LIMIT_MAX;
-
-const messageOf = (error: unknown): string =>
-  error instanceof Error ? error.message : '';
-
-const toQuery = (
-  params: Record<string, string | number | undefined>,
-): string => {
-  const search = new URLSearchParams();
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== '') search.append(key, String(value));
-  });
-  const qs = search.toString();
-  return qs ? `?${qs}` : '';
-};
 
 // The API has no status field; "now playing" vs "coming soon" is a function of
 // the release date.
@@ -149,48 +128,6 @@ export class MoviesServiceEffect {
         return data;
       },
       catch: (error: unknown) => MovieError.movieNetworkError(messageOf(error)),
-    });
-
-  getShowtimes = (movieId: string, date: string) =>
-    Effect.tryPromise({
-      try: async () => {
-        const { data, error } = await supabase
-          .from('showtimes')
-          .select('*, cinema_hall:cinema_halls(*, cinema:cinemas(*))')
-          .eq('movie_id', movieId)
-          .eq('show_date', date)
-          .eq('status', SHOWTIME_STATUS.ACTIVE as ShowtimeStatus)
-          .order('show_time', { ascending: true });
-
-        if (error) throw MovieError.showtimeNotFound(error.message);
-
-        return keysToCamel(data);
-      },
-      catch: (error: unknown) =>
-        MovieError.showtimeNotFound(
-          error instanceof Error ? error.message : '',
-        ),
-    });
-
-  getShowtimeById = (id: string) =>
-    Effect.tryPromise({
-      try: async () => {
-        const { data, error } = await supabase
-          .from('showtimes')
-          .select(
-            '*, cinema_hall:cinema_halls(*, cinema:cinemas(*)), movie:movies(*)',
-          )
-          .eq('id', id)
-          .single();
-
-        if (error) throw MovieError.showtimeNotFound(error.message);
-
-        return keysToCamel(data);
-      },
-      catch: (error: unknown) =>
-        MovieError.showtimeNotFound(
-          error instanceof Error ? error.message : '',
-        ),
     });
 }
 

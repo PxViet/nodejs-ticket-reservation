@@ -1,4 +1,4 @@
-import { ShowTime } from '@/features/booking/schemas/cinema';
+import { Showtime } from '@/features/booking/schemas/showtime';
 import {
   filterShowTimesByTime,
   formatShowTimes,
@@ -6,32 +6,25 @@ import {
   getMinimumShowtime,
 } from '../dates';
 
-// Mock types
-const createMockShowTime = (
-  showTime: string,
-  cinemaId: string,
-  hallId: string,
-) => ({
-  id: `showtime-${showTime}`,
+// A showtime as the API serves it: the hall is nested, with nothing above it.
+const createMockShowTime = (showTime: string, hallId: string) => ({
+  id: `showtime-${showTime}-${hallId}`,
   movieId: 'movie-1',
-  cinemaHallId: hallId,
+  hallId,
   showTime,
   showDate: '2024-01-15',
-  price: 50000,
-  cinemaHall: {
+  endTime: '23:59:00',
+  basePrice: 50000,
+  status: 'active' as const,
+  totalSeats: 100,
+  seatsTaken: 0,
+  availableSeats: 100,
+  createdAt: '2024-01-01',
+  updatedAt: '2024-01-01',
+  hall: {
     id: hallId,
-    cinemaId,
-    name: 'Hall 1',
-    cinema: {
-      id: cinemaId,
-      name: `Cinema ${cinemaId}`,
-      location: 'Location',
-      address: 'Address',
-      city: 'City',
-      isActive: true,
-      createdAt: '2024-01-01',
-      updatedAt: '2024-01-01',
-    },
+    name: `Hall ${hallId}`,
+    hallType: '2D' as const,
   },
 });
 
@@ -141,15 +134,15 @@ describe('filterShowtimesByTime', () => {
   it('should return all showtimes if showDate is not today', () => {
     jest.setSystemTime(new Date('2024-01-15T10:00:00'));
     const showtimes = [
-      createMockShowTime('09:00', 'cinema-1', 'hall-1'),
-      createMockShowTime('10:00', 'cinema-1', 'hall-1'),
-      createMockShowTime('11:00', 'cinema-1', 'hall-1'),
+      createMockShowTime('09:00', 'hall-1'),
+      createMockShowTime('10:00', 'hall-1'),
+      createMockShowTime('11:00', 'hall-1'),
     ];
     showtimes[0]!.showDate = '2024-01-16';
     showtimes[1]!.showDate = '2024-01-16';
     showtimes[2]!.showDate = '2024-01-16';
 
-    const result = filterShowTimesByTime(showtimes as ShowTime[], '2024-01-16');
+    const result = filterShowTimesByTime(showtimes as Showtime[], '2024-01-16');
     expect(result).toHaveLength(3);
   });
 
@@ -157,13 +150,13 @@ describe('filterShowtimesByTime', () => {
     jest.setSystemTime(new Date('2024-01-15T10:15:00'));
     const today = '2024-01-15';
     const showtimes = [
-      createMockShowTime('09:00', 'cinema-1', 'hall-1'),
-      createMockShowTime('10:30', 'cinema-1', 'hall-1'),
-      createMockShowTime('11:00', 'cinema-1', 'hall-1'),
+      createMockShowTime('09:00', 'hall-1'),
+      createMockShowTime('10:30', 'hall-1'),
+      createMockShowTime('11:00', 'hall-1'),
     ];
     showtimes.forEach(s => (s.showDate = today));
 
-    const result = filterShowTimesByTime(showtimes as ShowTime[], today);
+    const result = filterShowTimesByTime(showtimes as Showtime[], today);
     expect(result).toHaveLength(2); // 10:30 and 11:00
     expect(result[0]?.showTime).toBe('10:30');
   });
@@ -172,12 +165,12 @@ describe('filterShowtimesByTime', () => {
     jest.setSystemTime(new Date('2024-01-15T23:15:00'));
     const today = '2024-01-15';
     const showtimes = [
-      createMockShowTime('22:00', 'cinema-1', 'hall-1'),
-      createMockShowTime('23:00', 'cinema-1', 'hall-1'),
+      createMockShowTime('22:00', 'hall-1'),
+      createMockShowTime('23:00', 'hall-1'),
     ];
     showtimes.forEach(s => (s.showDate = today));
 
-    const result = filterShowTimesByTime(showtimes as ShowTime[], today);
+    const result = filterShowTimesByTime(showtimes as Showtime[], today);
     expect(result).toHaveLength(0);
   });
 
@@ -185,23 +178,23 @@ describe('filterShowtimesByTime', () => {
     jest.setSystemTime(new Date('2024-01-15T10:00:00'));
     const today = '2024-01-15';
     const showtimes = [
-      createMockShowTime('22:00', 'cinema-1', 'hall-1'),
-      createMockShowTime('23:00', 'cinema-1', 'hall-1'),
-      createMockShowTime('23:30', 'cinema-1', 'hall-1'),
+      createMockShowTime('22:00', 'hall-1'),
+      createMockShowTime('23:00', 'hall-1'),
+      createMockShowTime('23:30', 'hall-1'),
     ];
     showtimes.forEach(s => (s.showDate = today));
 
-    const result = filterShowTimesByTime(showtimes as ShowTime[], today);
+    const result = filterShowTimesByTime(showtimes as Showtime[], today);
     expect(result.every(s => s.showTime <= '23:00')).toBe(true);
   });
 
   it('should handle HH:MM:SS format', () => {
     jest.setSystemTime(new Date('2024-01-15T10:15:00'));
     const today = '2024-01-15';
-    const showtime = createMockShowTime('10:30:00', 'cinema-1', 'hall-1');
+    const showtime = createMockShowTime('10:30:00', 'hall-1');
     showtime.showDate = today;
 
-    const result = filterShowTimesByTime([showtime as ShowTime], today);
+    const result = filterShowTimesByTime([showtime as Showtime], today);
     expect(result).toHaveLength(1);
   });
 });
@@ -216,88 +209,101 @@ describe('formatShowtimes', () => {
     jest.useRealTimers();
   });
 
-  it('should group showTimes by cinema', () => {
+  it('should group showTimes by hall', () => {
     const showTimes = [
-      createMockShowTime('11:00', 'cinema-1', 'hall-1'),
-      createMockShowTime('12:00', 'cinema-1', 'hall-1'),
-      createMockShowTime('11:00', 'cinema-2', 'hall-2'),
+      createMockShowTime('11:00', 'hall-1'),
+      createMockShowTime('12:00', 'hall-1'),
+      createMockShowTime('11:00', 'hall-2'),
     ];
     showTimes.forEach(s => (s.showDate = '2024-01-16'));
 
-    const result = formatShowTimes(showTimes as ShowTime[], '2024-01-16');
+    const result = formatShowTimes(showTimes as Showtime[], '2024-01-16');
     expect(result).toHaveLength(2);
-    expect(result[0]!.cinema.id).toBe('cinema-1');
-    expect(result[0]!.showTimes).toHaveLength(2);
-    expect(result[1]!.cinema.id).toBe('cinema-2');
-    expect(result[1]!.showTimes).toHaveLength(1);
+    expect(result[0]!.hall.id).toBe('hall-1');
+    expect(result[0]!.showtimes).toHaveLength(2);
+    expect(result[1]!.hall.id).toBe('hall-2');
+    expect(result[1]!.showtimes).toHaveLength(1);
   });
 
-  it('should sort showTimes by time within each cinema', () => {
+  it('should sort showTimes by time within each hall', () => {
     const showTimes = [
-      createMockShowTime('12:00', 'cinema-1', 'hall-1'),
-      createMockShowTime('11:00', 'cinema-1', 'hall-1'),
-      createMockShowTime('13:00', 'cinema-1', 'hall-1'),
+      createMockShowTime('12:00', 'hall-1'),
+      createMockShowTime('11:00', 'hall-1'),
+      createMockShowTime('13:00', 'hall-1'),
     ];
     showTimes.forEach(s => (s.showDate = '2024-01-16'));
 
-    const result = formatShowTimes(showTimes as ShowTime[], '2024-01-16');
-    expect(result[0]?.showTimes[0]?.showTime).toBe('11:00');
-    expect(result[0]?.showTimes[1]?.showTime).toBe('12:00');
-    expect(result[0]?.showTimes[2]?.showTime).toBe('13:00');
+    const result = formatShowTimes(showTimes as Showtime[], '2024-01-16');
+    expect(result[0]?.showtimes[0]?.showTime).toBe('11:00');
+    expect(result[0]?.showtimes[1]?.showTime).toBe('12:00');
+    expect(result[0]?.showtimes[2]?.showTime).toBe('13:00');
   });
 
-  it('should sort cinemas alphabetically by name', () => {
+  it('should sort halls alphabetically by name', () => {
     const showTimes = [
-      createMockShowTime('11:00', 'cinema-z', 'hall-1'),
-      createMockShowTime('11:00', 'cinema-a', 'hall-2'),
-      createMockShowTime('11:00', 'cinema-m', 'hall-3'),
+      createMockShowTime('11:00', 'z'),
+      createMockShowTime('11:00', 'a'),
+      createMockShowTime('11:00', 'm'),
     ];
     showTimes.forEach(s => (s.showDate = '2024-01-16'));
 
-    const result = formatShowTimes(showTimes as ShowTime[], '2024-01-16');
-    expect(result[0]?.cinema.name).toBe('Cinema cinema-a');
-    expect(result[1]?.cinema.name).toBe('Cinema cinema-m');
-    expect(result[2]?.cinema.name).toBe('Cinema cinema-z');
+    const result = formatShowTimes(showTimes as Showtime[], '2024-01-16');
+    expect(result[0]?.hall.name).toBe('Hall a');
+    expect(result[1]?.hall.name).toBe('Hall m');
+    expect(result[2]?.hall.name).toBe('Hall z');
   });
 
   it('should filter showTimes by time for today', () => {
     jest.setSystemTime(new Date('2024-01-15T10:15:00'));
     const today = '2024-01-15';
     const showTimes = [
-      createMockShowTime('09:00', 'cinema-1', 'hall-1'),
-      createMockShowTime('10:30', 'cinema-1', 'hall-1'),
-      createMockShowTime('11:00', 'cinema-1', 'hall-1'),
+      createMockShowTime('09:00', 'hall-1'),
+      createMockShowTime('10:30', 'hall-1'),
+      createMockShowTime('11:00', 'hall-1'),
     ];
     showTimes.forEach(s => (s.showDate = today));
 
-    const result = formatShowTimes(showTimes as ShowTime[], today);
-    expect(result[0]?.showTimes).toHaveLength(2); // Only 10:30 and 11:00
+    const result = formatShowTimes(showTimes as Showtime[], today);
+    expect(result[0]?.showtimes).toHaveLength(2); // Only 10:30 and 11:00
   });
 
-  it('should skip showTimes without cinemaHall', () => {
+  it('should skip showTimes without a hall', () => {
     const showTimes = [
-      createMockShowTime('11:00', 'cinema-1', 'hall-1'),
+      createMockShowTime('11:00', 'hall-1'),
       {
-        ...createMockShowTime('11:00', 'cinema-2', 'hall-2'),
-        cinemaHall: null,
+        ...createMockShowTime('11:00', 'hall-2'),
+        hall: null,
       },
     ];
     showTimes.forEach(s => (s.showDate = '2024-01-16'));
 
-    const result = formatShowTimes(showTimes as ShowTime[], '2024-01-16');
+    const result = formatShowTimes(showTimes as Showtime[], '2024-01-16');
     expect(result).toHaveLength(1);
-    expect(result[0]?.cinema.id).toBe('cinema-1');
+    expect(result[0]?.hall.id).toBe('hall-1');
   });
 
-  it('should skip showTimes without cinema', () => {
-    const showTime = createMockShowTime('11:00', 'cinema-1', 'hall-1');
-    showTime.showDate = '2024-01-16';
-    if (showTime.cinemaHall) {
-      showTime.cinemaHall.cinema = undefined as any;
-    }
+  it('should skip showTimes a customer can no longer book', () => {
+    const showTimes = [
+      createMockShowTime('11:00', 'hall-1'),
+      { ...createMockShowTime('11:00', 'hall-2'), status: 'completed' },
+      { ...createMockShowTime('12:00', 'hall-3'), status: 'cancelled' },
+    ];
+    showTimes.forEach(s => (s.showDate = '2024-01-16'));
 
-    const result = formatShowTimes([showTime as ShowTime], '2024-01-16');
-    expect(result).toHaveLength(0);
+    const result = formatShowTimes(showTimes as Showtime[], '2024-01-16');
+    expect(result).toHaveLength(1);
+    expect(result[0]?.hall.id).toBe('hall-1');
+  });
+
+  it('should keep a scheduled showtime alongside an active one', () => {
+    const showTimes = [
+      { ...createMockShowTime('11:00', 'hall-1'), status: 'scheduled' },
+      createMockShowTime('12:00', 'hall-1'),
+    ];
+    showTimes.forEach(s => (s.showDate = '2024-01-16'));
+
+    const result = formatShowTimes(showTimes as Showtime[], '2024-01-16');
+    expect(result[0]?.showtimes).toHaveLength(2);
   });
 
   it('should return empty array for empty input', () => {

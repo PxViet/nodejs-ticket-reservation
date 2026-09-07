@@ -76,17 +76,15 @@ const mockUseBookingStore = jest.fn((selector: any) =>
     selectedShowtime: {
       id: 'showtime1',
       movieId: 'movie1',
-      cinemaHallId: 'hall1',
+      hallId: 'hall1',
       showDate: '2024-01-15',
       showTime: '14:00',
       endTime: '16:00',
-      price: 50,
-      cinemaHall: {
+      basePrice: 50,
+      hall: {
         id: 'hall1',
-        cinema: {
-          id: 'cinema1',
-          name: 'Test Cinema',
-        },
+        name: 'Hall 1',
+        hallType: 'IMAX',
       },
     },
     selectedSeats: ['A1', 'A2'],
@@ -154,7 +152,7 @@ describe('CheckoutScreen', () => {
       });
 
       expect(getByTestId('order-id')).toBeTruthy();
-      expect(getByTestId('order-cinema')).toBeTruthy();
+      expect(getByTestId('order-hall')).toBeTruthy();
       expect(getByTestId('order-datetime')).toBeTruthy();
       expect(getByTestId('order-seats')).toBeTruthy();
       expect(getByTestId('order-price')).toBeTruthy();
@@ -191,17 +189,15 @@ describe('CheckoutScreen', () => {
           selectedShowtime: {
             id: 'showtime1',
             movieId: 'movie1',
-            cinemaHallId: 'hall1',
+            hallId: 'hall1',
             showDate: '2024-01-15',
             showTime: '14:00',
             endTime: '16:00',
-            price: 50,
-            cinemaHall: {
+            basePrice: 50,
+            hall: {
               id: 'hall1',
-              cinema: {
-                id: 'cinema1',
-                name: 'Test Cinema',
-              },
+              name: 'Hall 1',
+              hallType: 'IMAX',
             },
           },
           selectedSeats: ['A1'],
@@ -255,17 +251,15 @@ describe('CheckoutScreen', () => {
           selectedShowtime: {
             id: 'showtime1',
             movieId: 'movie1',
-            cinemaHallId: 'hall1',
+            hallId: 'hall1',
             showDate: '2024-01-15',
             showTime: '14:00',
             endTime: '16:00',
-            price: 50,
-            cinemaHall: {
+            basePrice: 50,
+            hall: {
               id: 'hall1',
-              cinema: {
-                id: 'cinema1',
-                name: 'Test Cinema',
-              },
+              name: 'Hall 1',
+              hallType: 'IMAX',
             },
           },
           selectedSeats: ['A1'],
@@ -310,17 +304,15 @@ describe('CheckoutScreen', () => {
           selectedShowtime: {
             id: 'showtime1',
             movieId: 'movie1',
-            cinemaHallId: 'hall1',
+            hallId: 'hall1',
             showDate: '2024-01-15',
             showTime: '14:00',
             endTime: '16:00',
-            price: 50,
-            cinemaHall: {
+            basePrice: 50,
+            hall: {
               id: 'hall1',
-              cinema: {
-                id: 'cinema1',
-                name: 'Test Cinema',
-              },
+              name: 'Hall 1',
+              hallType: 'IMAX',
             },
           },
           selectedSeats: ['A1'],
@@ -624,17 +616,15 @@ describe('CheckoutScreen', () => {
           selectedShowtime: {
             id: 'showtime1',
             movieId: 'movie1',
-            cinemaHallId: 'hall1',
+            hallId: 'hall1',
             showDate: '2024-01-15',
             showTime: '14:00',
             endTime: '16:00',
-            price: 50,
-            cinemaHall: {
+            basePrice: 50,
+            hall: {
               id: 'hall1',
-              cinema: {
-                id: 'cinema1',
-                name: 'Test Cinema',
-              },
+              name: 'Hall 1',
+              hallType: 'IMAX',
             },
           },
           selectedSeats: [],

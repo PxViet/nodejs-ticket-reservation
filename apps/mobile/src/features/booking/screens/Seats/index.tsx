@@ -61,7 +61,7 @@ const SeatsScreen = () => {
   );
 
   const movieTitle = selectedMovie?.title;
-  const cinemaName = selectedShowtime?.cinemaHall?.cinema?.name;
+  const hallName = selectedShowtime?.hall?.name;
 
   const [seats] = useState<Seat[]>(() => generateSeats());
 
@@ -86,7 +86,7 @@ const SeatsScreen = () => {
   );
 
   const totalPrice = calculateTotalPrice(
-    selectedShowtime?.price || 0,
+    selectedShowtime?.basePrice || 0,
     selectedSeats.length,
   );
 
@@ -118,7 +118,7 @@ const SeatsScreen = () => {
       className="flex-1 pl-6 bg-dark-blue"
     >
       <View className="flex-1 bg-dark-blue">
-        {/* Movie Title and Cinema Name */}
+        {/* Movie Title and Hall Name */}
         <View className="pr-6 pb-2">
           <Typo
             size="lg"
@@ -136,10 +136,10 @@ const SeatsScreen = () => {
             className="text-gradient-light"
             accessible
             accessibilityRole="text"
-            accessibilityLabel="Cinema name"
-            accessibilityHint={cinemaName}
+            accessibilityLabel="Hall name"
+            accessibilityHint={hallName}
           >
-            {cinemaName}
+            {hallName}
           </Typo>
         </View>
 

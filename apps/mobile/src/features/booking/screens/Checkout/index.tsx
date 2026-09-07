@@ -99,9 +99,9 @@ const CheckoutScreen = () => {
         testID: 'order-id',
       },
       {
-        label: 'Cinema',
-        value: selectedShowtime?.cinemaHall?.cinema?.name || '',
-        testID: 'order-cinema',
+        label: 'Hall',
+        value: selectedShowtime?.hall?.name || '',
+        testID: 'order-hall',
       },
       {
         label: 'Date & Time',
@@ -118,7 +118,7 @@ const CheckoutScreen = () => {
       },
       {
         label: 'Price',
-        value: `IDR ${selectedShowtime?.price.toLocaleString(
+        value: `IDR ${selectedShowtime?.basePrice.toLocaleString(
           'id-ID',
         )} x ${selectedSeats.length}`,
         testID: 'order-price',

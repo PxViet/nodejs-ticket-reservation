@@ -7,14 +7,14 @@ import React from 'react';
 import { useShowtime, useShowtimes } from '../useShowtimes';
 
 // Services
-import { moviesServiceEffect } from '../../services/movies';
+import { showtimesServiceEffect } from '../../services/showtimes';
 
 // Types
-import { MovieError } from '../../error/movie';
-import { ShowTime } from '../../schemas/cinema';
+import { ShowtimeError } from '../../error/showtime';
+import { Showtime } from '../../schemas/showtime';
 
-jest.mock('@/features/booking/services/movies', () => ({
-  moviesServiceEffect: {
+jest.mock('@/features/booking/services/showtimes', () => ({
+  showtimesServiceEffect: {
     getShowtimes: jest.fn(),
     getShowtimeById: jest.fn(),
   },
@@ -52,8 +52,8 @@ describe('useShowtimes', () => {
       { id: '1', movieId: 'movie1', startTime: '10:00' },
       { id: '2', movieId: 'movie1', startTime: '13:00' },
     ];
-    (moviesServiceEffect.getShowtimes as jest.Mock).mockReturnValue(
-      Effect.succeed(mockShowtimes as unknown as ShowTime[]),
+    (showtimesServiceEffect.getShowtimes as jest.Mock).mockReturnValue(
+      Effect.succeed(mockShowtimes as unknown as Showtime[]),
     );
 
     const { result } = renderHook(() => useShowtimes('movie1', '2024-01-01'), {
@@ -64,11 +64,12 @@ describe('useShowtimes', () => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    expect(moviesServiceEffect.getShowtimes).toHaveBeenCalledWith(
+    expect(showtimesServiceEffect.getShowtimes).toHaveBeenCalledWith(
       'movie1',
       '2024-01-01',
+      undefined,
     );
-    expect(moviesServiceEffect.getShowtimes).toHaveBeenCalledTimes(1);
+    expect(showtimesServiceEffect.getShowtimes).toHaveBeenCalledTimes(1);
     expect(result.current.data).toEqual(mockShowtimes);
   });
 
@@ -77,7 +78,7 @@ describe('useShowtimes', () => {
       wrapper: createWrapper(),
     });
 
-    expect(moviesServiceEffect.getShowtimes).not.toHaveBeenCalled();
+    expect(showtimesServiceEffect.getShowtimes).not.toHaveBeenCalled();
   });
 
   it('should not fetch when date is empty', () => {
@@ -85,12 +86,14 @@ describe('useShowtimes', () => {
       wrapper: createWrapper(),
     });
 
-    expect(moviesServiceEffect.getShowtimes).not.toHaveBeenCalled();
+    expect(showtimesServiceEffect.getShowtimes).not.toHaveBeenCalled();
   });
 
   it('should handle error when fetch fails', async () => {
-    const mockError = MovieError.movieNetworkError('Failed to fetch showtimes');
-    (moviesServiceEffect.getShowtimes as jest.Mock).mockReturnValue(
+    const mockError = ShowtimeError.showtimesFailed(
+      'Failed to fetch showtimes',
+    );
+    (showtimesServiceEffect.getShowtimes as jest.Mock).mockReturnValue(
       Effect.fail(mockError),
     );
 
@@ -102,9 +105,30 @@ describe('useShowtimes', () => {
       expect(result.current.isError).toBe(true);
     });
 
-    expect(result.current.error).toBeInstanceOf(MovieError);
-    expect((result.current.error as MovieError).message).toBe(
+    expect(result.current.error).toBeInstanceOf(ShowtimeError);
+    expect((result.current.error as ShowtimeError).message).toBe(
       'Failed to fetch showtimes',
+    );
+  });
+
+  it('should pass the hall filter through to the service', async () => {
+    (showtimesServiceEffect.getShowtimes as jest.Mock).mockReturnValue(
+      Effect.succeed([] as unknown as Showtime[]),
+    );
+
+    const { result } = renderHook(
+      () => useShowtimes('movie1', '2024-01-01', 'hall1'),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(showtimesServiceEffect.getShowtimes).toHaveBeenCalledWith(
+      'movie1',
+      '2024-01-01',
+      'hall1',
     );
   });
 
@@ -129,7 +153,7 @@ describe('useShowtime', () => {
       startTime: '10:00',
       availableSeats: 50,
     };
-    (moviesServiceEffect.getShowtimeById as jest.Mock).mockReturnValue(
+    (showtimesServiceEffect.getShowtimeById as jest.Mock).mockReturnValue(
       Effect.succeed(mockShowtime),
     );
 
@@ -141,8 +165,8 @@ describe('useShowtime', () => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    expect(moviesServiceEffect.getShowtimeById).toHaveBeenCalledWith('1');
-    expect(moviesServiceEffect.getShowtimeById).toHaveBeenCalledTimes(1);
+    expect(showtimesServiceEffect.getShowtimeById).toHaveBeenCalledWith('1');
+    expect(showtimesServiceEffect.getShowtimeById).toHaveBeenCalledTimes(1);
     expect(result.current.data).toEqual(mockShowtime);
   });
 
@@ -151,12 +175,14 @@ describe('useShowtime', () => {
       wrapper: createWrapper(),
     });
 
-    expect(moviesServiceEffect.getShowtimeById).not.toHaveBeenCalled();
+    expect(showtimesServiceEffect.getShowtimeById).not.toHaveBeenCalled();
   });
 
   it('should handle error when fetch fails', async () => {
-    const mockError = MovieError.showtimeNotFound('Failed to fetch showtime');
-    (moviesServiceEffect.getShowtimeById as jest.Mock).mockReturnValue(
+    const mockError = ShowtimeError.showtimeNotFound(
+      'Failed to fetch showtime',
+    );
+    (showtimesServiceEffect.getShowtimeById as jest.Mock).mockReturnValue(
       Effect.fail(mockError),
     );
 
@@ -168,8 +194,8 @@ describe('useShowtime', () => {
       expect(result.current.isError).toBe(true);
     });
 
-    expect(result.current.error).toBeInstanceOf(MovieError);
-    expect((result.current.error as MovieError).message).toBe(
+    expect(result.current.error).toBeInstanceOf(ShowtimeError);
+    expect((result.current.error as ShowtimeError).message).toBe(
       'Failed to fetch showtime',
     );
   });
@@ -177,7 +203,7 @@ describe('useShowtime', () => {
   it('should refetch when id changes', async () => {
     const mockShowtime1 = { id: '1', movieId: 'movie1' };
     const mockShowtime2 = { id: '2', movieId: 'movie2' };
-    (moviesServiceEffect.getShowtimeById as jest.Mock)
+    (showtimesServiceEffect.getShowtimeById as jest.Mock)
       .mockReturnValueOnce(Effect.succeed(mockShowtime1))
       .mockReturnValueOnce(Effect.succeed(mockShowtime2));
 
@@ -201,6 +227,6 @@ describe('useShowtime', () => {
       expect(result.current.data).toEqual(mockShowtime2);
     });
 
-    expect(moviesServiceEffect.getShowtimeById).toHaveBeenCalledTimes(2);
+    expect(showtimesServiceEffect.getShowtimeById).toHaveBeenCalledTimes(2);
   });
 });

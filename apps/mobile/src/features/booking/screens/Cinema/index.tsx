@@ -16,7 +16,7 @@ import { useResolveClassNames, withUniwind } from 'uniwind';
 
 // Components
 import { Typo } from '@/components/Typo';
-import { LocationDropdown } from '@/features/booking/components/LocationDropdown';
+import { HallDropdown } from '@/features/booking/components/HallDropdown';
 import { SelectBox } from '@/features/booking/components/SelectBox';
 
 // Constants
@@ -38,9 +38,9 @@ import { useToastStore } from '@/stores/toast';
 
 // Types
 import {
-  CinemaWithShowTimes,
-  ShowTime,
-} from '@/features/booking/schemas/cinema';
+  HallWithShowtimes,
+  Showtime,
+} from '@/features/booking/schemas/showtime';
 
 const StyledSafeAreaView = withUniwind(SafeAreaView);
 
@@ -51,10 +51,11 @@ const CinemaScreen = () => {
   }>();
   const movieId = params.movieId || '';
 
-  const [selectedLocation, setSelectedLocation] = useState<string>('');
+  // '' means every hall — no `hallId` on the request.
+  const [selectedHallId, setSelectedHallId] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedShowtime, setSelectedShowtime] = useState<{
-    cinemaId: string;
+    hallId: string;
     showtimeId: string;
   } | null>(null);
 
@@ -73,9 +74,9 @@ const CinemaScreen = () => {
     isLoading,
     isError,
     error: showtimesError,
-  } = useShowtimes(movieId, showDate);
+  } = useShowtimes(movieId, showDate, selectedHallId || undefined);
 
-  const cinemasWithShowtimes = useMemo(() => {
+  const hallsWithShowtimes = useMemo(() => {
     if (!showtimesData || showtimesData.length === 0) return [];
 
     return formatShowTimes(showtimesData, showDate);
@@ -107,26 +108,31 @@ const CinemaScreen = () => {
   );
 
   const handleShowtimeSelect = useCallback(
-    (cinemaId: string, showtimeId: string) => {
-      const showtime = cinemasWithShowtimes
-        .find(cinema => cinema.cinema.id === cinemaId)
-        ?.showTimes.find((showtime: ShowTime) => showtime.id === showtimeId);
-      setSelectedShowtime({ cinemaId, showtimeId });
+    (hallId: string, showtimeId: string) => {
+      const showtime = hallsWithShowtimes
+        .find(item => item.hall.id === hallId)
+        ?.showtimes.find((showtime: Showtime) => showtime.id === showtimeId);
+      setSelectedShowtime({ hallId, showtimeId });
 
       if (showtime) {
         setShowtime(showtime);
       }
     },
-    [cinemasWithShowtimes, setShowtime],
+    [hallsWithShowtimes, setShowtime],
   );
 
-  const handleLocationChange = useCallback((value: string) => {
-    setSelectedLocation(value);
-  }, []);
+  const handleHallChange = useCallback(
+    (value: string) => {
+      // The selection belongs to a hall that may be about to leave the list.
+      value !== selectedHallId && setSelectedShowtime(null);
+      setSelectedHallId(value);
+    },
+    [selectedHallId],
+  );
 
-  const keyShowtimeExtractor = useCallback((item: ShowTime) => item.id, []);
+  const keyShowtimeExtractor = useCallback((item: Showtime) => item.id, []);
   const keyExtractor = useCallback(
-    (item: CinemaWithShowTimes) => item.cinema.id,
+    (item: HallWithShowtimes) => item.hall.id,
     [],
   );
 
@@ -140,11 +146,11 @@ const CinemaScreen = () => {
   const ListHeaderComponent = useCallback(
     () => (
       <View className="pl-6">
-        {/* Location Selection */}
+        {/* Hall Selection */}
         <View className="mb-6 mr-6">
-          <LocationDropdown
-            value={selectedLocation}
-            onChange={handleLocationChange}
+          <HallDropdown
+            value={selectedHallId}
+            onChange={handleHallChange}
             containerClassName="w-full"
           />
         </View>
@@ -186,9 +192,9 @@ const CinemaScreen = () => {
       </View>
     ),
     [
-      selectedLocation,
+      selectedHallId,
       selectedDate,
-      handleLocationChange,
+      handleHallChange,
       handleDateSelect,
       DATE_LABELS,
     ],
@@ -197,15 +203,15 @@ const CinemaScreen = () => {
   const renderShowtime = useCallback(
     ({
       item: showtime,
-      cinemaId,
-      cinemaName,
+      hallId,
+      hallName,
     }: {
       item: { id: string; showTime: string };
-      cinemaId: string;
-      cinemaName: string;
+      hallId: string;
+      hallName: string;
     }) => {
       const isSelected =
-        selectedShowtime?.cinemaId === cinemaId &&
+        selectedShowtime?.hallId === hallId &&
         selectedShowtime?.showtimeId === showtime.id;
 
       const formattedTime = formatTime(showtime.showTime);
@@ -214,36 +220,41 @@ const CinemaScreen = () => {
         <SelectBox
           value={formattedTime}
           isPrimary={isSelected}
-          accessibilityLabel={`Showtime ${formattedTime} at ${cinemaName}`}
+          accessibilityLabel={`Showtime ${formattedTime} in ${hallName}`}
           accessibilityHint={
             isSelected
               ? `${formattedTime} is currently selected. Tap to deselect`
-              : `Select showtime ${formattedTime} at ${cinemaName}`
+              : `Select showtime ${formattedTime} in ${hallName}`
           }
           className="py-3 px-4.5"
-          onPress={() => handleShowtimeSelect(cinemaId, showtime.id)}
+          onPress={() => handleShowtimeSelect(hallId, showtime.id)}
         />
       );
     },
     [selectedShowtime, handleShowtimeSelect],
   );
 
-  const renderCinema = useCallback(
-    ({ item }: { item: CinemaWithShowTimes }) => {
-      const { cinema, showTimes } = item;
+  const renderHall = useCallback(
+    ({ item }: { item: HallWithShowtimes }) => {
+      const { hall, showtimes } = item;
 
       return (
         <View className="gap-6 pl-6">
-          <Typo size="xl" weight="medium">
-            {cinema.name}
-          </Typo>
+          <View className="flex-row items-center gap-2">
+            <Typo size="xl" weight="medium">
+              {hall.name}
+            </Typo>
+            <Typo size="sm" weight="regular" className="text-text-secondary">
+              {hall.hallType}
+            </Typo>
+          </View>
           <FlashList
-            data={showTimes}
+            data={showtimes}
             renderItem={({ item: showtime }) =>
               renderShowtime({
                 item: showtime,
-                cinemaId: cinema.id,
-                cinemaName: cinema.name,
+                hallId: hall.id,
+                hallName: hall.name,
               })
             }
             horizontal
@@ -280,7 +291,7 @@ const CinemaScreen = () => {
       );
     }
 
-    if (cinemasWithShowtimes.length === 0) {
+    if (hallsWithShowtimes.length === 0) {
       return (
         <View
           className="flex-1 items-center justify-center py-16 px-6"
@@ -299,7 +310,7 @@ const CinemaScreen = () => {
         </View>
       );
     }
-  }, [isLoading, cinemasWithShowtimes.length]);
+  }, [isLoading, hallsWithShowtimes.length]);
 
   return (
     <StyledSafeAreaView
@@ -310,8 +321,8 @@ const CinemaScreen = () => {
     >
       <View className="flex-1 bg-dark-blue">
         <FlashList
-          data={cinemasWithShowtimes}
-          renderItem={renderCinema}
+          data={hallsWithShowtimes}
+          renderItem={renderHall}
           keyExtractor={keyExtractor}
           ListHeaderComponent={ListHeaderComponent}
           ItemSeparatorComponent={ItemSeparator}
@@ -320,7 +331,7 @@ const CinemaScreen = () => {
         />
 
         {/* Circular Navigation Button */}
-        {!isLoading && !isError && cinemasWithShowtimes.length > 0 && (
+        {!isLoading && !isError && hallsWithShowtimes.length > 0 && (
           <View className="absolute bottom-2 left-0 right-0 items-center">
             <TouchableOpacity
               onPress={handleNavigateToSeatSelection}

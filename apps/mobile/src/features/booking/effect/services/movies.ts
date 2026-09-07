@@ -7,7 +7,6 @@ import type { Genre } from '@movea/api-contract';
 // Schema
 import { Movie } from '../../schemas/movie';
 import { MovieError } from '../../error/movie';
-import { ShowTime } from '../../schemas/cinema';
 
 // Service
 import { MoviePage } from '../../services/movies';
@@ -34,14 +33,5 @@ export class MoviesService extends Context.Tag('MoviesServiceTag')<
     ) => Effect.Effect<MoviePage, MovieError, never>;
 
     readonly getGenres: () => Effect.Effect<Genre[], MovieError, never>;
-
-    readonly getShowtimes: (
-      movieId: string,
-      date: string,
-    ) => Effect.Effect<ShowTime[], MovieError, never>;
-
-    readonly getShowtimeById: (
-      id: string,
-    ) => Effect.Effect<ShowTime, MovieError, never>;
   }
 >() {}
