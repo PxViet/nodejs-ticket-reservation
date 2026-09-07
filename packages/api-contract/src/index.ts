@@ -49,3 +49,14 @@ export type PaginatedMovies = Schemas['PaginatedMovieResponseDto'];
 export type Genre = Schemas['GenreResponseDto'];
 /** One page of `GET /genres`. */
 export type PaginatedGenres = Schemas['PaginatedGenreResponseDto'];
+
+/** A showtime in the public schedule — `GET /showtimes` / `GET /showtimes/:id`. */
+export type Showtime = Schemas['ShowtimeResponseDto'];
+/** One page of `GET /showtimes`. */
+export type PaginatedShowtimes = Schemas['PaginatedShowtimeResponseDto'];
+/** The movie a showtime plays, as nested on a showtime. */
+export type ShowtimeMovie = Schemas['ShowtimeMovieDto'];
+/** The hall a showtime plays in, as nested on a showtime. */
+export type ShowtimeHall = Schemas['ShowtimeHallDto'];
+/** A hall — `GET /halls`, which returns a plain array rather than a page. */
+export type Hall = Schemas['HallResponseDto'];

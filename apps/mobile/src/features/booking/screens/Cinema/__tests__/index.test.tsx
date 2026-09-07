@@ -13,6 +13,7 @@ let mockParams: { movieId?: string; movieTitle: string } = {
   movieId: 'movie1',
   movieTitle: 'Test Movie',
 };
+const mockUseShowtimes = jest.fn();
 let mockShowtimesData: any[] = [];
 let mockIsLoading = false;
 let mockIsError = false;
@@ -26,12 +27,15 @@ jest.mock('expo-router', () => ({
 }));
 
 jest.mock('@/features/booking/hooks/useShowtimes', () => ({
-  useShowtimes: () => ({
-    data: mockShowtimesData,
-    isLoading: mockIsLoading,
-    isError: mockIsError,
-    error: mockError,
-  }),
+  useShowtimes: (movieId: string, date: string, hallId?: string) => {
+    mockUseShowtimes(movieId, date, hallId);
+    return {
+      data: mockShowtimesData,
+      isLoading: mockIsLoading,
+      isError: mockIsError,
+      error: mockError,
+    };
+  },
 }));
 
 const mockUseBookingStore = jest.fn((selector: any) =>
@@ -71,17 +75,18 @@ jest.mock('@/utils/dates', () => ({
     { id: '2024-01-16', label: 'Tomorrow' },
     { id: '2024-01-17', label: 'Wed' },
   ],
-  formatShowTimes: (showTimes: any[], date: string) => {
-    if (!showTimes || showTimes.length === 0) return [];
-    return [
-      {
-        cinema: {
-          id: 'cinema1',
-          name: 'Cinema 1',
-        },
-        showTimes: showTimes.filter((s: any) => s.showDate === date),
-      },
-    ];
+  formatShowTimes: (showtimes: any[], date: string) => {
+    if (!showtimes || showtimes.length === 0) return [];
+    const byHall = new Map<string, any>();
+    for (const showtime of showtimes.filter(
+      (s: any) => s.showDate === date && s.hall,
+    )) {
+      if (!byHall.has(showtime.hall.id)) {
+        byHall.set(showtime.hall.id, { hall: showtime.hall, showtimes: [] });
+      }
+      byHall.get(showtime.hall.id).showtimes.push(showtime);
+    }
+    return Array.from(byHall.values());
   },
 }));
 
@@ -89,27 +94,27 @@ jest.mock('@/utils/formats', () => ({
   formatTime: (time: string) => time,
 }));
 
-jest.mock('@/features/booking/components/LocationDropdown', () => {
+jest.mock('@/features/booking/components/HallDropdown', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const React = require('react');
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { View, Text, TouchableOpacity } = require('react-native');
   return {
-    LocationDropdown: ({ value, onChange, containerClassName, testID }: any) =>
+    HallDropdown: ({ value, onChange, containerClassName, testID }: any) =>
       React.createElement(
         View,
         {
-          testID: testID || 'location-dropdown',
+          testID: testID || 'hall-dropdown',
           className: containerClassName,
         },
-        React.createElement(Text, null, `Location: ${value || 'None'}`),
+        React.createElement(Text, null, `Hall: ${value || 'All'}`),
         React.createElement(
           TouchableOpacity,
           {
-            onPress: () => onChange('Jakarta'),
-            testID: 'location-change-button',
+            onPress: () => onChange('hall2'),
+            testID: 'hall-change-button',
           },
-          React.createElement(Text, null, 'Change Location'),
+          React.createElement(Text, null, 'Change Hall'),
         ),
       ),
   };
@@ -139,33 +144,31 @@ describe('CinemaScreen', () => {
       {
         id: 'showtime1',
         movieId: 'movie1',
-        cinemaHallId: 'hall1',
+        hallId: 'hall1',
         showDate: '2024-01-15',
         showTime: '14:00',
         endTime: '16:00',
-        price: 50,
-        cinemaHall: {
+        basePrice: 50,
+        status: 'active',
+        hall: {
           id: 'hall1',
-          cinema: {
-            id: 'cinema1',
-            name: 'Cinema 1',
-          },
+          name: 'Hall 1',
+          hallType: 'IMAX',
         },
       },
       {
         id: 'showtime2',
         movieId: 'movie1',
-        cinemaHallId: 'hall1',
+        hallId: 'hall1',
         showDate: '2024-01-15',
         showTime: '16:00',
         endTime: '18:00',
-        price: 50,
-        cinemaHall: {
+        basePrice: 50,
+        status: 'active',
+        hall: {
           id: 'hall1',
-          cinema: {
-            id: 'cinema1',
-            name: 'Cinema 1',
-          },
+          name: 'Hall 1',
+          hallType: 'IMAX',
         },
       },
     ];
@@ -175,11 +178,11 @@ describe('CinemaScreen', () => {
   });
 
   describe('Rendering', () => {
-    it('should render LocationDropdown in header', () => {
+    it('should render HallDropdown in header', () => {
       const { getByTestId } = render(<CinemaScreen />, {
         wrapper: createWrapper(),
       });
-      expect(getByTestId('location-dropdown')).toBeTruthy();
+      expect(getByTestId('hall-dropdown')).toBeTruthy();
     });
 
     it('should render date selection in header', () => {
@@ -198,11 +201,11 @@ describe('CinemaScreen', () => {
       expect(getByText('Wed')).toBeTruthy();
     });
 
-    it('should render cinemas with showtimes', () => {
+    it('should render halls with showtimes', () => {
       const { getByText } = render(<CinemaScreen />, {
         wrapper: createWrapper(),
       });
-      expect(getByText('Cinema 1')).toBeTruthy();
+      expect(getByText('Hall 1')).toBeTruthy();
     });
 
     it('should render showtime options', () => {
@@ -315,17 +318,20 @@ describe('CinemaScreen', () => {
     });
   });
 
-  describe('Location Selection', () => {
-    it('should update location when location changes', () => {
+  describe('Hall Selection', () => {
+    it('should re-query with the chosen hall', () => {
       const { getByTestId } = render(<CinemaScreen />, {
         wrapper: createWrapper(),
       });
-      const locationButton = getByTestId('location-change-button');
 
-      fireEvent.press(locationButton);
+      fireEvent.press(getByTestId('hall-change-button'));
 
-      // Location should be updated
-      expect(getByTestId('location-dropdown')).toBeTruthy();
+      // The hall filter reaches the query rather than sitting in local state.
+      expect(mockUseShowtimes).toHaveBeenLastCalledWith(
+        'movie1',
+        '2024-01-15',
+        'hall2',
+      );
     });
   });
 
@@ -412,23 +418,22 @@ describe('CinemaScreen', () => {
 
   describe('Edge Cases', () => {
     it('should return null from renderEmpty when data exists', () => {
-      // When not loading and cinemasWithShowtimes.length > 0, renderEmpty should return null
+      // When not loading and hallsWithShowtimes.length > 0, renderEmpty should return null
       mockIsLoading = false;
       mockShowtimesData = [
         {
           id: 'showtime1',
           movieId: 'movie1',
-          cinemaHallId: 'hall1',
+          hallId: 'hall1',
           showDate: '2024-01-15',
           showTime: '14:00',
           endTime: '16:00',
-          price: 50,
-          cinemaHall: {
+          basePrice: 50,
+          status: 'active',
+          hall: {
             id: 'hall1',
-            cinema: {
-              id: 'cinema1',
-              name: 'Cinema 1',
-            },
+            name: 'Hall 1',
+            hallType: 'IMAX',
           },
         },
       ];
@@ -440,42 +445,40 @@ describe('CinemaScreen', () => {
       // Should not show empty state messages
       expect(queryByText('No showtimes available')).toBeNull();
       expect(queryByText('Loading showtimes...')).toBeNull();
-      // Should show cinema data instead
-      expect(queryByText('Cinema 1')).toBeTruthy();
+      // Should show hall data instead
+      expect(queryByText('Hall 1')).toBeTruthy();
     });
 
-    it('should handle multiple cinemas', () => {
+    it('should handle multiple halls', () => {
       mockShowtimesData = [
         {
           id: 'showtime1',
           movieId: 'movie1',
-          cinemaHallId: 'hall1',
+          hallId: 'hall1',
           showDate: '2024-01-15',
           showTime: '14:00',
           endTime: '16:00',
-          price: 50,
-          cinemaHall: {
+          basePrice: 50,
+          status: 'active',
+          hall: {
             id: 'hall1',
-            cinema: {
-              id: 'cinema1',
-              name: 'Cinema 1',
-            },
+            name: 'Hall 1',
+            hallType: 'IMAX',
           },
         },
         {
           id: 'showtime2',
           movieId: 'movie1',
-          cinemaHallId: 'hall2',
+          hallId: 'hall2',
           showDate: '2024-01-15',
           showTime: '16:00',
           endTime: '18:00',
-          price: 50,
-          cinemaHall: {
+          basePrice: 50,
+          status: 'active',
+          hall: {
             id: 'hall2',
-            cinema: {
-              id: 'cinema2',
-              name: 'Cinema 2',
-            },
+            name: 'Hall 2',
+            hallType: 'IMAX',
           },
         },
       ];
@@ -484,8 +487,8 @@ describe('CinemaScreen', () => {
         wrapper: createWrapper(),
       });
 
-      expect(getByText('Cinema 1')).toBeTruthy();
-      // Note: formatShowTimes groups by cinema, so both should be visible
+      expect(getByText('Hall 1')).toBeTruthy();
+      // Note: formatShowTimes groups by hall, so both should be visible
     });
   });
 

@@ -2,11 +2,9 @@ import { Effect } from 'effect';
 
 // Schemas
 import {
-  Cinema,
-  CinemaHall,
-  CinemaWithShowTimes,
-  ShowTime,
-} from '@/features/booking/schemas/cinema';
+  HallWithShowtimes,
+  Showtime,
+} from '@/features/booking/schemas/showtime';
 
 // Constants
 import { DAY_COUNT, DAY_LABELS, MAX_MINUTES } from '@/constants/configs';
@@ -100,9 +98,9 @@ const isShowtimeInRange = (showTime: string, minTime: string): boolean => {
  * - Only applies if showDate is today
  */
 export const filterShowTimesByTimeEffect = (
-  showTimes: ShowTime[],
+  showTimes: Showtime[],
   showDate: string,
-): Effect.Effect<ShowTime[]> =>
+): Effect.Effect<Showtime[]> =>
   Effect.flatMap(
     Effect.sync(() => new Date().toISOString().split('T')[0] ?? ''),
     today =>
@@ -130,57 +128,60 @@ export const filterShowTimesByTimeEffect = (
  * - Only applies if showDate is today
  */
 export const filterShowTimesByTime = (
-  showTimes: ShowTime[],
+  showTimes: Showtime[],
   showDate: string,
-): ShowTime[] =>
+): Showtime[] =>
   Effect.runSync(filterShowTimesByTimeEffect(showTimes, showDate));
 
-const groupShowTimesByCinema = (
-  filteredShowTimes: ShowTime[],
-): CinemaWithShowTimes[] => {
-  const cinemaMap = new Map<
-    string,
-    { cinema: Cinema; cinemaHall: CinemaHall; showTimes: ShowTime[] }
-  >();
+// A showtime a customer can still book. The API already hides `cancelled` from
+// anonymous callers, but a past date still returns `completed` ones.
+const BOOKABLE_STATUSES: Showtime['status'][] = ['scheduled', 'active'];
 
-  for (const showTime of filteredShowTimes) {
-    if (!showTime.cinemaHall?.cinema || !showTime.cinemaHall) continue;
+const groupShowtimesByHall = (
+  filteredShowtimes: Showtime[],
+): HallWithShowtimes[] => {
+  const hallMap = new Map<string, HallWithShowtimes>();
 
-    const cinema = showTime.cinemaHall.cinema;
-    const cinemaHall = showTime.cinemaHall;
+  for (const showtime of filteredShowtimes) {
+    // The API serves halls nested on the showtime; a null hall has nothing to
+    // group under.
+    if (!showtime.hall) continue;
+    if (!BOOKABLE_STATUSES.includes(showtime.status)) continue;
 
-    if (!cinemaMap.has(cinema.id)) {
-      cinemaMap.set(cinema.id, { cinema, cinemaHall, showTimes: [] });
+    const hall = showtime.hall;
+
+    if (!hallMap.has(hall.id)) {
+      hallMap.set(hall.id, { hall, showtimes: [] });
     }
-    cinemaMap.get(cinema.id)!.showTimes.push(showTime);
+    hallMap.get(hall.id)!.showtimes.push(showtime);
   }
 
-  return Array.from(cinemaMap.values())
+  return Array.from(hallMap.values())
     .map(item => ({
       ...item,
-      showTimes: [...item.showTimes].sort((a, b) =>
+      showtimes: [...item.showtimes].sort((a, b) =>
         a.showTime.localeCompare(b.showTime),
       ),
     }))
-    .sort((a, b) => a.cinema.name.localeCompare(b.cinema.name));
+    .sort((a, b) => a.hall.name.localeCompare(b.hall.name));
 };
 
 /**
- * Effect that filters showTimes by date/time then groups by cinema and sorts.
+ * Effect that filters showTimes by date/time then groups by hall and sorts.
  */
 export const formatShowTimesEffect = (
-  showTimes: ShowTime[],
+  showTimes: Showtime[],
   showDate: string,
-): Effect.Effect<CinemaWithShowTimes[]> =>
+): Effect.Effect<HallWithShowtimes[]> =>
   Effect.flatMap(filterShowTimesByTimeEffect(showTimes, showDate), filtered =>
-    Effect.succeed(groupShowTimesByCinema(filtered)),
+    Effect.succeed(groupShowtimesByHall(filtered)),
   );
 
 /**
- * Filter showTimes by time, then group by cinema and sort by time and name.
+ * Filter showTimes by time, then group by hall and sort by time and name.
  */
 export const formatShowTimes = (
-  showTimes: ShowTime[],
+  showTimes: Showtime[],
   showDate: string,
-): CinemaWithShowTimes[] =>
+): HallWithShowtimes[] =>
   Effect.runSync(formatShowTimesEffect(showTimes, showDate));

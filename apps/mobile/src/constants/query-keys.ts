@@ -30,9 +30,15 @@ export const queryKeys = {
   showtimes: {
     all: ['showtimes'] as const,
     lists: () => [...queryKeys.showtimes.all, 'list'] as const,
-    list: (movieId: string, date: string) =>
-      [...queryKeys.showtimes.lists(), movieId, date] as const,
+    list: (movieId: string, date: string, hallId?: string) =>
+      [...queryKeys.showtimes.lists(), movieId, date, hallId] as const,
     detail: (id: string) => [...queryKeys.showtimes.all, 'detail', id] as const,
+  },
+
+  // Halls
+  halls: {
+    all: ['halls'] as const,
+    list: () => [...queryKeys.halls.all, 'list'] as const,
   },
 
   // Wallet

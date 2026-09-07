@@ -11,19 +11,19 @@ import { useQuery } from '@tanstack/react-query';
 import { runEffectForQuery } from '@/utils/effect';
 
 // Effect Services
-import { MoviesService } from '@/features/booking/effect/services/movies';
-import { MoviesServiceLayer } from '@/features/booking/effect/layer/movies';
+import { ShowtimesService } from '@/features/booking/effect/services/showtimes';
+import { ShowtimesServiceLayer } from '@/features/booking/effect/layer/showtimes';
 
-export function useShowtimes(movieId: string, date: string) {
+export function useShowtimes(movieId: string, date: string, hallId?: string) {
   return useQuery({
-    queryKey: queryKeys.showtimes.list(movieId, date),
+    queryKey: queryKeys.showtimes.list(movieId, date, hallId),
     queryFn: () =>
       runEffectForQuery(
         Effect.gen(function* () {
-          const moviesService = yield* MoviesService;
-          return yield* moviesService.getShowtimes(movieId, date);
+          const showtimesService = yield* ShowtimesService;
+          return yield* showtimesService.getShowtimes(movieId, date, hallId);
         }),
-        MoviesServiceLayer,
+        ShowtimesServiceLayer,
       ),
     enabled: !!movieId && !!date,
     staleTime: API_CONFIG.MOVIE_STALE_TIME,
@@ -36,10 +36,10 @@ export function useShowtime(id: string) {
     queryFn: () =>
       runEffectForQuery(
         Effect.gen(function* () {
-          const moviesService = yield* MoviesService;
-          return yield* moviesService.getShowtimeById(id);
+          const showtimesService = yield* ShowtimesService;
+          return yield* showtimesService.getShowtimeById(id);
         }),
-        MoviesServiceLayer,
+        ShowtimesServiceLayer,
       ),
     enabled: !!id,
     staleTime: API_CONFIG.MOVIE_STALE_TIME,

@@ -22,11 +22,6 @@ export const MoviesServiceLayer = Layer.effect(
         moviesServiceEffect.getMoviesByGenrePaginated(genreId, page),
 
       getGenres: () => moviesServiceEffect.getGenres(),
-
-      getShowtimes: (movieId: string, date: string) =>
-        moviesServiceEffect.getShowtimes(movieId, date),
-
-      getShowtimeById: (id: string) => moviesServiceEffect.getShowtimeById(id),
     } as const;
   }),
 );
