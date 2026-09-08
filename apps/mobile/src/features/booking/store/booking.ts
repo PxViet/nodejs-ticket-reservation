@@ -1,22 +1,26 @@
 import { create } from 'zustand';
 
 // Types
-import { Showtime } from '@/features/booking/schemas/showtime';
+import { SelectedSeat, Showtime } from '@/features/booking/schemas/showtime';
 import { Movie } from '../schemas/movie';
 
 interface BookingState {
   selectedMovie: Movie | null;
   selectedShowtime: Showtime | null;
-  selectedSeats: string[];
+  selectedSeats: SelectedSeat[];
+  holdIds: string[];
+  heldUntil: string | null;
   reservationId: string | null;
   promoCode: string | null;
   discountAmount: number;
 
   setMovie: (movie: Movie) => void;
   setShowtime: (showtime: Showtime) => void;
-  setSeats: (seats: string[]) => void;
-  addSeat: (seat: string) => void;
-  removeSeat: (seat: string) => void;
+  setSeats: (seats: SelectedSeat[]) => void;
+  addSeat: (seat: SelectedSeat) => void;
+  removeSeat: (seatId: string) => void;
+  setHoldIds: (holdIds: string[]) => void;
+  setHeldUntil: (heldUntil: string | null) => void;
   setReservationId: (id: string | null) => void;
   setPromoCode: (code: string | null) => void;
   setDiscountAmount: (amount: number) => void;
@@ -28,6 +32,8 @@ export const useBookingStore = create<BookingState>((set, get) => ({
   selectedMovie: null,
   selectedShowtime: null,
   selectedSeats: [],
+  holdIds: [],
+  heldUntil: null,
   reservationId: null,
   promoCode: null,
   discountAmount: 0,
@@ -37,15 +43,19 @@ export const useBookingStore = create<BookingState>((set, get) => ({
   setSeats: seats => set({ selectedSeats: seats }),
 
   addSeat: seat =>
+    set(state =>
+      state.selectedSeats.some(s => s.seatId === seat.seatId)
+        ? state
+        : { selectedSeats: [...state.selectedSeats, seat] },
+    ),
+
+  removeSeat: seatId =>
     set(state => ({
-      selectedSeats: [...state.selectedSeats, seat],
+      selectedSeats: state.selectedSeats.filter(s => s.seatId !== seatId),
     })),
 
-  removeSeat: seat =>
-    set(state => ({
-      selectedSeats: state.selectedSeats.filter(s => s !== seat),
-    })),
-
+  setHoldIds: holdIds => set({ holdIds }),
+  setHeldUntil: heldUntil => set({ heldUntil }),
   setReservationId: id => set({ reservationId: id }),
   setPromoCode: code => set({ promoCode: code }),
   setDiscountAmount: amount => set({ discountAmount: amount }),
@@ -65,6 +75,8 @@ export const useBookingStore = create<BookingState>((set, get) => ({
       selectedMovie: null,
       selectedShowtime: null,
       selectedSeats: [],
+      holdIds: [],
+      heldUntil: null,
       reservationId: null,
       promoCode: null,
       discountAmount: 0,
