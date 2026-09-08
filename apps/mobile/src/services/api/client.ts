@@ -1,13 +1,20 @@
 import { STORAGE_KEYS } from '@/constants';
+import { API_BASE_URL } from '@/services/api/config';
+import {
+  notifySessionExpired,
+  refreshAccessToken,
+} from '@/services/api/session';
 import { secureStorage } from '@/services/storage/secure';
 
 /**
  * Minimal HTTP client for `@movea/api`. Every response is JSON; every error is
  * the one envelope the API's global filter produces (DDR-006):
  * `{ statusCode, errorCode, message, timestamp }`.
+ *
+ * A `401` on an authenticated request rotates the token pair once and replays
+ * the request (see `doRequest`); if the rotation fails the session is torn down.
  */
-const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1';
+export { API_BASE_URL } from '@/services/api/config';
 
 interface ApiErrorBody {
   statusCode: number;
@@ -53,9 +60,15 @@ const parseJson = (text: string): unknown => {
   }
 };
 
-export const apiRequest = async <T>(
+export const apiRequest = <T>(
   path: string,
-  { method = 'GET', body, auth = false, accessToken }: RequestOptions = {},
+  options: RequestOptions = {},
+): Promise<T> => doRequest<T>(path, options, true);
+
+const doRequest = async <T>(
+  path: string,
+  { method = 'GET', body, auth = false, accessToken }: RequestOptions,
+  allowRetry: boolean,
 ): Promise<T> => {
   const headers: Record<string, string> = {};
 
@@ -76,6 +89,27 @@ export const apiRequest = async <T>(
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
   });
+
+  // Access token expired: rotate the pair once and replay with the new token.
+  // A failed rotation means the refresh token is spent too — tear the session
+  // down and let the original 401 surface below.
+  if (response.status === 401 && auth && allowRetry) {
+    let newAccessToken: string | null = null;
+
+    try {
+      newAccessToken = await refreshAccessToken();
+    } catch {
+      await notifySessionExpired();
+    }
+
+    if (newAccessToken) {
+      return doRequest<T>(
+        path,
+        { method, body, auth, accessToken: newAccessToken },
+        false,
+      );
+    }
+  }
 
   const payload = parseJson(await response.text());
 
