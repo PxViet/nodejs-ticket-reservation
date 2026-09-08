@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { useCallback, useEffect, useMemo } from 'react';
+import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -15,33 +15,43 @@ import { Typo } from '@/components/Typo';
 import { SeatItem } from './SeatItem';
 
 // Constants
-import { ROUTES, Size } from '@/constants';
-import { SEAT_STATUS } from '@/constants/status';
+import { ERROR_MESSAGES, ROUTES, Size } from '@/constants';
 
 // Icons
 import { ScreenIcon } from '@/icons/ScreenIcon';
 
+// Hooks
+import { useHoldSeats, useSeatMap } from '@/features/booking/hooks/useSeatMap';
+
 // Stores
+import { useAuthStore } from '@/features/auth/store/auth';
 import { useBookingStore } from '@/features/booking/store/booking';
+import { useToastStore } from '@/stores/toast';
 
 // Utils
-import { generateSeats } from '@/utils/data';
-import {
-  calculateTotalPrice,
-  formatIDR,
-  groupSeatsByRow,
-} from '@/utils/formats';
+import { calculateTotalPrice, formatIDR } from '@/utils/formats';
 
 // Types
-import { Seat } from '@/features/booking/schemas/cinema';
+import { ShowtimeSeat } from '@/features/booking/schemas/showtime';
 
 const StyledSafeAreaView = withUniwind(SafeAreaView);
 
 const STATUS_COLORS = [
   { color: 'bg-bg-quaternary', label: 'Available' },
-  { color: 'bg-light-navy', label: 'Booked' },
+  { color: 'bg-light-navy', label: 'Taken' },
   { color: 'bg-secondary', label: 'Your Seat' },
 ];
+
+/** Group the already row-then-column ordered seat list into rows, keeping order. */
+const groupByRow = (seats: ShowtimeSeat[]): [string, ShowtimeSeat[]][] => {
+  const rows = new Map<string, ShowtimeSeat[]>();
+  seats.forEach(seat => {
+    const row = rows.get(seat.seatRow) ?? [];
+    row.push(seat);
+    rows.set(seat.seatRow, row);
+  });
+  return [...rows.entries()];
+};
 
 const SeatsScreen = () => {
   const {
@@ -50,6 +60,9 @@ const SeatsScreen = () => {
     selectedSeats,
     addSeat,
     removeSeat,
+    setSeats,
+    setHoldIds,
+    setHeldUntil,
   } = useBookingStore(
     useShallow(state => ({
       selectedMovie: state.selectedMovie,
@@ -57,59 +70,110 @@ const SeatsScreen = () => {
       selectedSeats: state.selectedSeats,
       addSeat: state.addSeat,
       removeSeat: state.removeSeat,
+      setSeats: state.setSeats,
+      setHoldIds: state.setHoldIds,
+      setHeldUntil: state.setHeldUntil,
     })),
   );
 
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const showError = useToastStore(state => state.showError);
+
   const movieTitle = selectedMovie?.title;
   const hallName = selectedShowtime?.hall?.name;
+  const showtimeId = selectedShowtime?.id ?? '';
 
-  const [seats] = useState<Seat[]>(() => generateSeats());
+  const {
+    data: seats = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useSeatMap(showtimeId);
 
-  // Update seat status based on selected seats
-  const seatsWithStatus = useMemo(() => {
-    return seats.map(seat => {
-      if (seat.status === SEAT_STATUS.BOOKED) {
-        return seat;
-      }
-      const isSelected = selectedSeats.includes(seat.id);
-      return {
-        ...seat,
-        status: isSelected ? SEAT_STATUS.SELECTED : SEAT_STATUS.AVAILABLE,
-      };
-    });
-  }, [seats, selectedSeats]);
+  const { mutate: holdSeats, isPending: isHolding } = useHoldSeats();
 
-  // Group seats by row
-  const seatsByRow = useMemo(
-    () => groupSeatsByRow(seatsWithStatus as Seat[]),
-    [seatsWithStatus],
+  useEffect(() => {
+    if (isError) {
+      showError(error?.message ?? ERROR_MESSAGES.SOMETHING_WENT_WRONG);
+    }
+  }, [isError, error, showError]);
+
+  const selectedIds = useMemo(
+    () => new Set(selectedSeats.map(seat => seat.seatId)),
+    [selectedSeats],
+  );
+
+  const seatRows = useMemo(() => groupByRow(seats), [seats]);
+
+  const hasOwnHold = useMemo(
+    () => seats.some(seat => seat.status !== 'available' && seat.isMine),
+    [seats],
   );
 
   const totalPrice = calculateTotalPrice(
-    selectedShowtime?.basePrice || 0,
+    selectedShowtime?.basePrice ?? 0,
     selectedSeats.length,
   );
 
   const handleSeatPress = useCallback(
-    (seat: Seat) => {
-      if (seat.status === SEAT_STATUS.BOOKED) {
-        return;
-      }
+    (seat: ShowtimeSeat) => {
+      if (seat.status !== 'available') return;
 
-      if (seat.status === SEAT_STATUS.SELECTED) {
-        removeSeat(seat.id);
+      if (selectedIds.has(seat.seatId)) {
+        removeSeat(seat.seatId);
       } else {
-        addSeat(seat.id);
+        addSeat({ seatId: seat.seatId, seatLabel: seat.seatLabel });
       }
     },
-    [addSeat, removeSeat],
+    [selectedIds, addSeat, removeSeat],
   );
 
   const handleBookTicket = useCallback(() => {
     if (selectedSeats.length === 0 || !selectedShowtime) return;
 
-    router.push(ROUTES.CHECKOUT as Href);
-  }, [selectedSeats.length, selectedShowtime]);
+    if (!isAuthenticated) {
+      showError('Please sign in to reserve seats.');
+      router.push(ROUTES.LOGIN as Href);
+      return;
+    }
+
+    holdSeats(
+      { showtimeId, seatIds: selectedSeats.map(seat => seat.seatId) },
+      {
+        onSuccess: holds => {
+          setHoldIds(holds.map(hold => hold.id));
+          setHeldUntil(holds.map(hold => hold.heldUntil).sort()[0] ?? null);
+          router.push(ROUTES.CHECKOUT as Href);
+        },
+        onError: holdError => {
+          if (holdError.errorCode === 'SEAT_UNAVAILABLE') {
+            showError('Some of those seats were just taken.');
+            setSeats([]);
+            refetch();
+            return;
+          }
+          if (holdError.errorCode === 'SHOWTIME_NOT_BOOKABLE') {
+            showError('This showtime is no longer bookable.');
+            router.back();
+            return;
+          }
+          showError(holdError.message ?? ERROR_MESSAGES.SOMETHING_WENT_WRONG);
+        },
+      },
+    );
+  }, [
+    selectedSeats,
+    selectedShowtime,
+    isAuthenticated,
+    holdSeats,
+    showtimeId,
+    setHoldIds,
+    setHeldUntil,
+    setSeats,
+    refetch,
+    showError,
+  ]);
 
   return (
     <StyledSafeAreaView
@@ -159,48 +223,82 @@ const SeatsScreen = () => {
               </View>
             ))}
           </View>
+          {hasOwnHold && (
+            <View className="flex-row items-center justify-center gap-2 mt-3">
+              <View className="w-5 h-5 rounded border border-secondary" />
+              <Typo size="sm">Your hold</Typo>
+            </View>
+          )}
         </View>
-
-        {/* Seat Grid */}
-        <View className="mb-3">
-          <ScrollView showsVerticalScrollIndicator={false}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingRight: 24 }}
-              nestedScrollEnabled
+        <View className="flex-1 justify-between">
+          {/* Seat Grid */}
+          {isLoading ? (
+            <View
+              className="flex-1 items-center justify-center"
+              accessibilityRole="progressbar"
             >
-              <View>
-                {/* Seat Rows */}
-                {Object.entries(seatsByRow).map(([row, rowSeats]) => (
-                  <View key={row} className="flex-row items-center mb-2">
-                    {/* Seats */}
-                    <View className="flex-row gap-2">
-                      {rowSeats.map(seat => (
-                        <SeatItem
-                          key={seat.id}
-                          seat={seat}
-                          onSeatPress={handleSeatPress}
-                        />
-                      ))}
-                    </View>
+              <ActivityIndicator
+                size="large"
+                testID="seat-map-loading-indicator"
+              />
+              <Typo size="sm" className="text-text-secondary mt-4">
+                Loading seats...
+              </Typo>
+            </View>
+          ) : seatRows.length === 0 ? (
+            <View className="flex-1 items-center justify-center px-6">
+              <Typo
+                size="xl"
+                weight="semibold"
+                className="text-text-secondary text-center mb-2"
+              >
+                No seats to show
+              </Typo>
+              <Typo size="sm" className="text-text-secondary text-center">
+                This showtime has no seat map yet
+              </Typo>
+            </View>
+          ) : (
+            <View className="mb-3">
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ paddingRight: 24 }}
+                  nestedScrollEnabled
+                >
+                  <View>
+                    {seatRows.map(([row, rowSeats]) => (
+                      <View key={row} className="flex-row items-center mb-2">
+                        <View className="flex-row gap-2">
+                          {rowSeats.map(seat => (
+                            <SeatItem
+                              key={seat.seatId}
+                              seat={seat}
+                              isSelected={selectedIds.has(seat.seatId)}
+                              onSeatPress={handleSeatPress}
+                            />
+                          ))}
+                        </View>
+                      </View>
+                    ))}
                   </View>
-                ))}
-              </View>
-            </ScrollView>
-          </ScrollView>
-        </View>
+                </ScrollView>
+              </ScrollView>
+            </View>
+          )}
 
-        {/* Screen Icon */}
-        <View className="pr-6 mb-6 items-center">
-          <Typo
-            size="sm"
-            weight="light"
-            className="text-gradient-light text-center"
-          >
-            Screen
-          </Typo>
-          <ScreenIcon testID="screen-icon" />
+          {/* Screen Icon */}
+          <View className="pr-6 mb-6 items-center">
+            <Typo
+              size="sm"
+              weight="light"
+              className="text-gradient-light text-center"
+            >
+              Screen
+            </Typo>
+            <ScreenIcon testID="screen-icon" />
+          </View>
         </View>
       </View>
 
@@ -216,9 +314,9 @@ const SeatsScreen = () => {
           </Typo>
         </View>
         <Button
-          title="Book Ticket"
+          title={isHolding ? 'Holding seats...' : 'Book Ticket'}
           onPress={handleBookTicket}
-          disabled={selectedSeats.length === 0}
+          disabled={selectedSeats.length === 0 || isHolding}
           size={Size.SMALL}
           className="rounded-lg"
           testID="book-ticket-button"
