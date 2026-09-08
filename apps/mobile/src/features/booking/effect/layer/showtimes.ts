@@ -17,6 +17,12 @@ export const ShowtimesServiceLayer = Layer.effect(
         showtimesServiceEffect.getShowtimeById(id),
 
       getHalls: () => showtimesServiceEffect.getHalls(),
+
+      getSeatMap: (showtimeId: string) =>
+        showtimesServiceEffect.getSeatMap(showtimeId),
+
+      holdSeats: (showtimeId: string, seatIds: string[]) =>
+        showtimesServiceEffect.holdSeats(showtimeId, seatIds),
     } as const;
   }),
 );

@@ -20,6 +20,7 @@
     "format:check": "prettier --check .",
     "api": "pnpm --filter @movea/api",
     "mobile": "pnpm --filter @movea/mobile",
+    "build:apk": "cd apps/mobile/android && gradlew assembleRelease",
     "contract": "pnpm --filter @movea/api-contract",
     "contract:generate": "pnpm --filter @movea/api generate:openapi && pnpm --filter @movea/api-contract generate && pnpm --filter @movea/api-contract build",
     "db:logs": "docker compose logs -f postgres",

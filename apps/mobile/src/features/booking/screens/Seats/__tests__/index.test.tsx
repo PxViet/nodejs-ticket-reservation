@@ -3,300 +3,353 @@ import React from 'react';
 
 import SeatsScreen from '../index';
 
-// Mock dependencies
+// Mocks
 const mockPush = jest.fn();
+const mockBack = jest.fn();
 const mockAddSeat = jest.fn();
 const mockRemoveSeat = jest.fn();
+const mockSetSeats = jest.fn();
+const mockSetHoldIds = jest.fn();
+const mockSetHeldUntil = jest.fn();
+const mockShowError = jest.fn();
+const mockRefetch = jest.fn();
+const mockHoldSeats = jest.fn();
 
-let mockSelectedMovie: any = {
-  id: 'movie1',
-  title: 'Test Movie',
-};
-
+let mockSelectedMovie: any = { id: 'movie1', title: 'Test Movie' };
 let mockSelectedShowtime: any = {
   id: 'showtime1',
   basePrice: 50000,
-  hall: {
-    id: 'hall1',
-    name: 'Hall 1',
-    hallType: 'IMAX',
-  },
+  hall: { id: 'hall1', name: 'Hall 1', hallType: 'IMAX' },
+};
+let mockSelectedSeats: any[] = [];
+let mockIsAuthenticated = true;
+
+let mockSeatMap: any = {
+  data: [
+    {
+      seatId: 'id-A1',
+      seatRow: 'A',
+      seatColumn: 1,
+      seatLabel: 'A1',
+      status: 'available',
+    },
+    {
+      seatId: 'id-A2',
+      seatRow: 'A',
+      seatColumn: 2,
+      seatLabel: 'A2',
+      status: 'available',
+    },
+    {
+      seatId: 'id-A3',
+      seatRow: 'A',
+      seatColumn: 3,
+      seatLabel: 'A3',
+      status: 'held',
+      isMine: false,
+    },
+    {
+      seatId: 'id-B1',
+      seatRow: 'B',
+      seatColumn: 1,
+      seatLabel: 'B1',
+      status: 'reserved',
+      isMine: false,
+    },
+    {
+      seatId: 'id-B2',
+      seatRow: 'B',
+      seatColumn: 2,
+      seatLabel: 'B2',
+      status: 'available',
+    },
+  ],
+  isLoading: false,
+  isError: false,
+  error: null,
+  refetch: mockRefetch,
 };
 
-let mockSelectedSeats: string[] = [];
+let mockHoldMutation: any = { mutate: mockHoldSeats, isPending: false };
 
 jest.mock('expo-router', () => ({
   router: {
     push: (...args: any[]) => mockPush(...args),
+    back: (...args: any[]) => mockBack(...args),
   },
   Href: {} as any,
 }));
 
+jest.mock('@/features/booking/hooks/useSeatMap', () => ({
+  useSeatMap: () => mockSeatMap,
+  useHoldSeats: () => mockHoldMutation,
+}));
+
 jest.mock('@/features/booking/store/booking', () => ({
-  useBookingStore: (selector: any) => {
-    const state = {
+  useBookingStore: (selector: any) =>
+    selector({
       selectedMovie: mockSelectedMovie,
       selectedShowtime: mockSelectedShowtime,
       selectedSeats: mockSelectedSeats,
       addSeat: mockAddSeat,
       removeSeat: mockRemoveSeat,
-    };
-    return selector(state);
-  },
-  useShallow: (fn: any) => fn,
+      setSeats: mockSetSeats,
+      setHoldIds: mockSetHoldIds,
+      setHeldUntil: mockSetHeldUntil,
+    }),
 }));
 
-jest.mock('@/utils/data', () => {
-  return {
-    generateSeats: () => [
-      { id: 'A1', row: 'A', number: 1, status: 'available' },
-      { id: 'A2', row: 'A', number: 2, status: 'available' },
-      { id: 'A3', row: 'A', number: 3, status: 'available' },
-      { id: 'A4', row: 'A', number: 4, status: 'available' },
-      { id: 'A5', row: 'A', number: 5, status: 'available' },
-      { id: 'B1', row: 'B', number: 1, status: 'booked' },
-      { id: 'B2', row: 'B', number: 2, status: 'available' },
-    ],
-  };
-});
-
-jest.mock('@/utils/formats', () => ({
-  groupSeatsByRow: (seats: any[]) => {
-    const grouped: Record<string, any[]> = {};
-    seats.forEach(seat => {
-      if (!grouped[seat.row]) {
-        grouped[seat.row] = [];
-      }
-      grouped[seat?.row || '']?.push(seat);
-    });
-    return grouped;
-  },
-  calculateTotalPrice: (price: number, seats: number) => price * seats,
-  formatIDR: (amount: number) => `IDR ${amount.toLocaleString('id-ID')}`,
+jest.mock('@/features/auth/store/auth', () => ({
+  useAuthStore: (selector: any) =>
+    selector({ isAuthenticated: mockIsAuthenticated }),
 }));
 
-// Mock constants
+jest.mock('@/stores/toast', () => ({
+  useToastStore: (selector: any) => selector({ showError: mockShowError }),
+}));
+
 jest.mock('@/constants', () => ({
   ROUTES: {
     CHECKOUT: '/(main)/booking/checkout',
+    LOGIN: '/(auth)/signin',
   },
-  Size: {
-    SMALL: 'small',
-  },
+  Size: { SMALL: 'small' },
+  ERROR_MESSAGES: { SOMETHING_WENT_WRONG: 'Something went wrong.' },
+}));
+
+jest.mock('@/utils/formats', () => ({
+  calculateTotalPrice: (price: number, seats: number) => price * seats,
+  formatIDR: (amount: number) => `IDR ${amount.toLocaleString('id-ID')}`,
 }));
 
 describe('SeatsScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockSelectedMovie = {
-      id: 'movie1',
-      title: 'Test Movie',
-    };
+    mockSelectedMovie = { id: 'movie1', title: 'Test Movie' };
     mockSelectedShowtime = {
       id: 'showtime1',
       basePrice: 50000,
-      hall: {
-        id: 'hall1',
-        name: 'Hall 1',
-        hallType: 'IMAX',
-      },
+      hall: { id: 'hall1', name: 'Hall 1', hallType: 'IMAX' },
     };
     mockSelectedSeats = [];
+    mockIsAuthenticated = true;
+    mockSeatMap = {
+      data: [
+        {
+          seatId: 'id-A1',
+          seatRow: 'A',
+          seatColumn: 1,
+          seatLabel: 'A1',
+          status: 'available',
+        },
+        {
+          seatId: 'id-A2',
+          seatRow: 'A',
+          seatColumn: 2,
+          seatLabel: 'A2',
+          status: 'available',
+        },
+        {
+          seatId: 'id-A3',
+          seatRow: 'A',
+          seatColumn: 3,
+          seatLabel: 'A3',
+          status: 'held',
+          isMine: false,
+        },
+        {
+          seatId: 'id-B1',
+          seatRow: 'B',
+          seatColumn: 1,
+          seatLabel: 'B1',
+          status: 'reserved',
+          isMine: false,
+        },
+        {
+          seatId: 'id-B2',
+          seatRow: 'B',
+          seatColumn: 2,
+          seatLabel: 'B2',
+          status: 'available',
+        },
+      ],
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: mockRefetch,
+    };
+    mockHoldMutation = { mutate: mockHoldSeats, isPending: false };
   });
 
   describe('Rendering', () => {
-    it('should render without crashing', () => {
+    it('renders the movie title and hall name', () => {
       const { getByText } = render(<SeatsScreen />);
       expect(getByText('Test Movie')).toBeTruthy();
-    });
-
-    it('should render movie title', () => {
-      const { getByText } = render(<SeatsScreen />);
-      expect(getByText('Test Movie')).toBeTruthy();
-    });
-
-    it('should render hall name', () => {
-      const { getByText } = render(<SeatsScreen />);
       expect(getByText('Hall 1')).toBeTruthy();
     });
 
-    it('should render status colors', () => {
-      const { getByText } = render(<SeatsScreen />);
+    it('renders the legend and the screen icon', () => {
+      const { getByText, getByTestId } = render(<SeatsScreen />);
       expect(getByText('Available')).toBeTruthy();
-      expect(getByText('Booked')).toBeTruthy();
+      expect(getByText('Taken')).toBeTruthy();
       expect(getByText('Your Seat')).toBeTruthy();
-    });
-
-    it('should render screen icon', () => {
-      const { getByTestId, getByText } = render(<SeatsScreen />);
       expect(getByTestId('screen-icon')).toBeTruthy();
-      expect(getByText('Screen')).toBeTruthy();
     });
 
-    it('should render book ticket button', () => {
+    it('renders one box per seat from the seat map', () => {
       const { getByTestId } = render(<SeatsScreen />);
-      expect(getByTestId('book-ticket-button')).toBeTruthy();
+      expect(getByTestId('seat-A1')).toBeTruthy();
+      expect(getByTestId('seat-A2')).toBeTruthy();
+      expect(getByTestId('seat-B1')).toBeTruthy();
+    });
+
+    it('shows the loading indicator while the map is loading', () => {
+      mockSeatMap = { ...mockSeatMap, isLoading: true, data: undefined };
+      const { getByTestId, queryByTestId } = render(<SeatsScreen />);
+      expect(getByTestId('seat-map-loading-indicator')).toBeTruthy();
+      expect(queryByTestId('seat-A1')).toBeNull();
+    });
+
+    it('shows a "Your hold" legend entry when the caller holds a seat', () => {
+      mockSeatMap = {
+        ...mockSeatMap,
+        data: [
+          {
+            seatId: 'id-A1',
+            seatRow: 'A',
+            seatColumn: 1,
+            seatLabel: 'A1',
+            status: 'held',
+            isMine: true,
+          },
+        ],
+      };
+      const { getByText } = render(<SeatsScreen />);
+      expect(getByText('Your hold')).toBeTruthy();
+    });
+
+    it('toasts the error message when the map fails to load', () => {
+      mockSeatMap = {
+        ...mockSeatMap,
+        isError: true,
+        error: { message: 'seat map down' },
+        data: undefined,
+      };
+      render(<SeatsScreen />);
+      expect(mockShowError).toHaveBeenCalledWith('seat map down');
     });
   });
 
-  describe('Seat Selection', () => {
-    it('should add seat when available seat is pressed', () => {
+  describe('Seat selection', () => {
+    it('adds an available seat when tapped', () => {
       const { getByTestId } = render(<SeatsScreen />);
-      const seatA1 = getByTestId('seat-A1');
-      fireEvent.press(seatA1);
-
-      expect(mockAddSeat).toHaveBeenCalledWith('A1');
+      fireEvent.press(getByTestId('seat-A1'));
+      expect(mockAddSeat).toHaveBeenCalledWith({
+        seatId: 'id-A1',
+        seatLabel: 'A1',
+      });
       expect(mockRemoveSeat).not.toHaveBeenCalled();
     });
 
-    it('should remove seat when selected seat is pressed', () => {
-      mockSelectedSeats = ['A1'];
+    it('removes a seat that is already selected', () => {
+      mockSelectedSeats = [{ seatId: 'id-A1', seatLabel: 'A1' }];
       const { getByTestId } = render(<SeatsScreen />);
-      const seatA1 = getByTestId('seat-A1');
-      fireEvent.press(seatA1);
-
-      expect(mockRemoveSeat).toHaveBeenCalledWith('A1');
+      fireEvent.press(getByTestId('seat-A1'));
+      expect(mockRemoveSeat).toHaveBeenCalledWith('id-A1');
       expect(mockAddSeat).not.toHaveBeenCalled();
     });
 
-    it('should update seat status when seat is selected', () => {
-      mockSelectedSeats = ['A1'];
+    it('ignores taps on held or reserved seats', () => {
       const { getByTestId } = render(<SeatsScreen />);
-
-      // Selected seat should exist
-      expect(getByTestId('seat-A1')).toBeTruthy();
-    });
-
-    it('should show available seats as not selected', () => {
-      const { getByTestId } = render(<SeatsScreen />);
-
-      // Available seat should exist
-      const seatA2 = getByTestId('seat-A2');
-      expect(seatA2).toBeTruthy();
+      fireEvent.press(getByTestId('seat-A3')); // held
+      fireEvent.press(getByTestId('seat-B1')); // reserved
+      expect(mockAddSeat).not.toHaveBeenCalled();
+      expect(mockRemoveSeat).not.toHaveBeenCalled();
     });
   });
 
-  describe('Total Price', () => {
-    it('should calculate total price correctly', () => {
-      mockSelectedSeats = ['A1', 'A2'];
-      const { getByText } = render(<SeatsScreen />);
-
-      // 2 seats × 50000 = 100000
-      expect(getByText(/IDR 100/)).toBeTruthy();
-    });
-
-    it('should show zero price when no seats selected', () => {
-      const { getByText } = render(<SeatsScreen />);
-      expect(getByText(/IDR 0/)).toBeTruthy();
-    });
-
-    it('should show correct ticket count (plural)', () => {
-      mockSelectedSeats = ['A1', 'A2'];
-      const { getByText } = render(<SeatsScreen />);
-      expect(getByText(/2 Tickets/)).toBeTruthy();
-    });
-
-    it('should handle missing showtime price', () => {
-      mockSelectedShowtime = {
-        ...mockSelectedShowtime,
-        basePrice: undefined,
-      };
-      mockSelectedSeats = ['A1'];
-      const { getByText } = render(<SeatsScreen />);
-
-      // Should use 0 as default price
-      expect(getByText(/IDR 0/)).toBeTruthy();
-    });
-  });
-
-  describe('Book Ticket Button', () => {
-    it('should be enabled when seats are selected', () => {
-      mockSelectedSeats = ['A1'];
+  describe('Book Ticket', () => {
+    it('is disabled with no seats selected', () => {
       const { getByTestId } = render(<SeatsScreen />);
-      const button = getByTestId('book-ticket-button');
-
-      expect(button.props.disabled).toBe(undefined);
+      expect(
+        getByTestId('book-ticket-button').props.accessibilityState.disabled,
+      ).toBe(true);
     });
 
-    it('should navigate to checkout when button is pressed with seats selected', () => {
-      mockSelectedSeats = ['A1'];
+    it('holds the selected seats and routes to checkout on success', () => {
+      mockSelectedSeats = [
+        { seatId: 'id-A1', seatLabel: 'A1' },
+        { seatId: 'id-A2', seatLabel: 'A2' },
+      ];
+      mockHoldSeats.mockImplementation((_input, { onSuccess }) =>
+        onSuccess([
+          { id: 'hold1', heldUntil: '2024-01-15T14:10:00.000Z' },
+          { id: 'hold2', heldUntil: '2024-01-15T14:09:00.000Z' },
+        ]),
+      );
+
       const { getByTestId } = render(<SeatsScreen />);
-      const button = getByTestId('book-ticket-button');
+      fireEvent.press(getByTestId('book-ticket-button'));
 
-      fireEvent.press(button);
-
+      expect(mockHoldSeats).toHaveBeenCalledWith(
+        { showtimeId: 'showtime1', seatIds: ['id-A1', 'id-A2'] },
+        expect.any(Object),
+      );
+      expect(mockSetHoldIds).toHaveBeenCalledWith(['hold1', 'hold2']);
+      expect(mockSetHeldUntil).toHaveBeenCalledWith('2024-01-15T14:09:00.000Z');
       expect(mockPush).toHaveBeenCalledWith('/(main)/booking/checkout');
     });
 
-    it('should not navigate when showtime is missing', () => {
-      mockSelectedShowtime = null;
-      mockSelectedSeats = ['A1'];
+    it('clears the selection and refetches on SEAT_UNAVAILABLE', () => {
+      mockSelectedSeats = [{ seatId: 'id-A1', seatLabel: 'A1' }];
+      mockHoldSeats.mockImplementation((_input, { onError }) =>
+        onError({ errorCode: 'SEAT_UNAVAILABLE', message: 'taken' }),
+      );
+
       const { getByTestId } = render(<SeatsScreen />);
-      const button = getByTestId('book-ticket-button');
+      fireEvent.press(getByTestId('book-ticket-button'));
 
-      fireEvent.press(button);
-
-      // Should not navigate because selectedShowtime is null
+      expect(mockShowError).toHaveBeenCalledWith(
+        'Some of those seats were just taken.',
+      );
+      expect(mockSetSeats).toHaveBeenCalledWith([]);
+      expect(mockRefetch).toHaveBeenCalled();
       expect(mockPush).not.toHaveBeenCalled();
     });
-  });
 
-  describe('Seat Layout', () => {
-    it('should group seats by row', () => {
+    it('goes back on SHOWTIME_NOT_BOOKABLE', () => {
+      mockSelectedSeats = [{ seatId: 'id-A1', seatLabel: 'A1' }];
+      mockHoldSeats.mockImplementation((_input, { onError }) =>
+        onError({ errorCode: 'SHOWTIME_NOT_BOOKABLE', message: 'closed' }),
+      );
+
       const { getByTestId } = render(<SeatsScreen />);
+      fireEvent.press(getByTestId('book-ticket-button'));
 
-      // Should have seats from row A
-      expect(getByTestId('seat-A1')).toBeTruthy();
-      expect(getByTestId('seat-A2')).toBeTruthy();
-
-      // Should have seats from row B
-      expect(getByTestId('seat-B1')).toBeTruthy();
-      expect(getByTestId('seat-B2')).toBeTruthy();
+      expect(mockBack).toHaveBeenCalled();
     });
 
-    it('should apply aisle spacing for seat number 5', () => {
+    it('routes to sign-in when the user is not authenticated', () => {
+      mockIsAuthenticated = false;
+      mockSelectedSeats = [{ seatId: 'id-A1', seatLabel: 'A1' }];
+
       const { getByTestId } = render(<SeatsScreen />);
-      const seatA5 = getByTestId('seat-A5');
+      fireEvent.press(getByTestId('book-ticket-button'));
 
-      // Seat number 5 should have aisle spacing (ml-10 class)
-      expect(seatA5).toBeTruthy();
-    });
-
-    it('should not apply aisle spacing for other seat numbers', () => {
-      const { getByTestId } = render(<SeatsScreen />);
-
-      // Seat number 1 should not have aisle spacing
-      expect(getByTestId('seat-A1')).toBeTruthy();
+      expect(mockHoldSeats).not.toHaveBeenCalled();
+      expect(mockPush).toHaveBeenCalledWith('/(auth)/signin');
     });
   });
 
-  describe('Edge Cases', () => {
-    it('should handle missing movie title', () => {
-      mockSelectedMovie = null;
-      const { queryByText } = render(<SeatsScreen />);
-
-      // Should not crash, but movie title won't be displayed
-      expect(queryByText('Test Movie')).toBeNull();
-    });
-
-    it('should handle missing hall name', () => {
-      mockSelectedShowtime = {
-        ...mockSelectedShowtime,
-        hall: null,
-      };
-      const { queryByText } = render(<SeatsScreen />);
-
-      // Should not crash, but the hall name won't be displayed
-      expect(queryByText('Hall 1')).toBeNull();
-    });
-
-    it('should handle multiple seat selections', () => {
-      mockSelectedSeats = ['A1', 'A2', 'A3'];
+  describe('Total price', () => {
+    it('reflects the selected seat count', () => {
+      mockSelectedSeats = [
+        { seatId: 'id-A1', seatLabel: 'A1' },
+        { seatId: 'id-A2', seatLabel: 'A2' },
+      ];
       const { getByText } = render(<SeatsScreen />);
-
-      // Should calculate total for 3 seats
-      expect(getByText(/3 Tickets/)).toBeTruthy();
-      expect(getByText(/IDR 150/)).toBeTruthy(); // 3 × 50000 = 150000
+      expect(getByText(/2 Tickets/)).toBeTruthy();
+      expect(getByText(/IDR 100/)).toBeTruthy();
     });
   });
 });

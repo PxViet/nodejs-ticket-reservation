@@ -4,51 +4,61 @@ import { View } from 'react-native';
 // Components
 import { SelectBox } from '@/features/booking/components/SelectBox';
 
-// Constants
-import { SEAT_STATUS } from '@/constants/status';
-
 // Types
-import { Seat } from '@/features/booking/schemas/cinema';
+import { ShowtimeSeat } from '@/features/booking/schemas/showtime';
 
 interface SeatItemProps {
-  seat: Seat;
-  onSeatPress: (seat: Seat) => void;
+  seat: ShowtimeSeat;
+  isSelected: boolean;
+  onSeatPress: (seat: ShowtimeSeat) => void;
 }
 
-export const SeatItem = memo(({ seat, onSeatPress }: SeatItemProps) => {
-  const handlePress = useCallback(() => {
-    onSeatPress(seat);
-  }, [seat, onSeatPress]);
+export const SeatItem = memo(
+  ({ seat, isSelected, onSeatPress }: SeatItemProps) => {
+    const handlePress = useCallback(() => {
+      onSeatPress(seat);
+    }, [seat, onSeatPress]);
 
-  const isBooked = seat.status === SEAT_STATUS.BOOKED;
-  const isSelected = seat.status === SEAT_STATUS.SELECTED;
-  const hasAisleSpacing = seat.number === 5;
+    // Only free seats are selectable. A `held`/`reserved` seat that is the
+    // caller's own still can't be tapped — there is no release endpoint yet — but
+    // it gets a ring so they can see it is theirs.
+    const isTaken = seat.status !== 'available';
+    const isOwnHold = isTaken && seat.isMine === true;
+    const hasAisleSpacing = seat.seatColumn === 5;
 
-  const seatLabel = `Seat ${seat.id}`;
-  const seatHint = isBooked
-    ? 'This seat is already booked'
-    : isSelected
-      ? 'Tap to deselect this seat'
-      : 'Tap to select this seat';
+    const seatHint = isOwnHold
+      ? 'You are holding this seat'
+      : isTaken
+        ? 'This seat is already taken'
+        : isSelected
+          ? 'Tap to deselect this seat'
+          : 'Tap to select this seat';
 
-  return (
-    <View
-      className={
-        hasAisleSpacing ? 'w-9 h-9 rounded-base ml-10' : 'w-9 h-9 rounded-base'
-      }
-    >
-      <SelectBox
-        testID={`seat-${seat.id}`}
-        value={seat.id}
-        isPrimary={isSelected}
-        disabled={isBooked}
-        onPress={handlePress}
-        accessibilityLabel={seatLabel}
-        accessibilityHint={seatHint}
-        className="pt-1.5 pb-2.5 rounded-base"
-      />
-    </View>
-  );
-});
+    return (
+      <View
+        className={
+          hasAisleSpacing
+            ? 'w-9 h-9 rounded-base ml-10'
+            : 'w-9 h-9 rounded-base'
+        }
+      >
+        <SelectBox
+          testID={`seat-${seat.seatLabel}`}
+          value={seat.seatLabel}
+          isPrimary={isSelected}
+          disabled={isTaken}
+          onPress={handlePress}
+          accessibilityLabel={`Seat ${seat.seatLabel}`}
+          accessibilityHint={seatHint}
+          className={
+            isOwnHold
+              ? 'pt-1.5 pb-2.5 rounded-base border border-secondary'
+              : 'pt-1.5 pb-2.5 rounded-base'
+          }
+        />
+      </View>
+    );
+  },
+);
 
 SeatItem.displayName = 'SeatItem';

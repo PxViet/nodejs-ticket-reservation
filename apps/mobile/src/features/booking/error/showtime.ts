@@ -2,6 +2,9 @@ import { Data } from 'effect';
 
 export class ShowtimeError extends Data.TaggedError('ShowtimeError')<{
   message: string;
+  // The API's stable `errorCode` when it is known — lets a screen branch on
+  // `SEAT_UNAVAILABLE` vs `SHOWTIME_NOT_BOOKABLE` rather than string-matching.
+  errorCode?: string;
 }> {
   /**
    * Get the underlying cause of the error
@@ -35,6 +38,19 @@ export class ShowtimeError extends Data.TaggedError('ShowtimeError')<{
   static hallsUnavailable = (message: string) => {
     return new ShowtimeError({
       message: message,
+    });
+  };
+
+  static seatMapUnavailable = (message: string) => {
+    return new ShowtimeError({
+      message: message,
+    });
+  };
+
+  static holdFailed = (message: string, errorCode?: string) => {
+    return new ShowtimeError({
+      message: message,
+      errorCode: errorCode,
     });
   };
 }
