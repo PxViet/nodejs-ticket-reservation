@@ -146,6 +146,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         },
       },
     ],
+    // Required in this pnpm workspace: `expo export:embed` resolves the JS entry
+    // against the repo root, so `:app:createBundleReleaseJsAndAssets` fails with
+    // "Unable to resolve ./index.ts". Reapplies the absolute --entry-file patch
+    // to android/app/build.gradle on every prebuild.
+    './plugins/withMonorepoEntryFile',
   ],
   experiments: {
     typedRoutes: true,
