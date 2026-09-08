@@ -30,6 +30,9 @@ import { ROUTES, SCREEN_COLOR_PRIMARY, SCREENS } from '@/constants';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
+// HTTP
+import { ApiError } from '@/services/api/client';
+
 // Components
 import { Loading } from '@/components/Loading';
 import { Toast } from '@/components/Toast';
@@ -44,7 +47,12 @@ SystemUI.setBackgroundColorAsync(SCREEN_COLOR_PRIMARY);
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 2,
+      // A recoverable 401 is retried inside `apiRequest` and never lands here;
+      // one that reaches this point means the session is already gone, so don't
+      // retry it.
+      retry: (failureCount, error) =>
+        !(error instanceof ApiError && error.status === 401) &&
+        failureCount < 2,
       staleTime: 60 * 1000, // 1 minute
     },
   },
