@@ -1,4 +1,4 @@
-import { Showtime } from '@/features/booking/schemas/showtime';
+import { SelectedSeat, Showtime } from '@/features/booking/schemas/showtime';
 import {
   GenreMovie,
   Movie,
@@ -8,6 +8,12 @@ import { act } from '@testing-library/react-native';
 import { useBookingStore } from '../booking';
 import { GENRE_MOVIE } from '@/constants/movie';
 import { MOVIE_STATUS, SHOWTIME_STATUS } from '@/constants/status';
+
+/** A `{ seatId, seatLabel }` pair keyed off a human label. */
+const seat = (label: string): SelectedSeat => ({
+  seatId: `seat-${label}`,
+  seatLabel: label,
+});
 
 describe('useBookingStore', () => {
   const mockMovie: Movie = {
@@ -62,6 +68,8 @@ describe('useBookingStore', () => {
       expect(state.selectedMovie).toBe(null);
       expect(state.selectedShowtime).toBe(null);
       expect(state.selectedSeats).toEqual([]);
+      expect(state.holdIds).toEqual([]);
+      expect(state.heldUntil).toBe(null);
       expect(state.reservationId).toBe(null);
       expect(state.promoCode).toBe(null);
       expect(state.discountAmount).toBe(0);
@@ -126,7 +134,7 @@ describe('useBookingStore', () => {
 
   describe('setSeats', () => {
     it('should set selected seats', () => {
-      const seats = ['A1', 'A2', 'A3'];
+      const seats = [seat('A1'), seat('A2'), seat('A3')];
 
       act(() => {
         useBookingStore.getState().setSeats(seats);
@@ -137,8 +145,8 @@ describe('useBookingStore', () => {
     });
 
     it('should replace existing seats when setting new ones', () => {
-      const initialSeats = ['A1', 'A2'];
-      const newSeats = ['B1', 'B2', 'B3'];
+      const initialSeats = [seat('A1'), seat('A2')];
+      const newSeats = [seat('B1'), seat('B2'), seat('B3')];
 
       act(() => {
         useBookingStore.getState().setSeats(initialSeats);
@@ -152,7 +160,7 @@ describe('useBookingStore', () => {
 
     it('should set empty array when passing empty array', () => {
       act(() => {
-        useBookingStore.getState().setSeats(['A1', 'A2']);
+        useBookingStore.getState().setSeats([seat('A1'), seat('A2')]);
         useBookingStore.getState().setSeats([]);
       });
 
@@ -164,63 +172,87 @@ describe('useBookingStore', () => {
   describe('addSeat', () => {
     it('should add a seat to selected seats', () => {
       act(() => {
-        useBookingStore.getState().addSeat('A1');
+        useBookingStore.getState().addSeat(seat('A1'));
       });
 
       const state = useBookingStore.getState();
-      expect(state.selectedSeats).toEqual(['A1']);
+      expect(state.selectedSeats).toEqual([seat('A1')]);
     });
 
     it('should add multiple seats sequentially', () => {
       act(() => {
-        useBookingStore.getState().addSeat('A1');
-        useBookingStore.getState().addSeat('A2');
-        useBookingStore.getState().addSeat('A3');
+        useBookingStore.getState().addSeat(seat('A1'));
+        useBookingStore.getState().addSeat(seat('A2'));
+        useBookingStore.getState().addSeat(seat('A3'));
       });
 
       const state = useBookingStore.getState();
-      expect(state.selectedSeats).toEqual(['A1', 'A2', 'A3']);
+      expect(state.selectedSeats).toEqual([seat('A1'), seat('A2'), seat('A3')]);
     });
 
-    it('should allow adding duplicate seats', () => {
+    it('should ignore a seat that is already selected', () => {
       act(() => {
-        useBookingStore.getState().addSeat('A1');
-        useBookingStore.getState().addSeat('A1');
+        useBookingStore.getState().addSeat(seat('A1'));
+        useBookingStore.getState().addSeat(seat('A1'));
       });
 
       const state = useBookingStore.getState();
-      expect(state.selectedSeats).toEqual(['A1', 'A1']);
+      expect(state.selectedSeats).toEqual([seat('A1')]);
     });
   });
 
   describe('removeSeat', () => {
-    it('should remove a seat from selected seats', () => {
+    it('should remove a seat by its id', () => {
       act(() => {
-        useBookingStore.getState().setSeats(['A1', 'A2', 'A3']);
-        useBookingStore.getState().removeSeat('A2');
+        useBookingStore
+          .getState()
+          .setSeats([seat('A1'), seat('A2'), seat('A3')]);
+        useBookingStore.getState().removeSeat('seat-A2');
       });
 
       const state = useBookingStore.getState();
-      expect(state.selectedSeats).toEqual(['A1', 'A3']);
+      expect(state.selectedSeats).toEqual([seat('A1'), seat('A3')]);
     });
 
     it('should not throw error when removing non-existent seat', () => {
       act(() => {
-        useBookingStore.getState().setSeats(['A1', 'A2']);
-        useBookingStore.getState().removeSeat('B1');
+        useBookingStore.getState().setSeats([seat('A1'), seat('A2')]);
+        useBookingStore.getState().removeSeat('seat-B1');
       });
 
       const state = useBookingStore.getState();
-      expect(state.selectedSeats).toEqual(['A1', 'A2']);
+      expect(state.selectedSeats).toEqual([seat('A1'), seat('A2')]);
     });
 
     it('should handle removing from empty array', () => {
       act(() => {
-        useBookingStore.getState().removeSeat('A1');
+        useBookingStore.getState().removeSeat('seat-A1');
       });
 
       const state = useBookingStore.getState();
       expect(state.selectedSeats).toEqual([]);
+    });
+  });
+
+  describe('setHoldIds / setHeldUntil', () => {
+    it('should store the hold ids and expiry from a successful hold', () => {
+      act(() => {
+        useBookingStore.getState().setHoldIds(['hold1', 'hold2']);
+        useBookingStore.getState().setHeldUntil('2024-01-15T14:10:00.000Z');
+      });
+
+      const state = useBookingStore.getState();
+      expect(state.holdIds).toEqual(['hold1', 'hold2']);
+      expect(state.heldUntil).toBe('2024-01-15T14:10:00.000Z');
+    });
+
+    it('should clear the expiry when set to null', () => {
+      act(() => {
+        useBookingStore.getState().setHeldUntil('2024-01-15T14:10:00.000Z');
+        useBookingStore.getState().setHeldUntil(null);
+      });
+
+      expect(useBookingStore.getState().heldUntil).toBe(null);
     });
   });
 
@@ -299,7 +331,7 @@ describe('useBookingStore', () => {
   describe('getTotalAmount', () => {
     it('should return 0 when no showtime is selected', () => {
       act(() => {
-        useBookingStore.getState().setSeats(['A1', 'A2']);
+        useBookingStore.getState().setSeats([seat('A1'), seat('A2')]);
       });
 
       const total = useBookingStore.getState().getTotalAmount();
@@ -323,7 +355,7 @@ describe('useBookingStore', () => {
     it('should calculate total amount correctly without discount', () => {
       act(() => {
         useBookingStore.getState().setShowtime(mockShowtime);
-        useBookingStore.getState().setSeats(['A1', 'A2']);
+        useBookingStore.getState().setSeats([seat('A1'), seat('A2')]);
       });
 
       const total = useBookingStore.getState().getTotalAmount();
@@ -334,7 +366,9 @@ describe('useBookingStore', () => {
     it('should calculate total amount with discount', () => {
       act(() => {
         useBookingStore.getState().setShowtime(mockShowtime);
-        useBookingStore.getState().setSeats(['A1', 'A2', 'A3']);
+        useBookingStore
+          .getState()
+          .setSeats([seat('A1'), seat('A2'), seat('A3')]);
         useBookingStore.getState().setDiscountAmount(10000);
       });
 
@@ -346,7 +380,7 @@ describe('useBookingStore', () => {
     it('should handle discount larger than subtotal', () => {
       act(() => {
         useBookingStore.getState().setShowtime(mockShowtime);
-        useBookingStore.getState().setSeats(['A1']);
+        useBookingStore.getState().setSeats([seat('A1')]);
         useBookingStore.getState().setDiscountAmount(100000);
       });
 
@@ -363,7 +397,7 @@ describe('useBookingStore', () => {
 
       act(() => {
         useBookingStore.getState().setShowtime(mockShowtime);
-        useBookingStore.getState().setSeats(['A1', 'A2']);
+        useBookingStore.getState().setSeats([seat('A1'), seat('A2')]);
       });
 
       let total = useBookingStore.getState().getTotalAmount();
@@ -380,14 +414,14 @@ describe('useBookingStore', () => {
     it('should recalculate when seats change', () => {
       act(() => {
         useBookingStore.getState().setShowtime(mockShowtime);
-        useBookingStore.getState().setSeats(['A1']);
+        useBookingStore.getState().setSeats([seat('A1')]);
       });
 
       let total = useBookingStore.getState().getTotalAmount();
       expect(total).toBe(50000); // 1 × 50000
 
       act(() => {
-        useBookingStore.getState().addSeat('A2');
+        useBookingStore.getState().addSeat(seat('A2'));
       });
 
       total = useBookingStore.getState().getTotalAmount();
@@ -397,7 +431,7 @@ describe('useBookingStore', () => {
     it('should recalculate when discount changes', () => {
       act(() => {
         useBookingStore.getState().setShowtime(mockShowtime);
-        useBookingStore.getState().setSeats(['A1', 'A2']);
+        useBookingStore.getState().setSeats([seat('A1'), seat('A2')]);
         useBookingStore.getState().setDiscountAmount(5000);
       });
 
@@ -418,7 +452,9 @@ describe('useBookingStore', () => {
       act(() => {
         useBookingStore.getState().setMovie(mockMovie);
         useBookingStore.getState().setShowtime(mockShowtime);
-        useBookingStore.getState().setSeats(['A1', 'A2']);
+        useBookingStore.getState().setSeats([seat('A1'), seat('A2')]);
+        useBookingStore.getState().setHoldIds(['hold1']);
+        useBookingStore.getState().setHeldUntil('2024-01-15T14:10:00.000Z');
         useBookingStore.getState().setReservationId('reservation123');
         useBookingStore.getState().setPromoCode('PROMO123');
         useBookingStore.getState().setDiscountAmount(10000);
@@ -432,6 +468,8 @@ describe('useBookingStore', () => {
       expect(state.selectedMovie).toBe(null);
       expect(state.selectedShowtime).toBe(null);
       expect(state.selectedSeats).toEqual([]);
+      expect(state.holdIds).toEqual([]);
+      expect(state.heldUntil).toBe(null);
       expect(state.reservationId).toBe(null);
       expect(state.promoCode).toBe(null);
       expect(state.discountAmount).toBe(0);
@@ -440,7 +478,7 @@ describe('useBookingStore', () => {
     it('should reset total amount to 0 after reset', () => {
       act(() => {
         useBookingStore.getState().setShowtime(mockShowtime);
-        useBookingStore.getState().setSeats(['A1', 'A2']);
+        useBookingStore.getState().setSeats([seat('A1'), seat('A2')]);
       });
 
       let total = useBookingStore.getState().getTotalAmount();
@@ -465,23 +503,25 @@ describe('useBookingStore', () => {
         useBookingStore.getState().setShowtime(mockShowtime);
 
         // Step 3: Select seats
-        useBookingStore.getState().addSeat('A1');
-        useBookingStore.getState().addSeat('A2');
+        useBookingStore.getState().addSeat(seat('A1'));
+        useBookingStore.getState().addSeat(seat('A2'));
 
         // Step 4: Apply promo code
         useBookingStore.getState().setPromoCode('PROMO123');
         useBookingStore.getState().setDiscountAmount(10000);
 
-        // Step 5: Reserve seats
+        // Step 5: Hold seats
+        useBookingStore.getState().setHoldIds(['hold1', 'hold2']);
         useBookingStore.getState().setReservationId('reservation123');
       });
 
       const state = useBookingStore.getState();
       expect(state.selectedMovie).toEqual(mockMovie);
       expect(state.selectedShowtime).toEqual(mockShowtime);
-      expect(state.selectedSeats).toEqual(['A1', 'A2']);
+      expect(state.selectedSeats).toEqual([seat('A1'), seat('A2')]);
       expect(state.promoCode).toBe('PROMO123');
       expect(state.discountAmount).toBe(10000);
+      expect(state.holdIds).toEqual(['hold1', 'hold2']);
       expect(state.reservationId).toBe('reservation123');
 
       const total = state.getTotalAmount();
@@ -491,14 +531,14 @@ describe('useBookingStore', () => {
     it('should handle seat selection and removal', () => {
       act(() => {
         useBookingStore.getState().setShowtime(mockShowtime);
-        useBookingStore.getState().addSeat('A1');
-        useBookingStore.getState().addSeat('A2');
-        useBookingStore.getState().addSeat('A3');
-        useBookingStore.getState().removeSeat('A2');
+        useBookingStore.getState().addSeat(seat('A1'));
+        useBookingStore.getState().addSeat(seat('A2'));
+        useBookingStore.getState().addSeat(seat('A3'));
+        useBookingStore.getState().removeSeat('seat-A2');
       });
 
       const state = useBookingStore.getState();
-      expect(state.selectedSeats).toEqual(['A1', 'A3']);
+      expect(state.selectedSeats).toEqual([seat('A1'), seat('A3')]);
 
       const total = state.getTotalAmount();
       expect(total).toBe(100000); // 2 × 50000
