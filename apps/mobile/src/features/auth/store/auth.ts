@@ -9,6 +9,7 @@ import { AuthServiceLayer } from '../layer';
 import { AuthSession, AuthUser } from '@/features/auth/types/auth';
 
 // Store
+import { registerSessionExpiredHandler } from '@/services/api/session';
 import { secureStorage } from '@/services/storage/secure';
 
 // Utils
@@ -98,3 +99,9 @@ export const useAuthStore = create<AuthState>(set => ({
       isAuthenticated: false,
     }),
 }));
+
+// When the HTTP client can no longer rotate an expired token pair, drop the
+// session so the root layout redirects to sign-in.
+registerSessionExpiredHandler(() => {
+  useAuthStore.getState().reset();
+});
