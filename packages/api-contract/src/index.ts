@@ -60,3 +60,12 @@ export type ShowtimeMovie = Schemas['ShowtimeMovieDto'];
 export type ShowtimeHall = Schemas['ShowtimeHallDto'];
 /** A hall — `GET /halls`, which returns a plain array rather than a page. */
 export type Hall = Schemas['HallResponseDto'];
+
+/** One seat on a showtime's seat map — `GET /showtimes/:id/seats`, a plain array. */
+export type ShowtimeSeat = Schemas['ShowtimeSeatResponseDto'];
+/** `POST /showtimes/:id/hold` request body. */
+export type HoldSeatsRequest = Schemas['CreateSeatHoldDto'];
+/** One seat hold, as nested in a hold response. */
+export type SeatHold = Schemas['SeatHoldResponseDto'];
+/** What `POST /showtimes/:id/hold` returns. */
+export type HoldSeatsResponse = Schemas['HoldSeatsResponseDto'];
