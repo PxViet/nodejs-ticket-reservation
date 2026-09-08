@@ -1,7 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
 import { Pressable, View } from 'react-native';
-import { useShallow } from 'zustand/react/shallow';
 
 // Constants
 import { MESSAGES, ROUTES } from '@/constants';
@@ -19,16 +18,11 @@ import { useBookingStore } from '@/features/booking/store/booking';
 
 const CheckoutSuccessScreen = () => {
   const router = useRouter();
-  const { selectedSeats, removeSeat } = useBookingStore(
-    useShallow(state => ({
-      selectedSeats: state.selectedSeats,
-      removeSeat: state.removeSeat,
-    })),
-  );
+  const setSeats = useBookingStore(state => state.setSeats);
 
   const handleClearSeats = useCallback(() => {
-    selectedSeats.forEach(seat => removeSeat(seat));
-  }, [selectedSeats, removeSeat]);
+    setSeats([]);
+  }, [setSeats]);
 
   const handleNavigateToMyTicket = useCallback(() => {
     handleClearSeats();

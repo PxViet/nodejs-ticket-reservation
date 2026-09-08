@@ -9,9 +9,17 @@ const googleServicesFile =
   process.env.GOOGLE_SERVICES_JSON ??
   (existsSync('./google-services.json') ? './google-services.json' : undefined);
 
+// Release Android blocks cleartext HTTP by default. Dev/preview builds point at
+// an http:// API (the emulator reaches the host as http://10.0.2.2:3000), so
+// allow cleartext whenever the configured API base is not https — production
+// builds set an https URL and stay locked down.
+const allowCleartextTraffic = !(
+  process.env.EXPO_PUBLIC_API_URL ?? ''
+).startsWith('https');
+
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  owner: 'px_viet',
+  owner: 'viet.pham_agilityio',
   name: 'Movea',
   slug: 'movea',
   version: '1.0.0',
@@ -130,6 +138,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         color: '#0B0F2F',
       },
     ],
+    [
+      'expo-build-properties',
+      {
+        android: {
+          usesCleartextTraffic: allowCleartextTraffic,
+        },
+      },
+    ],
   ],
   experiments: {
     typedRoutes: true,
@@ -138,13 +154,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   primaryColor: '#0B0F2F',
   extra: {
     eas: {
-      projectId: '55913f90-5eeb-4669-a915-82809054f674',
+      projectId: '36d003fd-c40c-47c3-8f16-3eb497324288',
     },
   },
   updates: {
-    url: 'https://u.expo.dev/55913f90-5eeb-4669-a915-82809054f674',
+    url: 'https://u.expo.dev/36d003fd-c40c-47c3-8f16-3eb497324288',
   },
-  runtimeVersion: {
-    policy: 'appVersion',
-  },
+  runtimeVersion: '1.0.0',
 });

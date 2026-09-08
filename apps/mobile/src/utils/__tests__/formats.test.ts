@@ -86,8 +86,8 @@ describe('formatIDR', () => {
     expect(formatIDR('150000')).toBe('IDR 150.000');
   });
 
-  it('should handle string with dots and commas', () => {
-    expect(formatIDR('150.000,50')).toBe('IDR 150.001');
+  it('should handle string with dots and commas without rounding', () => {
+    expect(formatIDR('150.000,50')).toBe('IDR 150.000,5');
   });
 
   it('should handle decimals', () => {
@@ -104,6 +104,27 @@ describe('formatIDR', () => {
 
   it('should handle zero', () => {
     expect(formatIDR(0)).toBe('IDR 0');
+  });
+
+  it('keeps a non-integer amount exact, no rounding (basePrice 8.5 x seats)', () => {
+    // Regression: Hermes' partial Intl returned "" here, so the total showed
+    // as "IDR " with no number; and the value must not be rounded to whole units.
+    expect(formatIDR(8.5)).toBe('IDR 8,5');
+    expect(formatIDR(8.5 * 3)).toBe('IDR 25,5');
+    expect(formatIDR(42.5, { showCurrency: false })).toBe('42,5');
+    expect(formatIDR(14 * 4)).toBe('IDR 56');
+  });
+
+  it('always renders a digit after the currency for finite input', () => {
+    for (const n of [0, 1, 8.5, 17, 25.5, 1234567, 999999.99]) {
+      expect(formatIDR(n)).toMatch(/^IDR \d/);
+    }
+  });
+
+  it('treats undefined / NaN / Infinity as IDR 0', () => {
+    expect(formatIDR(undefined as unknown as number)).toBe('IDR 0');
+    expect(formatIDR(NaN)).toBe('IDR 0');
+    expect(formatIDR(Infinity)).toBe('IDR 0');
   });
 });
 

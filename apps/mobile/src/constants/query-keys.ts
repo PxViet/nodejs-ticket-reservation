@@ -33,6 +33,8 @@ export const queryKeys = {
     list: (movieId: string, date: string, hallId?: string) =>
       [...queryKeys.showtimes.lists(), movieId, date, hallId] as const,
     detail: (id: string) => [...queryKeys.showtimes.all, 'detail', id] as const,
+    seatMap: (showtimeId: string) =>
+      [...queryKeys.showtimes.all, 'seat-map', showtimeId] as const,
   },
 
   // Halls

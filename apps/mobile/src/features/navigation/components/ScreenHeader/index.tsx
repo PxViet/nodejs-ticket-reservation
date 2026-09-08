@@ -51,10 +51,10 @@ export const ScreenHeader = ({
     })),
   );
 
-  const { selectedSeats, removeSeat } = useBookingStore(
+  const { selectedSeats, setSeats } = useBookingStore(
     useShallow(state => ({
       selectedSeats: state.selectedSeats,
-      removeSeat: state.removeSeat,
+      setSeats: state.setSeats,
     })),
   );
 
@@ -82,8 +82,8 @@ export const ScreenHeader = ({
 
     // Seats screen: Clear all selected seats when user navigates away
     // This resets the booking state to avoid stale seat selections
-    if (selectedSeats && isSeatScreen) {
-      selectedSeats.forEach(seat => removeSeat(seat));
+    if (selectedSeats.length > 0 && isSeatScreen) {
+      setSeats([]);
     }
 
     router.back();

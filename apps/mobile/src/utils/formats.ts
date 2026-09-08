@@ -39,21 +39,35 @@ export function formatIDR(
     decimals?: number;
   },
 ): string {
-  const { showCurrency = true, decimals = 0 } = options || {};
+  const { showCurrency = true, decimals } = options || {};
 
   const amount =
     typeof value === 'string'
       ? Number(value.replace(/\./g, '').replace(',', '.'))
       : value;
 
-  if (isNaN(amount)) {
+  if (!Number.isFinite(amount)) {
     return showCurrency ? 'IDR 0' : '0';
   }
 
-  const formattedNumber = amount.toLocaleString('id-ID', {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  });
+  // Format by hand rather than via `Number#toLocaleString(locale, …)`: Hermes
+  // only partially implements `Intl.NumberFormat`, and a non-integer amount with
+  // `maximumFractionDigits` set comes back as an empty string on device — the
+  // total then renders as "IDR " alone.
+  //
+  // With an explicit `decimals` the amount is fixed to that precision (padded).
+  // Without one the exact value is kept — never rounded — so a price like
+  // basePrice 8.5 × 3 seats shows as "IDR 25,5", not "IDR 26".
+  const absStr =
+    decimals === undefined
+      ? String(parseFloat(Math.abs(amount).toFixed(10))) // strip float noise only
+      : Math.abs(amount).toFixed(decimals);
+  const [intPart = '0', fracPart] = absStr.split('.');
+  const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const sign = amount < 0 ? '-' : '';
+  const formattedNumber = fracPart
+    ? `${sign}${grouped},${fracPart}`
+    : `${sign}${grouped}`;
 
   return showCurrency ? `IDR ${formattedNumber}` : formattedNumber;
 }
