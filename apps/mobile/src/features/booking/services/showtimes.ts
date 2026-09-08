@@ -3,21 +3,27 @@ import { Effect } from 'effect';
 
 // HTTP
 import { apiRequest } from '@/services/api/client';
-import { messageOf, toQuery } from '@/services/api/helpers';
+import { codeOf, messageOf, toQuery } from '@/services/api/helpers';
 
 // Types
 import type {
   Hall as ApiHall,
+  HoldSeatsRequest as ApiHoldSeatsRequest,
+  HoldSeatsResponse as ApiHoldSeatsResponse,
+  SeatHold as ApiSeatHold,
   Showtime as ApiShowtime,
   ShowtimeHall as ApiShowtimeHall,
   ShowtimeMovie as ApiShowtimeMovie,
+  ShowtimeSeat as ApiShowtimeSeat,
   PaginatedShowtimes,
 } from '@movea/api-contract';
 import {
   Hall,
+  SeatHold,
   Showtime,
   ShowtimeHall,
   ShowtimeMovie,
+  ShowtimeSeat,
 } from '@/features/booking/schemas/showtime';
 
 // Constants
@@ -93,6 +99,39 @@ const toHall = ({ id, name, hallType, totalSeats }: ApiHall): Hall => ({
   totalSeats,
 });
 
+const toShowtimeSeat = ({
+  seatId,
+  seatRow,
+  seatColumn,
+  seatLabel,
+  status,
+  isMine,
+}: ApiShowtimeSeat): ShowtimeSeat => ({
+  seatId,
+  seatRow,
+  seatColumn,
+  seatLabel,
+  status,
+  // Keep `isMine` off the object entirely for anonymous reads, matching the API.
+  ...(isMine === undefined ? {} : { isMine }),
+});
+
+const toSeatHold = ({
+  id,
+  seatId,
+  seatLabel,
+  showtimeId,
+  status,
+  heldUntil,
+}: ApiSeatHold): SeatHold => ({
+  id,
+  seatId,
+  seatLabel,
+  showtimeId,
+  status,
+  heldUntil,
+});
+
 export class ShowtimesServiceEffect {
   private static instance: ShowtimesServiceEffect;
 
@@ -137,6 +176,42 @@ export class ShowtimesServiceEffect {
       try: async () => (await apiRequest<ApiHall[]>('/halls')).map(toHall),
       catch: (error: unknown) =>
         ShowtimeError.hallsUnavailable(messageOf(error)),
+    });
+
+  // The seat map is a plain array, row-then-column ordered. `auth: true` only
+  // attaches a token when one is stored, so an anonymous read still works — a
+  // token just earns the `isMine` flag on the caller's own held/reserved seats.
+  getSeatMap = (showtimeId: string) =>
+    Effect.tryPromise({
+      try: async () =>
+        (
+          await apiRequest<ApiShowtimeSeat[]>(
+            `/showtimes/${showtimeId}/seats`,
+            { auth: true },
+          )
+        ).map(toShowtimeSeat),
+      catch: (error: unknown) =>
+        ShowtimeError.seatMapUnavailable(messageOf(error)),
+    });
+
+  // Holds every seat or none (ADR-007). A lost race comes back as
+  // `409 SEAT_UNAVAILABLE`; a closed showtime as `409 SHOWTIME_NOT_BOOKABLE` —
+  // both preserved on the error's `errorCode` for the screen to act on.
+  holdSeats = (showtimeId: string, seatIds: string[]) =>
+    Effect.tryPromise({
+      try: async () => {
+        const { holds } = await apiRequest<ApiHoldSeatsResponse>(
+          `/showtimes/${showtimeId}/hold`,
+          {
+            method: 'POST',
+            body: { seatIds } satisfies ApiHoldSeatsRequest,
+            auth: true,
+          },
+        );
+        return holds.map(toSeatHold);
+      },
+      catch: (error: unknown) =>
+        ShowtimeError.holdFailed(messageOf(error), codeOf(error)),
     });
 }
 

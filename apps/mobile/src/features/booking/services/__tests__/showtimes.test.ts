@@ -1,5 +1,5 @@
 // HTTP
-import { apiRequest } from '@/services/api/client';
+import { ApiError, apiRequest } from '@/services/api/client';
 
 // Utils
 import { runEffectForQuery } from '@/utils/effect';
@@ -8,6 +8,7 @@ import { runEffectForQuery } from '@/utils/effect';
 import { ShowtimesServiceEffect, showtimesServiceEffect } from '../showtimes';
 
 jest.mock('@/services/api/client', () => ({
+  ...jest.requireActual('@/services/api/client'),
   apiRequest: jest.fn(),
 }));
 
@@ -162,6 +163,112 @@ describe('ShowtimesService', () => {
       await expect(
         runEffectForQuery(showtimesServiceEffect.getHalls()),
       ).rejects.toThrow('offline');
+    });
+  });
+
+  describe('getSeatMap', () => {
+    const API_SEAT = {
+      seatId: 'seat1',
+      seatRow: 'A',
+      seatColumn: 1,
+      seatLabel: 'A1',
+      status: 'available',
+    };
+
+    it('reads the seat map with a token attached when one is stored', async () => {
+      mockApiRequest.mockResolvedValue([
+        API_SEAT,
+        {
+          ...API_SEAT,
+          seatId: 'seat2',
+          seatColumn: 2,
+          seatLabel: 'A2',
+          status: 'held',
+          isMine: true,
+        },
+      ]);
+
+      const seats = await runEffectForQuery(
+        showtimesServiceEffect.getSeatMap('show1'),
+      );
+
+      expect(mockApiRequest).toHaveBeenCalledWith('/showtimes/show1/seats', {
+        auth: true,
+      });
+      expect(seats).toHaveLength(2);
+      expect(seats[1]).toMatchObject({
+        seatLabel: 'A2',
+        status: 'held',
+        isMine: true,
+      });
+    });
+
+    it('keeps isMine off a seat the API did not flag', async () => {
+      mockApiRequest.mockResolvedValue([API_SEAT]);
+
+      const seats = await runEffectForQuery(
+        showtimesServiceEffect.getSeatMap('show1'),
+      );
+
+      expect(seats[0]).not.toHaveProperty('isMine');
+    });
+
+    it('fails with the underlying message', async () => {
+      mockApiRequest.mockRejectedValue(new Error('no map'));
+
+      await expect(
+        runEffectForQuery(showtimesServiceEffect.getSeatMap('show1')),
+      ).rejects.toThrow('no map');
+    });
+  });
+
+  describe('holdSeats', () => {
+    it('posts the seat ids and unwraps the holds', async () => {
+      mockApiRequest.mockResolvedValue({
+        holds: [
+          {
+            id: 'hold1',
+            seatId: 'seat1',
+            seatLabel: 'A1',
+            showtimeId: 'show1',
+            status: 'held',
+            heldUntil: '2026-09-08T00:10:00.000Z',
+          },
+        ],
+      });
+
+      const holds = await runEffectForQuery(
+        showtimesServiceEffect.holdSeats('show1', ['seat1']),
+      );
+
+      expect(mockApiRequest).toHaveBeenCalledWith('/showtimes/show1/hold', {
+        method: 'POST',
+        body: { seatIds: ['seat1'] },
+        auth: true,
+      });
+      expect(holds).toEqual([
+        {
+          id: 'hold1',
+          seatId: 'seat1',
+          seatLabel: 'A1',
+          showtimeId: 'show1',
+          status: 'held',
+          heldUntil: '2026-09-08T00:10:00.000Z',
+        },
+      ]);
+    });
+
+    it('carries the API errorCode onto the tagged error', async () => {
+      mockApiRequest.mockRejectedValue(
+        new ApiError(409, 'SEAT_UNAVAILABLE', 'seat taken'),
+      );
+
+      await expect(
+        runEffectForQuery(showtimesServiceEffect.holdSeats('show1', ['seat1'])),
+      ).rejects.toMatchObject({
+        message: 'seat taken',
+        errorCode: 'SEAT_UNAVAILABLE',
+      });
     });
   });
 });

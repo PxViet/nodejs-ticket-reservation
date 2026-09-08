@@ -60,6 +60,38 @@ export const HallSchema = Schema.Struct({
   totalSeats: Schema.Number,
 });
 
+// The seat-map vocabulary the API projects for the client: `held` is someone's
+// live 10-minute hold, `reserved` a confirmed reservation (SeatStatus on the API).
+export const SeatStatusSchema = Schema.Literal('available', 'held', 'reserved');
+
+export const ShowtimeSeatSchema = Schema.Struct({
+  seatId: Schema.String,
+  seatRow: Schema.String,
+  seatColumn: Schema.Number,
+  seatLabel: Schema.String,
+  status: SeatStatusSchema,
+  // Present only when the caller sent a token — `held`/`reserved` seats that are
+  // the caller's own (DDR-015). Omitted, not `false`, for anonymous reads.
+  isMine: Schema.optional(Schema.Boolean),
+});
+
+// The storage vocabulary a hold row carries back (BR-08).
+export const SeatHoldStatusSchema = Schema.Literal(
+  'held',
+  'confirmed',
+  'released',
+  'expired',
+);
+
+export const SeatHoldSchema = Schema.Struct({
+  id: Schema.String,
+  seatId: Schema.String,
+  seatLabel: Schema.String,
+  showtimeId: Schema.String,
+  status: SeatHoldStatusSchema,
+  heldUntil: Schema.String,
+});
+
 export type HallType = Schema.Schema.Type<typeof HallTypeSchema>;
 export type ApiShowtimeStatus = Schema.Schema.Type<
   typeof ApiShowtimeStatusSchema
@@ -68,9 +100,19 @@ export type ShowtimeHall = Schema.Schema.Type<typeof ShowtimeHallSchema>;
 export type ShowtimeMovie = Schema.Schema.Type<typeof ShowtimeMovieSchema>;
 export type Showtime = Schema.Schema.Type<typeof ShowtimeSchema>;
 export type Hall = Schema.Schema.Type<typeof HallSchema>;
+export type SeatStatus = Schema.Schema.Type<typeof SeatStatusSchema>;
+export type ShowtimeSeat = Schema.Schema.Type<typeof ShowtimeSeatSchema>;
+export type SeatHold = Schema.Schema.Type<typeof SeatHoldSchema>;
 
 /** One hall and the times it plays a movie on a given date. */
 export interface HallWithShowtimes {
   hall: ShowtimeHall;
   showtimes: Showtime[];
+}
+
+/** What the booking store keeps per selected seat — the id the hold call needs
+ * plus the label Checkout shows. */
+export interface SelectedSeat {
+  seatId: string;
+  seatLabel: string;
 }
