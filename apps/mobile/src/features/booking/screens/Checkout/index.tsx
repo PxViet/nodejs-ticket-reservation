@@ -113,7 +113,7 @@ const CheckoutScreen = () => {
       },
       {
         label: 'Seat Number',
-        value: selectedSeats.join(', '),
+        value: selectedSeats.map(seat => seat.seatLabel).join(', '),
         testID: 'order-seats',
       },
       {
@@ -205,7 +205,7 @@ const CheckoutScreen = () => {
     const bookingData = {
       userId: user?.id || '',
       showtimeId: selectedShowtime?.id || '',
-      seats: selectedSeats,
+      seats: selectedSeats.map(seat => seat.seatLabel),
       totalAmount: totalPrice,
       ...(promoCode && { promoCodeId: promoCode }),
       ...(discountAmount > 0 && { discountAmount }),

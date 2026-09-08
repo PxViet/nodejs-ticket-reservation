@@ -7,9 +7,7 @@ import { MESSAGES } from '@/constants';
 
 // Mock dependencies
 const mockReplace = jest.fn();
-const mockRemoveSeat = jest.fn();
-
-let mockSelectedSeats = ['A1', 'A2', 'A3'];
+const mockSetSeats = jest.fn();
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({
@@ -19,8 +17,7 @@ jest.mock('expo-router', () => ({
 
 const mockUseBookingStore = jest.fn((selector: any) =>
   selector({
-    selectedSeats: mockSelectedSeats,
-    removeSeat: mockRemoveSeat,
+    setSeats: mockSetSeats,
   }),
 );
 
@@ -31,11 +28,9 @@ jest.mock('@/features/booking/store/booking', () => ({
 describe('CheckoutSuccessScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockSelectedSeats = ['A1', 'A2', 'A3'];
     mockUseBookingStore.mockImplementation((selector: any) =>
       selector({
-        selectedSeats: mockSelectedSeats,
-        removeSeat: mockRemoveSeat,
+        setSeats: mockSetSeats,
       }),
     );
   });
@@ -87,68 +82,32 @@ describe('CheckoutSuccessScreen', () => {
   });
 
   describe('Seat Clearing', () => {
-    it('should clear all seats when "My Ticket" button is pressed', () => {
+    it('should clear the selected seats when "My Ticket" button is pressed', () => {
       const { getByText } = render(<CheckoutSuccessScreen />);
       const button = getByText('My Ticket').parent;
 
       fireEvent.press(button!);
 
-      // Should call removeSeat for each selected seat
-      expect(mockRemoveSeat).toHaveBeenCalledTimes(3);
-      expect(mockRemoveSeat).toHaveBeenCalledWith('A1');
-      expect(mockRemoveSeat).toHaveBeenCalledWith('A2');
-      expect(mockRemoveSeat).toHaveBeenCalledWith('A3');
+      expect(mockSetSeats).toHaveBeenCalledWith([]);
     });
 
-    it('should clear all seats when "Back to home" is pressed', () => {
+    it('should clear the selected seats when "Back to home" is pressed', () => {
       const { getByText } = render(<CheckoutSuccessScreen />);
       const pressable = getByText('Back to home').parent;
 
       fireEvent.press(pressable!);
 
-      // Should call removeSeat for each selected seat
-      expect(mockRemoveSeat).toHaveBeenCalledTimes(3);
-      expect(mockRemoveSeat).toHaveBeenCalledWith('A1');
-      expect(mockRemoveSeat).toHaveBeenCalledWith('A2');
-      expect(mockRemoveSeat).toHaveBeenCalledWith('A3');
+      expect(mockSetSeats).toHaveBeenCalledWith([]);
     });
 
-    it('should handle empty seats array gracefully', () => {
-      mockSelectedSeats = [];
-      mockUseBookingStore.mockImplementationOnce((selector: any) =>
-        selector({
-          selectedSeats: [],
-          removeSeat: mockRemoveSeat,
-        }),
-      );
-
+    it('should still navigate after clearing seats', () => {
       const { getByText } = render(<CheckoutSuccessScreen />);
       const button = getByText('My Ticket').parent;
 
       fireEvent.press(button!);
 
-      // Should not call removeSeat when seats array is empty
-      expect(mockRemoveSeat).not.toHaveBeenCalled();
-      // But should still navigate
+      expect(mockSetSeats).toHaveBeenCalledWith([]);
       expect(mockReplace).toHaveBeenCalledWith('/(main)/(tabs)/my-ticket');
-    });
-
-    it('should handle single seat', () => {
-      mockSelectedSeats = ['B5'];
-      mockUseBookingStore.mockImplementationOnce((selector: any) =>
-        selector({
-          selectedSeats: ['B5'],
-          removeSeat: mockRemoveSeat,
-        }),
-      );
-
-      const { getByText } = render(<CheckoutSuccessScreen />);
-      const button = getByText('My Ticket').parent;
-
-      fireEvent.press(button!);
-
-      expect(mockRemoveSeat).toHaveBeenCalledTimes(1);
-      expect(mockRemoveSeat).toHaveBeenCalledWith('B5');
     });
   });
 });
