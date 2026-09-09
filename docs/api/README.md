@@ -5,8 +5,8 @@ Pagination (all list endpoints): query `page` (default 1), `limit` (default 20, 
 `{ data: [...], meta: { page, limit, total, hasMore } }`. Errors (all endpoints):
 `{ statusCode, errorCode, message, timestamp }`.
 
-Status: **Implemented** = Health, Auth, Users, Genres, Movies, Halls, Showtimes, Reservations,
-Reports. **Planned** = Seat Holds (`DELETE /seat-holds/:id` — voluntary release).
+Status: **Implemented** = Health, Auth, Users, Genres, Movies, Halls, Showtimes, Seat Holds,
+Reservations, Reports.
 
 ---
 
@@ -312,7 +312,18 @@ Claim one or more seats (10-minute hold). Implemented in the Reservations module
 
 ---
 
-## Seat Holds — Planned
+## Seat Holds — Implemented
+
+### `GET /seat-holds/me`
+
+List the authenticated user's active holds (`held`, not yet expired), so a client that left the
+checkout flow and came back can resume it instead of re-selecting seats. Optional `showtimeId`
+query filter; omitted, holds across all showtimes are returned.
+
+- Auth: Bearer
+- Request: `?showtimeId=` (optional), plus standard pagination query params
+- Success: `200 OK` — `{ data: [{ id, seatId, seatLabel, showtimeId, status, heldUntil, price }], meta }`
+- Errors: `401 UNAUTHENTICATED`
 
 ### `DELETE /seat-holds/:id`
 
