@@ -338,6 +338,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seat-holds/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the authenticated user's active seat holds */
+        get: operations["SeatHoldController_findMine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seat-holds/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Voluntarily release a held seat (owner only) */
+        delete: operations["SeatHoldController_release"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/reservations": {
         parameters: {
             query?: never;
@@ -676,6 +710,21 @@ export interface components {
         };
         HoldSeatsResponseDto: {
             holds: components["schemas"]["SeatHoldResponseDto"][];
+        };
+        ActiveSeatHoldResponseDto: {
+            id: string;
+            seatId: string;
+            seatLabel: string;
+            showtimeId: string;
+            /** @enum {string} */
+            status: "held" | "confirmed" | "released" | "expired";
+            /** Format: date-time */
+            heldUntil: string;
+            price: number;
+        };
+        PaginatedSeatHoldResponseDto: {
+            data: components["schemas"]["ActiveSeatHoldResponseDto"][];
+            meta: components["schemas"]["PaginationMetaDto"];
         };
         ConfirmReservationDto: {
             holdIds: string[];
@@ -1523,6 +1572,48 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HoldSeatsResponseDto"];
                 };
+            };
+        };
+    };
+    SeatHoldController_findMine: {
+        parameters: {
+            query?: {
+                page?: components["schemas"]["Object"];
+                limit?: components["schemas"]["Object"];
+                showtimeId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedSeatHoldResponseDto"];
+                };
+            };
+        };
+    };
+    SeatHoldController_release: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
