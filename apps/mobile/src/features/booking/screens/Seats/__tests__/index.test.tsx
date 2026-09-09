@@ -14,6 +14,7 @@ const mockSetHeldUntil = jest.fn();
 const mockShowError = jest.fn();
 const mockRefetch = jest.fn();
 const mockHoldSeats = jest.fn();
+const mockReleaseHold = jest.fn();
 
 let mockSelectedMovie: any = { id: 'movie1', title: 'Test Movie' };
 let mockSelectedShowtime: any = {
@@ -22,7 +23,10 @@ let mockSelectedShowtime: any = {
   hall: { id: 'hall1', name: 'Hall 1', hallType: 'IMAX' },
 };
 let mockSelectedSeats: any[] = [];
+let mockHoldIds: string[] = [];
+let mockHeldUntil: string | null = null;
 let mockIsAuthenticated = true;
+let mockActiveHolds: any = { data: undefined };
 
 let mockSeatMap: any = {
   data: [
@@ -71,6 +75,7 @@ let mockSeatMap: any = {
 };
 
 let mockHoldMutation: any = { mutate: mockHoldSeats, isPending: false };
+let mockReleaseMutation: any = { mutate: mockReleaseHold, isPending: false };
 
 jest.mock('expo-router', () => ({
   router: {
@@ -83,6 +88,8 @@ jest.mock('expo-router', () => ({
 jest.mock('@/features/booking/hooks/useSeatMap', () => ({
   useSeatMap: () => mockSeatMap,
   useHoldSeats: () => mockHoldMutation,
+  useMyActiveHolds: () => mockActiveHolds,
+  useReleaseHold: () => mockReleaseMutation,
 }));
 
 jest.mock('@/features/booking/store/booking', () => ({
@@ -91,6 +98,8 @@ jest.mock('@/features/booking/store/booking', () => ({
       selectedMovie: mockSelectedMovie,
       selectedShowtime: mockSelectedShowtime,
       selectedSeats: mockSelectedSeats,
+      holdIds: mockHoldIds,
+      heldUntil: mockHeldUntil,
       addSeat: mockAddSeat,
       removeSeat: mockRemoveSeat,
       setSeats: mockSetSeats,
@@ -132,7 +141,10 @@ describe('SeatsScreen', () => {
       hall: { id: 'hall1', name: 'Hall 1', hallType: 'IMAX' },
     };
     mockSelectedSeats = [];
+    mockHoldIds = [];
+    mockHeldUntil = null;
     mockIsAuthenticated = true;
+    mockActiveHolds = { data: undefined };
     mockSeatMap = {
       data: [
         {
@@ -179,6 +191,7 @@ describe('SeatsScreen', () => {
       refetch: mockRefetch,
     };
     mockHoldMutation = { mutate: mockHoldSeats, isPending: false };
+    mockReleaseMutation = { mutate: mockReleaseHold, isPending: false };
   });
 
   describe('Rendering', () => {
@@ -208,24 +221,6 @@ describe('SeatsScreen', () => {
       const { getByTestId, queryByTestId } = render(<SeatsScreen />);
       expect(getByTestId('seat-map-loading-indicator')).toBeTruthy();
       expect(queryByTestId('seat-A1')).toBeNull();
-    });
-
-    it('shows a "Your hold" legend entry when the caller holds a seat', () => {
-      mockSeatMap = {
-        ...mockSeatMap,
-        data: [
-          {
-            seatId: 'id-A1',
-            seatRow: 'A',
-            seatColumn: 1,
-            seatLabel: 'A1',
-            status: 'held',
-            isMine: true,
-          },
-        ],
-      };
-      const { getByText } = render(<SeatsScreen />);
-      expect(getByText('Your hold')).toBeTruthy();
     });
 
     it('toasts the error message when the map fails to load', () => {
@@ -259,12 +254,126 @@ describe('SeatsScreen', () => {
       expect(mockAddSeat).not.toHaveBeenCalled();
     });
 
-    it('ignores taps on held or reserved seats', () => {
+    it('ignores taps on held or reserved seats owned by someone else', () => {
       const { getByTestId } = render(<SeatsScreen />);
-      fireEvent.press(getByTestId('seat-A3')); // held
-      fireEvent.press(getByTestId('seat-B1')); // reserved
+      fireEvent.press(getByTestId('seat-A3')); // held, not mine
+      fireEvent.press(getByTestId('seat-B1')); // reserved, not mine
       expect(mockAddSeat).not.toHaveBeenCalled();
       expect(mockRemoveSeat).not.toHaveBeenCalled();
+      expect(mockReleaseHold).not.toHaveBeenCalled();
+    });
+
+    it('releases a held seat of the caller’s own when tapped', () => {
+      mockSeatMap = {
+        ...mockSeatMap,
+        data: [
+          ...mockSeatMap.data,
+          {
+            seatId: 'id-A9',
+            seatRow: 'A',
+            seatColumn: 9,
+            seatLabel: 'A9',
+            status: 'held',
+            isMine: true,
+          },
+        ],
+      };
+      mockSelectedSeats = [
+        { seatId: 'id-A9', seatLabel: 'A9', holdId: 'hold-9' },
+      ];
+      mockReleaseHold.mockImplementation((_holdId, { onSuccess }) =>
+        onSuccess(),
+      );
+
+      const { getByTestId } = render(<SeatsScreen />);
+      fireEvent.press(getByTestId('seat-A9'));
+
+      expect(mockReleaseHold).toHaveBeenCalledWith(
+        'hold-9',
+        expect.any(Object),
+      );
+      expect(mockRemoveSeat).toHaveBeenCalledWith('id-A9');
+      expect(mockSetHoldIds).toHaveBeenCalledWith([]);
+      expect(mockRefetch).toHaveBeenCalled();
+    });
+
+    it('surfaces the error toast when releasing a held seat fails', () => {
+      mockSeatMap = {
+        ...mockSeatMap,
+        data: [
+          ...mockSeatMap.data,
+          {
+            seatId: 'id-A9',
+            seatRow: 'A',
+            seatColumn: 9,
+            seatLabel: 'A9',
+            status: 'held',
+            isMine: true,
+          },
+        ],
+      };
+      mockSelectedSeats = [
+        { seatId: 'id-A9', seatLabel: 'A9', holdId: 'hold-9' },
+      ];
+      mockReleaseHold.mockImplementation((_holdId, { onError }) =>
+        onError({ message: 'release failed' }),
+      );
+
+      const { getByTestId } = render(<SeatsScreen />);
+      fireEvent.press(getByTestId('seat-A9'));
+
+      expect(mockShowError).toHaveBeenCalledWith('release failed');
+      expect(mockRemoveSeat).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Resuming an existing hold', () => {
+    it("populates the store from the caller's active holds for this showtime", () => {
+      mockActiveHolds = {
+        data: [
+          {
+            id: 'hold-9',
+            seatId: 'id-A1',
+            seatLabel: 'A1',
+            showtimeId: 'showtime1',
+            status: 'held',
+            heldUntil: '2024-01-15T14:05:00.000Z',
+            price: 50000,
+          },
+        ],
+      };
+
+      render(<SeatsScreen />);
+
+      expect(mockSetSeats).toHaveBeenCalledWith([
+        { seatId: 'id-A1', seatLabel: 'A1', holdId: 'hold-9' },
+      ]);
+      expect(mockSetHoldIds).toHaveBeenCalledWith(['hold-9']);
+      expect(mockSetHeldUntil).toHaveBeenCalledWith('2024-01-15T14:05:00.000Z');
+    });
+
+    it('shows a resumed seat as selected, with Book Ticket already enabled', () => {
+      mockSelectedSeats = [
+        { seatId: 'id-A1', seatLabel: 'A1', holdId: 'hold-9' },
+      ];
+
+      const { getByTestId } = render(<SeatsScreen />);
+
+      expect(
+        getByTestId('book-ticket-button').props.accessibilityState.disabled,
+      ).toBe(false);
+    });
+
+    it('continues straight to checkout when Book Ticket has nothing new to hold', () => {
+      mockSelectedSeats = [
+        { seatId: 'id-A1', seatLabel: 'A1', holdId: 'hold-9' },
+      ];
+
+      const { getByTestId } = render(<SeatsScreen />);
+      fireEvent.press(getByTestId('book-ticket-button'));
+
+      expect(mockPush).toHaveBeenCalledWith('/(main)/booking/checkout');
+      expect(mockHoldSeats).not.toHaveBeenCalled();
     });
   });
 

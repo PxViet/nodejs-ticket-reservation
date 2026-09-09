@@ -21,7 +21,12 @@ import { ERROR_MESSAGES, ROUTES, Size } from '@/constants';
 import { ScreenIcon } from '@/icons/ScreenIcon';
 
 // Hooks
-import { useHoldSeats, useSeatMap } from '@/features/booking/hooks/useSeatMap';
+import {
+  useHoldSeats,
+  useMyActiveHolds,
+  useReleaseHold,
+  useSeatMap,
+} from '@/features/booking/hooks/useSeatMap';
 
 // Stores
 import { useAuthStore } from '@/features/auth/store/auth';
@@ -58,6 +63,8 @@ const SeatsScreen = () => {
     selectedMovie,
     selectedShowtime,
     selectedSeats,
+    holdIds,
+    heldUntil,
     addSeat,
     removeSeat,
     setSeats,
@@ -68,6 +75,8 @@ const SeatsScreen = () => {
       selectedMovie: state.selectedMovie,
       selectedShowtime: state.selectedShowtime,
       selectedSeats: state.selectedSeats,
+      holdIds: state.holdIds,
+      heldUntil: state.heldUntil,
       addSeat: state.addSeat,
       removeSeat: state.removeSeat,
       setSeats: state.setSeats,
@@ -92,6 +101,25 @@ const SeatsScreen = () => {
   } = useSeatMap(showtimeId);
 
   const { mutate: holdSeats, isPending: isHolding } = useHoldSeats();
+  const { mutate: releaseHold, isPending: isReleasing } = useReleaseHold();
+
+  const { data: activeHolds } = useMyActiveHolds(
+    showtimeId,
+    isAuthenticated && selectedSeats.length === 0,
+  );
+
+  useEffect(() => {
+    if (!activeHolds || activeHolds.length === 0) return;
+    setSeats(
+      activeHolds.map(hold => ({
+        seatId: hold.seatId,
+        seatLabel: hold.seatLabel,
+        holdId: hold.id,
+      })),
+    );
+    setHoldIds(activeHolds.map(hold => hold.id));
+    setHeldUntil(activeHolds.map(hold => hold.heldUntil).sort()[0] ?? null);
+  }, [activeHolds, setSeats, setHoldIds, setHeldUntil]);
 
   useEffect(() => {
     if (isError) {
@@ -106,11 +134,6 @@ const SeatsScreen = () => {
 
   const seatRows = useMemo(() => groupByRow(seats), [seats]);
 
-  const hasOwnHold = useMemo(
-    () => seats.some(seat => seat.status !== 'available' && seat.isMine),
-    [seats],
-  );
-
   const totalPrice = calculateTotalPrice(
     selectedShowtime?.basePrice ?? 0,
     selectedSeats.length,
@@ -118,15 +141,44 @@ const SeatsScreen = () => {
 
   const handleSeatPress = useCallback(
     (seat: ShowtimeSeat) => {
-      if (seat.status !== 'available') return;
-
-      if (selectedIds.has(seat.seatId)) {
-        removeSeat(seat.seatId);
-      } else {
-        addSeat({ seatId: seat.seatId, seatLabel: seat.seatLabel });
+      if (seat.status === 'available') {
+        if (selectedIds.has(seat.seatId)) {
+          removeSeat(seat.seatId);
+        } else {
+          addSeat({ seatId: seat.seatId, seatLabel: seat.seatLabel });
+        }
+        return;
       }
+
+      if (seat.status !== 'held' || !seat.isMine || isReleasing) return;
+
+      const held = selectedSeats.find(s => s.seatId === seat.seatId);
+      if (!held?.holdId) return;
+
+      releaseHold(held.holdId, {
+        onSuccess: () => {
+          removeSeat(seat.seatId);
+          setHoldIds(holdIds.filter(id => id !== held.holdId));
+          refetch();
+        },
+        onError: releaseError =>
+          showError(
+            releaseError.message ?? ERROR_MESSAGES.SOMETHING_WENT_WRONG,
+          ),
+      });
     },
-    [selectedIds, addSeat, removeSeat],
+    [
+      selectedIds,
+      selectedSeats,
+      holdIds,
+      isReleasing,
+      addSeat,
+      removeSeat,
+      setHoldIds,
+      releaseHold,
+      refetch,
+      showError,
+    ],
   );
 
   const handleBookTicket = useCallback(() => {
@@ -138,18 +190,36 @@ const SeatsScreen = () => {
       return;
     }
 
+    const newSeats = selectedSeats.filter(seat => !seat.holdId);
+
+    if (newSeats.length === 0) {
+      router.push(ROUTES.CHECKOUT as Href);
+      return;
+    }
+
     holdSeats(
-      { showtimeId, seatIds: selectedSeats.map(seat => seat.seatId) },
+      { showtimeId, seatIds: newSeats.map(seat => seat.seatId) },
       {
         onSuccess: holds => {
-          setHoldIds(holds.map(hold => hold.id));
-          setHeldUntil(holds.map(hold => hold.heldUntil).sort()[0] ?? null);
+          const holdBySeatId = new Map(holds.map(hold => [hold.seatId, hold]));
+          setSeats(
+            selectedSeats.map(seat => ({
+              ...seat,
+              holdId: holdBySeatId.get(seat.seatId)?.id ?? seat.holdId,
+            })),
+          );
+          setHoldIds([...holdIds, ...holds.map(hold => hold.id)]);
+          setHeldUntil(
+            [heldUntil, ...holds.map(hold => hold.heldUntil)]
+              .filter((value): value is string => !!value)
+              .sort()[0] ?? null,
+          );
           router.push(ROUTES.CHECKOUT as Href);
         },
         onError: holdError => {
           if (holdError.errorCode === 'SEAT_UNAVAILABLE') {
             showError('Some of those seats were just taken.');
-            setSeats([]);
+            setSeats(selectedSeats.filter(seat => !!seat.holdId));
             refetch();
             return;
           }
@@ -168,6 +238,8 @@ const SeatsScreen = () => {
     isAuthenticated,
     holdSeats,
     showtimeId,
+    holdIds,
+    heldUntil,
     setHoldIds,
     setHeldUntil,
     setSeats,
@@ -223,13 +295,8 @@ const SeatsScreen = () => {
               </View>
             ))}
           </View>
-          {hasOwnHold && (
-            <View className="flex-row items-center justify-center gap-2 mt-3">
-              <View className="w-5 h-5 rounded border border-secondary" />
-              <Typo size="sm">Your hold</Typo>
-            </View>
-          )}
         </View>
+
         <View className="flex-1 justify-between">
           {/* Seat Grid */}
           {isLoading ? (
