@@ -53,4 +53,17 @@ export class ShowtimeError extends Data.TaggedError('ShowtimeError')<{
       errorCode: errorCode,
     });
   };
+
+  static myHoldsUnavailable = (message: string) => {
+    return new ShowtimeError({
+      message: message,
+    });
+  };
+
+  static releaseFailed = (message: string, errorCode?: string) => {
+    return new ShowtimeError({
+      message: message,
+      errorCode: errorCode,
+    });
+  };
 }

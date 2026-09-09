@@ -4,19 +4,26 @@ import { Effect } from 'effect';
 import React from 'react';
 
 // Hooks
-import { useHoldSeats, useSeatMap } from '../useSeatMap';
+import {
+  useHoldSeats,
+  useMyActiveHolds,
+  useReleaseHold,
+  useSeatMap,
+} from '../useSeatMap';
 
 // Services
 import { showtimesServiceEffect } from '../../services/showtimes';
 
 // Types
 import { ShowtimeError } from '../../error/showtime';
-import { SeatHold, ShowtimeSeat } from '../../schemas/showtime';
+import { ActiveSeatHold, SeatHold, ShowtimeSeat } from '../../schemas/showtime';
 
 jest.mock('@/features/booking/services/showtimes', () => ({
   showtimesServiceEffect: {
     getSeatMap: jest.fn(),
     holdSeats: jest.fn(),
+    getMyActiveHolds: jest.fn(),
+    releaseHold: jest.fn(),
   },
 }));
 
@@ -135,5 +142,88 @@ describe('useHoldSeats', () => {
     await waitFor(() => expect(result.current.isError).toBe(true));
 
     expect(result.current.error?.errorCode).toBe('SEAT_UNAVAILABLE');
+  });
+});
+
+describe('useMyActiveHolds', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('fetches the active holds when enabled', async () => {
+    const holds: ActiveSeatHold[] = [
+      {
+        id: 'hold1',
+        seatId: 'seat1',
+        seatLabel: 'A1',
+        showtimeId: 'show1',
+        status: 'held',
+        heldUntil: '2026-09-08T00:10:00.000Z',
+        price: 75000,
+      },
+    ];
+    (showtimesServiceEffect.getMyActiveHolds as jest.Mock).mockReturnValue(
+      Effect.succeed(holds),
+    );
+
+    const { result } = renderHook(() => useMyActiveHolds('show1', true), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(showtimesServiceEffect.getMyActiveHolds).toHaveBeenCalledWith(
+      'show1',
+    );
+    expect(result.current.data).toEqual(holds);
+  });
+
+  it('does not fetch when disabled', () => {
+    renderHook(() => useMyActiveHolds('show1', false), {
+      wrapper: createWrapper(),
+    });
+
+    expect(showtimesServiceEffect.getMyActiveHolds).not.toHaveBeenCalled();
+  });
+});
+
+describe('useReleaseHold', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('releases the hold and resolves with its id', async () => {
+    (showtimesServiceEffect.releaseHold as jest.Mock).mockReturnValue(
+      Effect.succeed(undefined),
+    );
+
+    const { result } = renderHook(() => useReleaseHold(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate('hold1');
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(showtimesServiceEffect.releaseHold).toHaveBeenCalledWith('hold1');
+    expect(result.current.data).toBe('hold1');
+  });
+
+  it('exposes the errorCode when release is refused', async () => {
+    (showtimesServiceEffect.releaseHold as jest.Mock).mockReturnValue(
+      Effect.fail(
+        ShowtimeError.releaseFailed('not yours', 'SEAT_HOLD_NOT_OWNED'),
+      ),
+    );
+
+    const { result } = renderHook(() => useReleaseHold(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate('hold1');
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+
+    expect(result.current.error?.errorCode).toBe('SEAT_HOLD_NOT_OWNED');
   });
 });

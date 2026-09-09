@@ -69,3 +69,7 @@ export type HoldSeatsRequest = Schemas['CreateSeatHoldDto'];
 export type SeatHold = Schemas['SeatHoldResponseDto'];
 /** What `POST /showtimes/:id/hold` returns. */
 export type HoldSeatsResponse = Schemas['HoldSeatsResponseDto'];
+/** One of the caller's own active holds — `GET /seat-holds/me`, adds `price` to `SeatHold`. */
+export type ActiveSeatHold = Schemas['ActiveSeatHoldResponseDto'];
+/** One page of `GET /seat-holds/me`. */
+export type PaginatedSeatHolds = Schemas['PaginatedSeatHoldResponseDto'];

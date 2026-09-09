@@ -2,7 +2,13 @@
 import { Effect, Context } from 'effect';
 
 // Schema
-import { Hall, SeatHold, Showtime, ShowtimeSeat } from '../../schemas/showtime';
+import {
+  ActiveSeatHold,
+  Hall,
+  SeatHold,
+  Showtime,
+  ShowtimeSeat,
+} from '../../schemas/showtime';
 import { ShowtimeError } from '../../error/showtime';
 
 export class ShowtimesService extends Context.Tag('ShowtimesServiceTag')<
@@ -28,5 +34,13 @@ export class ShowtimesService extends Context.Tag('ShowtimesServiceTag')<
       showtimeId: string,
       seatIds: string[],
     ) => Effect.Effect<SeatHold[], ShowtimeError, never>;
+
+    readonly getMyActiveHolds: (
+      showtimeId: string,
+    ) => Effect.Effect<ActiveSeatHold[], ShowtimeError, never>;
+
+    readonly releaseHold: (
+      holdId: string,
+    ) => Effect.Effect<void, ShowtimeError, never>;
   }
 >() {}

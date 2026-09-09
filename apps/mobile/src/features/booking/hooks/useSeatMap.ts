@@ -16,7 +16,7 @@ import { ShowtimesServiceLayer } from '@/features/booking/effect/layer/showtimes
 
 // Types
 import { ShowtimeError } from '@/features/booking/error/showtime';
-import { SeatHold } from '@/features/booking/schemas/showtime';
+import { ActiveSeatHold, SeatHold } from '@/features/booking/schemas/showtime';
 
 // A hold lives 10 minutes and the server sweeps expiries every 60s, so the map
 // goes stale quickly — refetch it on mount and on a short interval.
@@ -52,6 +52,39 @@ export function useHoldSeats() {
         Effect.gen(function* () {
           const showtimesService = yield* ShowtimesService;
           return yield* showtimesService.holdSeats(showtimeId, seatIds);
+        }),
+        ShowtimesServiceLayer,
+      ),
+  });
+}
+
+// A one-shot check for a hold left over from an abandoned checkout — Seats
+// disables this once it has something selected (fresh or resumed), so it
+// never clobbers an in-progress selection.
+export function useMyActiveHolds(showtimeId: string, enabled: boolean) {
+  return useQuery<ActiveSeatHold[], ShowtimeError>({
+    queryKey: queryKeys.showtimes.myHolds(showtimeId),
+    queryFn: () =>
+      runEffectForQuery(
+        Effect.gen(function* () {
+          const showtimesService = yield* ShowtimesService;
+          return yield* showtimesService.getMyActiveHolds(showtimeId);
+        }),
+        ShowtimesServiceLayer,
+      ),
+    enabled: enabled && !!showtimeId,
+    staleTime: 0,
+  });
+}
+
+export function useReleaseHold() {
+  return useMutation<string, ShowtimeError, string>({
+    mutationFn: holdId =>
+      runEffectForQuery(
+        Effect.gen(function* () {
+          const showtimesService = yield* ShowtimesService;
+          yield* showtimesService.releaseHold(holdId);
+          return holdId;
         }),
         ShowtimesServiceLayer,
       ),

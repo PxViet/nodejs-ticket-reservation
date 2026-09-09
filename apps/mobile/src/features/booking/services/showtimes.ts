@@ -7,9 +7,11 @@ import { codeOf, messageOf, toQuery } from '@/services/api/helpers';
 
 // Types
 import type {
+  ActiveSeatHold as ApiActiveSeatHold,
   Hall as ApiHall,
   HoldSeatsRequest as ApiHoldSeatsRequest,
   HoldSeatsResponse as ApiHoldSeatsResponse,
+  PaginatedSeatHolds,
   SeatHold as ApiSeatHold,
   Showtime as ApiShowtime,
   ShowtimeHall as ApiShowtimeHall,
@@ -18,6 +20,7 @@ import type {
   PaginatedShowtimes,
 } from '@movea/api-contract';
 import {
+  ActiveSeatHold,
   Hall,
   SeatHold,
   Showtime,
@@ -212,6 +215,55 @@ export class ShowtimesServiceEffect {
       },
       catch: (error: unknown) =>
         ShowtimeError.holdFailed(messageOf(error), codeOf(error)),
+    });
+
+  // Active means held and not yet expired (the API re-checks this itself
+  // rather than trusting its 60s sweep job) — what a resumed Seats screen
+  // fetches to find a hold left over from an abandoned checkout.
+  getMyActiveHolds = (showtimeId: string) =>
+    Effect.tryPromise({
+      try: async () => {
+        const { data } = await apiRequest<PaginatedSeatHolds>(
+          `/seat-holds/me${toQuery({ showtimeId, limit: PAGE_LIMIT })}`,
+          { auth: true },
+        );
+        return data.map(
+          ({
+            id,
+            seatId,
+            seatLabel,
+            showtimeId,
+            status,
+            heldUntil,
+            price,
+          }: ApiActiveSeatHold): ActiveSeatHold => ({
+            id,
+            seatId,
+            seatLabel,
+            showtimeId,
+            status,
+            heldUntil,
+            price,
+          }),
+        );
+      },
+      catch: (error: unknown) =>
+        ShowtimeError.myHoldsUnavailable(messageOf(error)),
+    });
+
+  // Voluntary HELD → RELEASED, so the seat frees up immediately instead of
+  // waiting out the 10-minute TTL — lets the user drop a held seat before
+  // checkout without abandoning the rest of their selection.
+  releaseHold = (holdId: string) =>
+    Effect.tryPromise({
+      try: async () => {
+        await apiRequest<void>(`/seat-holds/${holdId}`, {
+          method: 'DELETE',
+          auth: true,
+        });
+      },
+      catch: (error: unknown) =>
+        ShowtimeError.releaseFailed(messageOf(error), codeOf(error)),
     });
 }
 
