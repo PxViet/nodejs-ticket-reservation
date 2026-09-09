@@ -1,6 +1,14 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { ArrayNotEmpty, ArrayUnique, IsArray, IsUUID } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  ArrayNotEmpty,
+  ArrayUnique,
+  IsArray,
+  IsOptional,
+  IsUUID,
+} from 'class-validator';
 
+import { PaginationMetaDto } from '../../../common/dto/paginated-response.dto';
+import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 import { SeatHoldStatus } from '../enums/seat-hold-status.enum';
 
 export class CreateSeatHoldDto {
@@ -35,4 +43,24 @@ export class SeatHoldResponseDto {
 export class HoldSeatsResponseDto {
   @ApiProperty({ type: [SeatHoldResponseDto] })
   holds!: SeatHoldResponseDto[];
+}
+
+export class SeatHoldQueryDto extends PaginationQueryDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID('4')
+  showtimeId?: string;
+}
+
+export class ActiveSeatHoldResponseDto extends SeatHoldResponseDto {
+  @ApiProperty()
+  price!: number;
+}
+
+export class PaginatedSeatHoldResponseDto {
+  @ApiProperty({ type: [ActiveSeatHoldResponseDto] })
+  data!: ActiveSeatHoldResponseDto[];
+
+  @ApiProperty()
+  meta!: PaginationMetaDto;
 }

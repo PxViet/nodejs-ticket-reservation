@@ -8,6 +8,7 @@ import { Ticket } from './entities/ticket.entity';
 import { ReservationCompletionSweepService } from './reservation-completion-sweep.service';
 import { ReservationsController } from './reservations.controller';
 import { ReservationsService } from './reservations.service';
+import { SeatHoldController } from './seat-hold.controller';
 import { SeatHoldSweepService } from './seat-hold-sweep.service';
 import { SeatHoldsController } from './seat-holds.controller';
 import { SeatHoldsService } from './seat-holds.service';
@@ -17,7 +18,11 @@ import { SeatHoldsService } from './seat-holds.service';
     TypeOrmModule.forFeature([SeatHold, Reservation, Ticket]),
     ShowtimesModule,
   ],
-  controllers: [SeatHoldsController, ReservationsController],
+  controllers: [
+    SeatHoldsController,
+    SeatHoldController,
+    ReservationsController,
+  ],
   providers: [
     SeatHoldsService,
     SeatHoldSweepService,
