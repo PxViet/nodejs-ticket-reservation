@@ -1254,6 +1254,100 @@
         ]
       }
     },
+    "/seat-holds/me": {
+      "get": {
+        "operationId": "SeatHoldController_findMine",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "showtimeId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedSeatHoldResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the authenticated user's active seat holds",
+        "tags": [
+          "seat-holds"
+        ]
+      }
+    },
+    "/seat-holds/{id}": {
+      "delete": {
+        "operationId": "SeatHoldController_release",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Voluntarily release a held seat (owner only)",
+        "tags": [
+          "seat-holds"
+        ]
+      }
+    },
     "/reservations": {
       "post": {
         "operationId": "ReservationsController_confirm",
@@ -2625,6 +2719,66 @@
         },
         "required": [
           "holds"
+        ]
+      },
+      "ActiveSeatHoldResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "seatId": {
+            "type": "string"
+          },
+          "seatLabel": {
+            "type": "string"
+          },
+          "showtimeId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "held",
+              "confirmed",
+              "released",
+              "expired"
+            ]
+          },
+          "heldUntil": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "seatId",
+          "seatLabel",
+          "showtimeId",
+          "status",
+          "heldUntil",
+          "price"
+        ]
+      },
+      "PaginatedSeatHoldResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActiveSeatHoldResponseDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
         ]
       },
       "ConfirmReservationDto": {

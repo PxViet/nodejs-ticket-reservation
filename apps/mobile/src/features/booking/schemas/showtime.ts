@@ -92,6 +92,13 @@ export const SeatHoldSchema = Schema.Struct({
   heldUntil: Schema.String,
 });
 
+// `GET /seat-holds/me` — a SeatHold plus the showtime's price, so a resumed
+// checkout screen can render seats + a total without a second round trip.
+export const ActiveSeatHoldSchema = Schema.Struct({
+  ...SeatHoldSchema.fields,
+  price: Schema.Number,
+});
+
 export type HallType = Schema.Schema.Type<typeof HallTypeSchema>;
 export type ApiShowtimeStatus = Schema.Schema.Type<
   typeof ApiShowtimeStatusSchema
@@ -103,6 +110,7 @@ export type Hall = Schema.Schema.Type<typeof HallSchema>;
 export type SeatStatus = Schema.Schema.Type<typeof SeatStatusSchema>;
 export type ShowtimeSeat = Schema.Schema.Type<typeof ShowtimeSeatSchema>;
 export type SeatHold = Schema.Schema.Type<typeof SeatHoldSchema>;
+export type ActiveSeatHold = Schema.Schema.Type<typeof ActiveSeatHoldSchema>;
 
 /** One hall and the times it plays a movie on a given date. */
 export interface HallWithShowtimes {
@@ -111,8 +119,12 @@ export interface HallWithShowtimes {
 }
 
 /** What the booking store keeps per selected seat — the id the hold call needs
- * plus the label Checkout shows. */
+ * plus the label Checkout shows. `holdId` is set once the seat is actually
+ * held (fresh from `holdSeats`, or resumed from `GET /seat-holds/me`) — its
+ * absence is what tells Seats a selection is still local-only, pending the
+ * next hold call. */
 export interface SelectedSeat {
   seatId: string;
   seatLabel: string;
+  holdId?: string;
 }

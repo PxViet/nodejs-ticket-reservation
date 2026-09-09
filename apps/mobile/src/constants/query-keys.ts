@@ -35,6 +35,8 @@ export const queryKeys = {
     detail: (id: string) => [...queryKeys.showtimes.all, 'detail', id] as const,
     seatMap: (showtimeId: string) =>
       [...queryKeys.showtimes.all, 'seat-map', showtimeId] as const,
+    myHolds: (showtimeId: string) =>
+      [...queryKeys.showtimes.all, 'my-holds', showtimeId] as const,
   },
 
   // Halls

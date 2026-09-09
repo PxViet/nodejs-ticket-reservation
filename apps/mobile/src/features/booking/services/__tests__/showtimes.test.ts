@@ -271,4 +271,76 @@ describe('ShowtimesService', () => {
       });
     });
   });
+
+  describe('getMyActiveHolds', () => {
+    it('fetches the page scoped to the showtime and unwraps it', async () => {
+      mockApiRequest.mockResolvedValue(
+        apiPage([
+          {
+            id: 'hold1',
+            seatId: 'seat1',
+            seatLabel: 'A1',
+            showtimeId: 'show1',
+            status: 'held',
+            heldUntil: '2026-09-08T00:10:00.000Z',
+            price: 75000,
+          },
+        ]),
+      );
+
+      const holds = await runEffectForQuery(
+        showtimesServiceEffect.getMyActiveHolds('show1'),
+      );
+
+      expect(mockApiRequest).toHaveBeenCalledWith(
+        '/seat-holds/me?showtimeId=show1&limit=20',
+        { auth: true },
+      );
+      expect(holds).toEqual([
+        {
+          id: 'hold1',
+          seatId: 'seat1',
+          seatLabel: 'A1',
+          showtimeId: 'show1',
+          status: 'held',
+          heldUntil: '2026-09-08T00:10:00.000Z',
+          price: 75000,
+        },
+      ]);
+    });
+
+    it('fails with the underlying message', async () => {
+      mockApiRequest.mockRejectedValue(new Error('offline'));
+
+      await expect(
+        runEffectForQuery(showtimesServiceEffect.getMyActiveHolds('show1')),
+      ).rejects.toThrow('offline');
+    });
+  });
+
+  describe('releaseHold', () => {
+    it('sends the DELETE with auth attached', async () => {
+      mockApiRequest.mockResolvedValue(undefined);
+
+      await runEffectForQuery(showtimesServiceEffect.releaseHold('hold1'));
+
+      expect(mockApiRequest).toHaveBeenCalledWith('/seat-holds/hold1', {
+        method: 'DELETE',
+        auth: true,
+      });
+    });
+
+    it('carries the API errorCode onto the tagged error', async () => {
+      mockApiRequest.mockRejectedValue(
+        new ApiError(403, 'SEAT_HOLD_NOT_OWNED', 'not yours'),
+      );
+
+      await expect(
+        runEffectForQuery(showtimesServiceEffect.releaseHold('hold1')),
+      ).rejects.toMatchObject({
+        message: 'not yours',
+        errorCode: 'SEAT_HOLD_NOT_OWNED',
+      });
+    });
+  });
 });

@@ -23,6 +23,12 @@ export const ShowtimesServiceLayer = Layer.effect(
 
       holdSeats: (showtimeId: string, seatIds: string[]) =>
         showtimesServiceEffect.holdSeats(showtimeId, seatIds),
+
+      getMyActiveHolds: (showtimeId: string) =>
+        showtimesServiceEffect.getMyActiveHolds(showtimeId),
+
+      releaseHold: (holdId: string) =>
+        showtimesServiceEffect.releaseHold(holdId),
     } as const;
   }),
 );
