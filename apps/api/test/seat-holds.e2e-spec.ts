@@ -203,4 +203,107 @@ describe('Seat holds (e2e)', () => {
 
     expect(res.status).toBe(401);
   });
+
+  it("lists the caller's active holds and lets them resume checkout", async () => {
+    const [tokenA, tokenB] = await Promise.all([
+      registerAndLogin('resume-mine'),
+      registerAndLogin('resume-other'),
+    ]);
+    const { showtimeId, seatId } = await findBookableSeat();
+
+    await request(app.getHttpServer())
+      .post(`/api/v1/showtimes/${showtimeId}/hold`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ seatIds: [seatId] })
+      .expect(201);
+
+    const mineRes = await request(app.getHttpServer())
+      .get('/api/v1/seat-holds/me')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(200);
+
+    expect(mineRes.body.data).toEqual([
+      expect.objectContaining({ seatId, showtimeId, status: 'held' }),
+    ]);
+    expect(typeof mineRes.body.data[0].price).toBe('number');
+
+    // The hold belongs to A, so B sees none of it in their own list.
+    const otherRes = await request(app.getHttpServer())
+      .get('/api/v1/seat-holds/me')
+      .set('Authorization', `Bearer ${tokenB}`)
+      .expect(200);
+    expect(otherRes.body.data).toEqual([]);
+
+    // Filtering by showtimeId narrows the same result, doesn't hide it.
+    const filteredRes = await request(app.getHttpServer())
+      .get(`/api/v1/seat-holds/me?showtimeId=${showtimeId}`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(200);
+    expect(filteredRes.body.data).toHaveLength(1);
+  });
+
+  it('releases a held seat, freeing it for another user to hold', async () => {
+    const [tokenA, tokenB] = await Promise.all([
+      registerAndLogin('release-mine'),
+      registerAndLogin('release-other'),
+    ]);
+    const { showtimeId, seatId } = await findBookableSeat();
+
+    const holdRes = await request(app.getHttpServer())
+      .post(`/api/v1/showtimes/${showtimeId}/hold`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ seatIds: [seatId] })
+      .expect(201);
+    const holdId = holdRes.body.holds[0].id as string;
+
+    await request(app.getHttpServer())
+      .delete(`/api/v1/seat-holds/${holdId}`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(204);
+
+    const mineRes = await request(app.getHttpServer())
+      .get('/api/v1/seat-holds/me')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .expect(200);
+    expect(mineRes.body.data).toEqual([]);
+
+    // The seat is truly free again, not just absent from A's list.
+    await request(app.getHttpServer())
+      .post(`/api/v1/showtimes/${showtimeId}/hold`)
+      .set('Authorization', `Bearer ${tokenB}`)
+      .send({ seatIds: [seatId] })
+      .expect(201);
+  });
+
+  it("rejects releasing another user's hold with SEAT_HOLD_NOT_OWNED", async () => {
+    const [tokenA, tokenB] = await Promise.all([
+      registerAndLogin('owned-mine'),
+      registerAndLogin('owned-other'),
+    ]);
+    const { showtimeId, seatId } = await findBookableSeat();
+
+    const holdRes = await request(app.getHttpServer())
+      .post(`/api/v1/showtimes/${showtimeId}/hold`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ seatIds: [seatId] })
+      .expect(201);
+    const holdId = holdRes.body.holds[0].id as string;
+
+    const res = await request(app.getHttpServer())
+      .delete(`/api/v1/seat-holds/${holdId}`)
+      .set('Authorization', `Bearer ${tokenB}`);
+
+    expect(res.status).toBe(403);
+    expect(res.body.errorCode).toBe('SEAT_HOLD_NOT_OWNED');
+  });
+
+  it('returns 404 when releasing an unknown hold id', async () => {
+    const token = await registerAndLogin('release-missing');
+
+    const res = await request(app.getHttpServer())
+      .delete('/api/v1/seat-holds/00000000-0000-4000-8000-000000000000')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(404);
+  });
 });
