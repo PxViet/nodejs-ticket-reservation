@@ -28,7 +28,9 @@
     { "key": "showtimeTime", "value": "" },
     { "key": "showtimeId", "value": "" },
     { "key": "seatId", "value": "" },
+    { "key": "seatId2", "value": "" },
     { "key": "holdId", "value": "" },
+    { "key": "releaseHoldId", "value": "" },
     { "key": "reservationId", "value": "" }
   ],
   "item": [
@@ -742,9 +744,10 @@
                 "exec": [
                   "pm.test('status 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
-                  "const available = body.find((seat) => seat.status === 'available');",
-                  "pm.test('has an available seat', () => pm.expect(available).to.not.be.undefined);",
-                  "if (available) { pm.collectionVariables.set('seatId', available.seatId); }"
+                  "const availableSeats = body.filter((seat) => seat.status === 'available');",
+                  "pm.test('has an available seat', () => pm.expect(availableSeats[0]).to.not.be.undefined);",
+                  "if (availableSeats[0]) { pm.collectionVariables.set('seatId', availableSeats[0].seatId); }",
+                  "if (availableSeats[1]) { pm.collectionVariables.set('seatId2', availableSeats[1].seatId); }"
                 ]
               }
             }
@@ -860,14 +863,104 @@
           }
         },
         {
-          "name": "Release hold (voluntary) — Planned",
+          "name": "Hold second seat, for the release demo (customer)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('not implemented yet (404)', () => pm.response.to.have.status(404));"
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  pm.test('holds[0] exists', () => pm.expect(body.holds[0]).to.not.be.undefined);",
+                  "  if (body.holds && body.holds[0]) {",
+                  "    pm.collectionVariables.set('releaseHoldId', body.holds[0].id);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customerAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"seatIds\": [\"{{seatId2}}\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/showtimes/{{showtimeId}}/hold",
+              "host": ["{{baseUrl}}"],
+              "path": ["showtimes", "{{showtimeId}}", "hold"]
+            },
+            "description": "A second, disposable hold — kept separate from {{holdId}} so releasing it below does not disturb the seat that Confirm reservation needs later."
+          }
+        },
+        {
+          "name": "List my active holds (customer)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('data is an array', () => pm.expect(body.data).to.be.an('array'));",
+                  "pm.test('meta has pagination fields', () => pm.expect(body.meta).to.include.keys('page', 'limit', 'total', 'hasMore'));",
+                  "const holdId = pm.collectionVariables.get('holdId');",
+                  "const releaseHoldId = pm.collectionVariables.get('releaseHoldId');",
+                  "pm.test('includes both holds just created', () => {",
+                  "  const ids = body.data.map((hold) => hold.id);",
+                  "  pm.expect(ids).to.include(holdId);",
+                  "  pm.expect(ids).to.include(releaseHoldId);",
+                  "});",
+                  "pm.test('each hold carries a price', () => pm.expect(body.data[0].price).to.be.a('number'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customerAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/seat-holds/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["seat-holds", "me"]
+            },
+            "description": "The caller's active (held, not-yet-expired) holds across all showtimes — what a resumed checkout screen fetches to know what's already selected."
+          }
+        },
+        {
+          "name": "Release hold (voluntary)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 204', () => pm.response.to.have.status(204));"
                 ]
               }
             }
@@ -885,11 +978,11 @@
             },
             "method": "DELETE",
             "url": {
-              "raw": "{{baseUrl}}/seat-holds/{{holdId}}",
+              "raw": "{{baseUrl}}/seat-holds/{{releaseHoldId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["seat-holds", "{{holdId}}"]
+              "path": ["seat-holds", "{{releaseHoldId}}"]
             },
-            "description": "docs/api/README.md lists this as Planned, not Implemented — expected to 404 until it's built. Kept here so the request is ready to go once it lands."
+            "description": "Voluntary HELD → RELEASED on the second hold above — frees the seat immediately instead of waiting out the 10-minute TTL."
           }
         }
       ]
