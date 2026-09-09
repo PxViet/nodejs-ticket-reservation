@@ -88,7 +88,7 @@ const CheckoutScreen = () => {
   const totalPrice = getTotalAmount();
 
   const isEnoughBalance = useMemo(() => {
-    return wallet && wallet.balance >= totalPrice;
+    return wallet && wallet?.balance ? wallet.balance : 0 >= totalPrice;
   }, [wallet, totalPrice]);
 
   const orderRows = useMemo(
