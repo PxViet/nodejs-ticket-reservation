@@ -69,7 +69,7 @@ movea-app/
 │   ├── icons/                  # SVG & icon components
 │   ├── layouts/                # Layout components (Auth, Main, etc.)
 │   ├── mocks/                  # Mock data for development & testing
-│   ├── services/               # API / Supabase / Edge Function services
+│   ├── services/               # API services
 │   ├── stores/                 # State management (Zustand, etc.)
 │   ├── types/                  # Global TypeScript types
 │   ├── utils/                  # Utility & helper functions
@@ -134,14 +134,11 @@ pnpm install
 
 ```bash
 EXPO_PUBLIC_API_URL=http://localhost:3000/api/v1
-EXPO_PUBLIC_SUPABASE_URL=
-EXPO_PUBLIC_SUPABASE_ANON_KEY=
 GOOGLE_SERVICES_JSON=
 ```
 
-`EXPO_PUBLIC_API_URL` points at the running `@movea/api` (auth); the Supabase vars
-still back the features not yet migrated. On a device, replace `localhost` with your
-machine's LAN IP.
+`EXPO_PUBLIC_API_URL` points at the running `@movea/api`. On a device, replace `localhost`
+with your machine's LAN IP.
 
 - Option 2: Pull environment variables for your local development (need to Expo account)
 
@@ -156,8 +153,7 @@ The created .env.local file will look like this:
 ```bash
 # Environment: development
 
-EXPO_PUBLIC_SUPABASE_URL=
-EXPO_PUBLIC_SUPABASE_ANON_KEY=
+EXPO_PUBLIC_API_URL=
 # GOOGLE_SERVICES_JSON=***** (secret variables are not available for reading)
 ```
 
