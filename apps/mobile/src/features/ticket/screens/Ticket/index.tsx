@@ -9,17 +9,16 @@ import { withUniwind } from 'uniwind';
 
 // Constants
 import { Size, UNACTIVE_MESSAGE } from '@/constants';
-import { BOOKING_STATUS } from '@/constants/status';
 
 // Utils
 import { capitalize } from '@/utils/convert';
 import { formatDate, formatIDR, formatTime } from '@/utils/formats';
 
 // Hooks
-import { useTicket } from '@/features/ticket/hooks/useTickets';
+import { useReservation } from '@/features/booking/hooks/useReservations';
 
 // Types
-import { BookingStatus } from '@/features/booking/schemas/booking';
+import { toDisplayStatus } from '@/features/booking/schemas/reservation';
 
 // Components
 import { Button } from '@/components/Button';
@@ -37,47 +36,42 @@ const TicketDetailScreen = () => {
   const id = params.id || '';
 
   const {
-    data: ticket,
+    data: reservation,
     isLoading,
     isError,
     refetch: refetchTicket,
-  } = useTicket(id);
+  } = useReservation(id);
 
   const ticketDetail = useMemo(() => {
-    if (!ticket?.booking) return null;
+    if (!reservation) return null;
 
-    const { booking } = ticket;
-    const { showtime } = booking;
-    const { movie, cinemaHall, showTime, showDate } = showtime || {};
-    const { cinema } = cinemaHall || {};
+    const { movie, showTime, showDate } = reservation.showtime || {};
 
-    if (!movie || !cinema) return null;
+    if (!movie) return null;
 
     return {
       movie,
       movieName: movie.title,
-      cinemaName: cinema.name,
-      seatNumber: ticket.seatNumber,
-      seatsNumber: booking.seatNumbers,
-      paid: formatIDR(booking.totalAmount),
-      showTime: showTime,
-      showDate: showDate,
-      qrCode: ticket.qrCodeData,
-      idOrder: booking.bookingNumber,
-      status: ticket.status,
+      seatLabels: reservation.tickets.map(ticket => ticket.seatLabel),
+      paid: formatIDR(reservation.totalAmount),
+      showTime,
+      showDate,
+      // Cosmetic only — the API has no `qrCodeData` field and no scan/validate
+      // endpoint, so scanning this has no backend effect yet.
+      qrCode: JSON.stringify({
+        reservationId: reservation.id,
+        reservationNumber: reservation.reservationNumber,
+      }),
+      idOrder: reservation.reservationNumber,
+      status: toDisplayStatus(reservation.status),
     };
-  }, [ticket]);
+  }, [reservation]);
 
   // Determine if QR should be shown
-  const isActive = ticketDetail?.status === BOOKING_STATUS.ACTIVE;
+  const isActive = ticketDetail?.status === 'active';
 
   const orderRows = useMemo(
     () => [
-      {
-        label: 'Cinema',
-        value: ticketDetail?.cinemaName || '',
-        testID: 'cinema-name',
-      },
       {
         label: 'Date & Time',
         value: `${formatDate(ticketDetail?.showDate || '')}, ${formatTime(
@@ -87,12 +81,7 @@ const TicketDetailScreen = () => {
       },
       {
         label: 'Seat Number',
-        value: ticketDetail?.seatNumber || '',
-        testID: 'order-seat',
-      },
-      {
-        label: 'Seats Number',
-        value: ticketDetail?.seatsNumber.join(', ') || '',
+        value: ticketDetail?.seatLabels.join(', ') || '',
         testID: 'order-seats',
       },
       {
@@ -109,8 +98,7 @@ const TicketDetailScreen = () => {
     [ticketDetail],
   );
 
-  const unActiveMessage =
-    UNACTIVE_MESSAGE[ticketDetail?.status as BookingStatus] || '';
+  const unActiveMessage = UNACTIVE_MESSAGE[ticketDetail?.status || ''] || '';
 
   return (
     <StyledSafeAreaView

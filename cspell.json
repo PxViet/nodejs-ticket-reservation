@@ -15,6 +15,7 @@
     "Supabase",
     "timestamptz",
     "typeorm",
+    "UNACTIVE",
     "Unindexed",
     "xact"
   ],

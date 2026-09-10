@@ -1,5 +1,5 @@
 import { FlashList } from '@shopify/flash-list';
-import { router, useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, RefreshControl, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,11 +19,14 @@ import {
 import { BOOKING_STATUS } from '@/constants/status';
 
 // Hooks
-import { useTicketExpiration } from '@/features/ticket/hooks/useTicketExpiration';
-import { useTicketsInfinite } from '@/features/ticket/hooks/useTickets';
+import { useReservationsInfinite } from '@/features/booking/hooks/useReservations';
 
 // Types
-import { Ticket } from '@/features/booking/schemas/booking';
+import {
+  toDisplayStatus,
+  TicketDisplayStatus,
+} from '@/features/booking/schemas/reservation';
+import { ReservationWithShowtime } from '@/features/booking/services/reservations';
 // Components
 import { Button } from '@/components/Button';
 import { HorizontalCard } from '@/components/HorizontalCard';
@@ -37,9 +40,6 @@ const StyledSafeAreaView = withUniwind(SafeAreaView);
 const MyTicketScreen = () => {
   const [activeTab, setActiveTab] = useState(TICKET_TABS[0]?.id || '');
 
-  // Hooks for ticket expiration
-  const { checkExpiredTickets } = useTicketExpiration();
-
   const {
     data,
     isLoading,
@@ -50,19 +50,12 @@ const MyTicketScreen = () => {
     fetchNextPage,
     refetch,
     isRefetching,
-  } = useTicketsInfinite();
-
-  // Check for expired tickets when screen focuses
-  useFocusEffect(
-    useCallback(() => {
-      checkExpiredTickets();
-    }, [checkExpiredTickets]),
-  );
+  } = useReservationsInfinite();
 
   // Flatten paginated data
   const allTickets = useMemo(() => {
     if (!data?.pages) return [];
-    return data.pages.flat();
+    return data.pages.flatMap(page => page.data);
   }, [data]);
 
   const isAllTickets = useMemo(
@@ -78,22 +71,20 @@ const MyTicketScreen = () => {
     [activeTab],
   );
 
-  // Filter tickets by status
+  // Filter reservations by the derived display status (see toDisplayStatus —
+  // the API has no separate "expired" state, so it folds into this tab too).
   const filteredTickets = useMemo(() => {
     if (isAllTickets) return allTickets;
 
     if (isActiveTickets) {
       return allTickets.filter(
-        ticket => ticket.status === BOOKING_STATUS.ACTIVE,
+        reservation => toDisplayStatus(reservation.status) === 'active',
       );
     }
 
     if (isExpiredTickets) {
       return allTickets.filter(
-        ticket =>
-          ticket.status === BOOKING_STATUS.EXPIRED ||
-          ticket.status === BOOKING_STATUS.CANCELLED ||
-          ticket.status === BOOKING_STATUS.USED,
+        reservation => toDisplayStatus(reservation.status) !== 'active',
       );
     }
 
@@ -110,27 +101,19 @@ const MyTicketScreen = () => {
     router.push(ROUTES.HOME);
   }, []);
 
-  const handleTicketDetails = useCallback((ticketId: string) => {
-    router.push(ROUTES.TICKET_DETAILS(ticketId));
+  const handleTicketDetails = useCallback((reservationId: string) => {
+    router.push(ROUTES.TICKET_DETAILS(reservationId));
   }, []);
 
-  // Handle refresh action for expired tickets to check for updates
-  const handleRefresh = useCallback(async () => {
-    await checkExpiredTickets();
+  const handleRefresh = useCallback(() => {
     refetch();
-  }, [checkExpiredTickets, refetch]);
+  }, [refetch]);
 
   const renderTicket = useCallback(
-    ({ item }: { item: Ticket }) => {
-      const { booking } = item;
+    ({ item }: { item: ReservationWithShowtime }) => {
+      const { movie, showTime, showDate } = item.showtime || {};
 
-      if (!booking) return null;
-
-      const { showtime } = booking;
-      const { movie, cinemaHall, showTime, showDate } = showtime || {};
-      const { cinema } = cinemaHall || {};
-
-      if (!movie || !cinema) return null;
+      if (!movie) return null;
 
       return (
         <HorizontalCard
@@ -138,7 +121,6 @@ const MyTicketScreen = () => {
           posterUrl={movie.posterUrl}
           showtime={showTime}
           showDate={showDate}
-          cinemaName={cinema.name}
           justifyContent="center"
           onPress={() => handleTicketDetails(item.id)}
         />
@@ -147,10 +129,13 @@ const MyTicketScreen = () => {
     [handleTicketDetails],
   );
 
-  const keyExtractor = useCallback((item: Ticket) => item.id, []);
+  const keyExtractor = useCallback(
+    (item: ReservationWithShowtime) => item.id,
+    [],
+  );
 
-  const getItemType = useCallback((item: Ticket) => {
-    return item.status || 'default';
+  const getItemType = useCallback((item: ReservationWithShowtime) => {
+    return toDisplayStatus(item.status) satisfies TicketDisplayStatus;
   }, []);
 
   const renderFooter = useCallback(() => {
