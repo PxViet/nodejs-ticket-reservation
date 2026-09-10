@@ -71,4 +71,10 @@ export class SettingError extends Data.TaggedError('SettingError')<{
       message: message || ERROR_MESSAGES.DELETE_AVATAR_ERROR,
     });
   };
+
+  static changePasswordError = (message: string) => {
+    return new SettingError({
+      message: message || ERROR_MESSAGES.UPDATE_PASSWORD_FAILED,
+    });
+  };
 }
