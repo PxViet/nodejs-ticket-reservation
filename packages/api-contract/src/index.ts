@@ -73,3 +73,14 @@ export type HoldSeatsResponse = Schemas['HoldSeatsResponseDto'];
 export type ActiveSeatHold = Schemas['ActiveSeatHoldResponseDto'];
 /** One page of `GET /seat-holds/me`. */
 export type PaginatedSeatHolds = Schemas['PaginatedSeatHoldResponseDto'];
+
+/** `POST /reservations` request body — the holds to confirm. */
+export type ConfirmReservationRequest = Schemas['ConfirmReservationDto'];
+/** One ticket on a confirmed reservation, as nested in `Reservation`. */
+export type ReservationTicket = Schemas['TicketResponseDto'];
+/** What `POST /reservations` and `GET /reservations/:id` return. */
+export type Reservation = Schemas['ReservationResponseDto'];
+/** One row of `GET /reservations/me` — a `Reservation` without its tickets. */
+export type ReservationSummary = Schemas['ReservationSummaryResponseDto'];
+/** One page of `GET /reservations/me`. */
+export type PaginatedReservations = Schemas['PaginatedReservationResponseDto'];
