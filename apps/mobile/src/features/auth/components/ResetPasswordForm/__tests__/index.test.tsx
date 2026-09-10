@@ -1,6 +1,3 @@
-import { authServiceEffect } from '@/features/auth/services/auth.effect';
-import { Effect } from 'effect';
-import { supabase } from '@/services/supabase/client';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { TextInput } from 'react-native';
 
@@ -8,21 +5,7 @@ import { TextInput } from 'react-native';
 import { ResetPasswordForm } from '../';
 
 // Mock dependencies
-const mockSignOut = jest.fn();
 const mockToastAlert = jest.fn();
-
-jest.mock('expo-router', () => ({
-  useLocalSearchParams: jest.fn(() => ({
-    access_token: 'mock-access-token',
-    refresh_token: 'mock-refresh-token',
-  })),
-}));
-
-jest.mock('@/features/auth/hooks/useAuth', () => ({
-  useAuth: () => ({
-    signOut: mockSignOut,
-  }),
-}));
 
 jest.mock('@/hooks/useToast', () => ({
   useToastAlert: () => ({
@@ -30,27 +13,9 @@ jest.mock('@/hooks/useToast', () => ({
   }),
 }));
 
-jest.mock('@/services/supabase/client', () => ({
-  supabase: {
-    auth: {
-      setSession: jest.fn(),
-    },
-  },
-}));
-
-jest.mock('@/features/auth/services/auth.effect', () => ({
-  authServiceEffect: {
-    updatePassword: jest.fn(),
-  },
-}));
-
 describe('ResetPasswordForm Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (supabase.auth.setSession as jest.Mock).mockResolvedValue({ error: null });
-    (authServiceEffect.updatePassword as jest.Mock).mockReturnValue(
-      Effect.succeed(true),
-    );
   });
 
   describe('Rendering', () => {
@@ -153,115 +118,10 @@ describe('ResetPasswordForm Component', () => {
     });
   });
 
-  describe('Form Submission - Success Cases', () => {
-    it('should successfully reset password with valid credentials', async () => {
-      const { getByTestId } = render(<ResetPasswordForm />);
-      const newPasswordInput = getByTestId('new-password-input-input');
-      const confirmPasswordInput = getByTestId('confirm-password-input-input');
-      const submitButton = getByTestId('reset-password-submit-button');
-
-      // Fill in valid passwords
-      fireEvent.changeText(newPasswordInput, 'NewPass123!@');
-      fireEvent.changeText(confirmPasswordInput, 'NewPass123!@');
-
-      // Submit the form
-      fireEvent.press(submitButton);
-
-      await waitFor(() => {
-        expect(supabase.auth.setSession).toHaveBeenCalledWith({
-          access_token: 'mock-access-token',
-          refresh_token: 'mock-refresh-token',
-        });
-        expect(authServiceEffect.updatePassword).toHaveBeenCalledWith(
-          'NewPass123!@',
-        );
-      });
-    });
-
-    it('should show success toast after password reset', async () => {
-      const { getByTestId } = render(<ResetPasswordForm />);
-      const newPasswordInput = getByTestId('new-password-input-input');
-      const confirmPasswordInput = getByTestId('confirm-password-input-input');
-      const submitButton = getByTestId('reset-password-submit-button');
-
-      fireEvent.changeText(newPasswordInput, 'NewPass123!@');
-      fireEvent.changeText(confirmPasswordInput, 'NewPass123!@');
-      fireEvent.press(submitButton);
-
-      await waitFor(() => {
-        expect(mockToastAlert).toHaveBeenCalledWith(
-          expect.any(String), // Success title
-          expect.any(String), // Success message
-          expect.arrayContaining([
-            expect.objectContaining({
-              text: 'OK',
-              onPress: expect.any(Function),
-            }),
-          ]),
-          expect.objectContaining({ type: expect.any(String) }),
-        );
-      });
-    });
-
-    it('should call signOut when OK button is pressed on success toast', async () => {
-      const { getByTestId } = render(<ResetPasswordForm />);
-      const newPasswordInput = getByTestId('new-password-input-input');
-      const confirmPasswordInput = getByTestId('confirm-password-input-input');
-      const submitButton = getByTestId('reset-password-submit-button');
-
-      fireEvent.changeText(newPasswordInput, 'NewPass123!@');
-      fireEvent.changeText(confirmPasswordInput, 'NewPass123!@');
-      fireEvent.press(submitButton);
-
-      await waitFor(() => {
-        expect(mockToastAlert).toHaveBeenCalled();
-      });
-
-      // Get the onPress callback from the toast alert call
-      const toastAlertCall = mockToastAlert.mock.calls[0];
-      const buttons = toastAlertCall[2]; // Third argument is the buttons array
-      const okButton = buttons.find((btn: any) => btn.text === 'OK');
-
-      // Call the onPress function
-      await okButton.onPress();
-
-      expect(mockSignOut).toHaveBeenCalled();
-    });
-  });
-
-  describe('Form Submission - Error Cases', () => {
-    it('should show error toast when setSession fails', async () => {
-      (supabase.auth.setSession as jest.Mock).mockResolvedValueOnce({
-        error: new Error('Session error'),
-      });
-
-      const { getByTestId } = render(<ResetPasswordForm />);
-      const newPasswordInput = getByTestId('new-password-input-input');
-      const confirmPasswordInput = getByTestId('confirm-password-input-input');
-      const submitButton = getByTestId('reset-password-submit-button');
-
-      fireEvent.changeText(newPasswordInput, 'NewPass123!@');
-      fireEvent.changeText(confirmPasswordInput, 'NewPass123!@');
-      fireEvent.press(submitButton);
-
-      await waitFor(() => {
-        expect(mockToastAlert).toHaveBeenCalledWith(
-          expect.any(String), // Error title
-          'Session error', // Error message
-          [],
-          expect.objectContaining({ type: expect.any(String) }),
-        );
-      });
-
-      // Ensure updatePassword was not called
-      expect(authServiceEffect.updatePassword).not.toHaveBeenCalled();
-    });
-
-    it('should show generic error message when setSession fails with non-Error object', async () => {
-      (supabase.auth.setSession as jest.Mock).mockResolvedValueOnce({
-        error: { message: 'Some error' }, // Non-Error object
-      });
-
+  // Not implemented yet — the form always surfaces a "not available" error,
+  // since neither the API nor Supabase back this flow any more.
+  describe('Form Submission', () => {
+    it('should show a not-available error toast instead of resetting the password', async () => {
       const { getByTestId } = render(<ResetPasswordForm />);
       const newPasswordInput = getByTestId('new-password-input-input');
       const confirmPasswordInput = getByTestId('confirm-password-input-input');
@@ -274,55 +134,7 @@ describe('ResetPasswordForm Component', () => {
       await waitFor(() => {
         expect(mockToastAlert).toHaveBeenCalledWith(
           expect.any(String),
-          expect.stringContaining(''), // Generic error message
-          [],
-          expect.objectContaining({ type: expect.any(String) }),
-        );
-      });
-    });
-
-    it('should show error toast when updatePassword fails with Error', async () => {
-      (authServiceEffect.updatePassword as jest.Mock).mockReturnValueOnce(
-        Effect.fail(new Error('Update failed')),
-      );
-
-      const { getByTestId } = render(<ResetPasswordForm />);
-      const newPasswordInput = getByTestId('new-password-input-input');
-      const confirmPasswordInput = getByTestId('confirm-password-input-input');
-      const submitButton = getByTestId('reset-password-submit-button');
-
-      fireEvent.changeText(newPasswordInput, 'NewPass123!@');
-      fireEvent.changeText(confirmPasswordInput, 'NewPass123!@');
-      fireEvent.press(submitButton);
-
-      await waitFor(() => {
-        expect(mockToastAlert).toHaveBeenCalledWith(
-          expect.any(String), // Error title
-          'Update failed', // Error message
-          [],
-          expect.objectContaining({ type: expect.any(String) }),
-        );
-      });
-    });
-
-    it('should show generic error message when updatePassword fails with non-Error', async () => {
-      (authServiceEffect.updatePassword as jest.Mock).mockReturnValueOnce(
-        Effect.fail('String error'),
-      );
-
-      const { getByTestId } = render(<ResetPasswordForm />);
-      const newPasswordInput = getByTestId('new-password-input-input');
-      const confirmPasswordInput = getByTestId('confirm-password-input-input');
-      const submitButton = getByTestId('reset-password-submit-button');
-
-      fireEvent.changeText(newPasswordInput, 'NewPass123!@');
-      fireEvent.changeText(confirmPasswordInput, 'NewPass123!@');
-      fireEvent.press(submitButton);
-
-      await waitFor(() => {
-        expect(mockToastAlert).toHaveBeenCalledWith(
-          expect.any(String),
-          expect.stringContaining(''), // Generic error message
+          'Password reset via email is not available yet.',
           [],
           expect.objectContaining({ type: expect.any(String) }),
         );
@@ -331,34 +143,6 @@ describe('ResetPasswordForm Component', () => {
   });
 
   describe('Form State', () => {
-    it('should disable submit button while submitting', async () => {
-      // Make updatePassword take some time
-      (authServiceEffect.updatePassword as jest.Mock).mockImplementation(() =>
-        Effect.tryPromise({
-          try: async () =>
-            await new Promise(resolve => setTimeout(resolve, 100)),
-          catch: (e: unknown) => e,
-        }),
-      );
-
-      const { getByTestId } = render(<ResetPasswordForm />);
-      const newPasswordInput = getByTestId('new-password-input-input');
-      const confirmPasswordInput = getByTestId('confirm-password-input-input');
-      const submitButton = getByTestId('reset-password-submit-button');
-
-      fireEvent.changeText(newPasswordInput, 'NewPass123!@');
-      fireEvent.changeText(confirmPasswordInput, 'NewPass123!@');
-      fireEvent.press(submitButton);
-
-      // Check button is disabled while submitting
-      await waitFor(() => {
-        const disabled =
-          submitButton.props.accessibilityState?.disabled ||
-          submitButton.props.disabled;
-        expect(disabled).toBe(true);
-      });
-    });
-
     it('should have default empty values', () => {
       const { getByTestId } = render(<ResetPasswordForm />);
       const newPasswordInput = getByTestId('new-password-input-input');
@@ -366,183 +150,6 @@ describe('ResetPasswordForm Component', () => {
 
       expect(newPasswordInput.props.value).toBe('');
       expect(confirmPasswordInput.props.value).toBe('');
-    });
-  });
-
-  describe('Form Submission - Success Cases', () => {
-    it('should successfully reset password with valid credentials', async () => {
-      const { getByTestId } = render(<ResetPasswordForm />);
-      const newPasswordInput = getByTestId('new-password-input-input');
-      const confirmPasswordInput = getByTestId('confirm-password-input-input');
-      const submitButton = getByTestId('reset-password-submit-button');
-
-      // Fill in valid passwords
-      fireEvent.changeText(newPasswordInput, 'NewPass123!@');
-      fireEvent.changeText(confirmPasswordInput, 'NewPass123!@');
-
-      // Submit the form
-      fireEvent.press(submitButton);
-
-      await waitFor(() => {
-        expect(supabase.auth.setSession).toHaveBeenCalledWith({
-          access_token: 'mock-access-token',
-          refresh_token: 'mock-refresh-token',
-        });
-        expect(authServiceEffect.updatePassword).toHaveBeenCalledWith(
-          'NewPass123!@',
-        );
-      });
-    });
-
-    it('should show success toast after password reset', async () => {
-      const { getByTestId } = render(<ResetPasswordForm />);
-      const newPasswordInput = getByTestId('new-password-input-input');
-      const confirmPasswordInput = getByTestId('confirm-password-input-input');
-      const submitButton = getByTestId('reset-password-submit-button');
-
-      fireEvent.changeText(newPasswordInput, 'NewPass123!@');
-      fireEvent.changeText(confirmPasswordInput, 'NewPass123!@');
-      fireEvent.press(submitButton);
-
-      await waitFor(() => {
-        expect(mockToastAlert).toHaveBeenCalledWith(
-          expect.any(String), // Success title
-          expect.any(String), // Success message
-          expect.arrayContaining([
-            expect.objectContaining({
-              text: 'OK',
-              onPress: expect.any(Function),
-            }),
-          ]),
-          expect.objectContaining({ type: expect.any(String) }),
-        );
-      });
-    });
-
-    it('should call signOut when OK button is pressed on success toast', async () => {
-      const { getByTestId } = render(<ResetPasswordForm />);
-      const newPasswordInput = getByTestId('new-password-input-input');
-      const confirmPasswordInput = getByTestId('confirm-password-input-input');
-      const submitButton = getByTestId('reset-password-submit-button');
-
-      fireEvent.changeText(newPasswordInput, 'NewPass123!@');
-      fireEvent.changeText(confirmPasswordInput, 'NewPass123!@');
-      fireEvent.press(submitButton);
-
-      await waitFor(() => {
-        expect(mockToastAlert).toHaveBeenCalled();
-      });
-
-      // Get the onPress callback from the toast alert call
-      const toastAlertCall = mockToastAlert.mock.calls[0];
-      const buttons = toastAlertCall[2]; // Third argument is the buttons array
-      const okButton = buttons.find((btn: any) => btn.text === 'OK');
-
-      // Call the onPress function
-      await okButton.onPress();
-
-      expect(mockSignOut).toHaveBeenCalled();
-    });
-  });
-
-  describe('Form Submission - Error Cases', () => {
-    it('should show error toast when setSession fails', async () => {
-      (supabase.auth.setSession as jest.Mock).mockResolvedValueOnce({
-        error: new Error('Session error'),
-      });
-
-      const { getByTestId } = render(<ResetPasswordForm />);
-      const newPasswordInput = getByTestId('new-password-input-input');
-      const confirmPasswordInput = getByTestId('confirm-password-input-input');
-      const submitButton = getByTestId('reset-password-submit-button');
-
-      fireEvent.changeText(newPasswordInput, 'NewPass123!@');
-      fireEvent.changeText(confirmPasswordInput, 'NewPass123!@');
-      fireEvent.press(submitButton);
-
-      await waitFor(() => {
-        expect(mockToastAlert).toHaveBeenCalledWith(
-          expect.any(String), // Error title
-          'Session error', // Error message
-          [],
-          expect.objectContaining({ type: expect.any(String) }),
-        );
-      });
-
-      // Ensure updatePassword was not called
-      expect(authServiceEffect.updatePassword).not.toHaveBeenCalled();
-    });
-
-    it('should show generic error message when setSession fails with non-Error object', async () => {
-      (supabase.auth.setSession as jest.Mock).mockResolvedValueOnce({
-        error: { message: 'Some error' }, // Non-Error object
-      });
-
-      const { getByTestId } = render(<ResetPasswordForm />);
-      const newPasswordInput = getByTestId('new-password-input-input');
-      const confirmPasswordInput = getByTestId('confirm-password-input-input');
-      const submitButton = getByTestId('reset-password-submit-button');
-
-      fireEvent.changeText(newPasswordInput, 'NewPass123!@');
-      fireEvent.changeText(confirmPasswordInput, 'NewPass123!@');
-      fireEvent.press(submitButton);
-
-      await waitFor(() => {
-        expect(mockToastAlert).toHaveBeenCalledWith(
-          expect.any(String),
-          expect.stringContaining(''), // Generic error message
-          [],
-          expect.objectContaining({ type: expect.any(String) }),
-        );
-      });
-    });
-
-    it('should show error toast when updatePassword fails with Error', async () => {
-      (authServiceEffect.updatePassword as jest.Mock).mockReturnValueOnce(
-        Effect.fail(new Error('Update failed')),
-      );
-
-      const { getByTestId } = render(<ResetPasswordForm />);
-      const newPasswordInput = getByTestId('new-password-input-input');
-      const confirmPasswordInput = getByTestId('confirm-password-input-input');
-      const submitButton = getByTestId('reset-password-submit-button');
-
-      fireEvent.changeText(newPasswordInput, 'NewPass123!@');
-      fireEvent.changeText(confirmPasswordInput, 'NewPass123!@');
-      fireEvent.press(submitButton);
-
-      await waitFor(() => {
-        expect(mockToastAlert).toHaveBeenCalledWith(
-          expect.any(String), // Error title
-          'Update failed', // Error message
-          [],
-          expect.objectContaining({ type: expect.any(String) }),
-        );
-      });
-    });
-
-    it('should show generic error message when updatePassword fails with non-Error', async () => {
-      (authServiceEffect.updatePassword as jest.Mock).mockReturnValueOnce(
-        Effect.fail('String error'),
-      );
-
-      const { getByTestId } = render(<ResetPasswordForm />);
-      const newPasswordInput = getByTestId('new-password-input-input');
-      const confirmPasswordInput = getByTestId('confirm-password-input-input');
-      const submitButton = getByTestId('reset-password-submit-button');
-
-      fireEvent.changeText(newPasswordInput, 'NewPass123!@');
-      fireEvent.changeText(confirmPasswordInput, 'NewPass123!@');
-      fireEvent.press(submitButton);
-
-      await waitFor(() => {
-        expect(mockToastAlert).toHaveBeenCalledWith(
-          expect.any(String),
-          expect.stringContaining(''), // Generic error message
-          [],
-          expect.objectContaining({ type: expect.any(String) }),
-        );
-      });
     });
   });
 

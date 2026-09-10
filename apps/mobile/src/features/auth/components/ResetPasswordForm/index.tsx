@@ -1,6 +1,5 @@
 import { effectTsResolver } from '@hookform/resolvers/effect-ts';
-import { useLocalSearchParams } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
 import { TextInput, View } from 'react-native';
 
@@ -9,40 +8,22 @@ import { Button } from '@/components/Button';
 import { PasswordInput } from '@/components/PasswordInput';
 import { Typo } from '@/components/Typo';
 
-// Utils
-import { runEffectForQuery } from '@/utils/effect';
-
 // Constants
 import {
   ERROR_MESSAGES,
-  MESSAGES,
   ResetPasswordFormData,
   resetPasswordSchema as resetPasswordSchemaEffect,
   ToastType,
 } from '@/constants';
 
 // Hooks
-import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useToastAlert } from '@/hooks/useToast';
 
-// Services
-import { supabase } from '@/services/supabase/client';
-import { Effect } from 'effect';
-import { AuthService } from '../../effect/services';
-import { AuthServiceLayer } from '../../layer';
-
 export const ResetPasswordForm = () => {
-  const params = useLocalSearchParams<{
-    access_token: string;
-    refresh_token: string;
-  }>();
   const toast = useToastAlert();
-  const { signOut } = useAuth();
 
   const newPasswordRef = useRef<TextInput>(null);
   const confirmPasswordRef = useRef<TextInput>(null);
-
-  const [isLoading, setIsLoading] = useState(false);
 
   const {
     control,
@@ -60,71 +41,22 @@ export const ResetPasswordForm = () => {
     },
   });
 
-  const isDisabled = isSubmitting || isLoading || !isDirty;
+  const isDisabled = isSubmitting || !isDirty;
 
   const handleNewPasswordSubmit = useCallback(() => {
     confirmPasswordRef.current?.focus();
   }, []);
 
-  const handleSubmitForm = useCallback(
-    async (data: ResetPasswordFormData) => {
-      // Set session with recovery token
-      const { error: sessionError } = await supabase.auth.setSession({
-        access_token: params.access_token,
-        refresh_token: params.refresh_token,
-      });
-
-      if (sessionError) {
-        toast.alert(
-          ERROR_MESSAGES.UPDATE_FAILED,
-          sessionError instanceof Error
-            ? sessionError.message
-            : ERROR_MESSAGES.UPDATE_PASSWORD_FAILED,
-          [],
-          { type: ToastType.ERROR },
-        );
-        return;
-      }
-
-      try {
-        // Update password
-        await runEffectForQuery(
-          Effect.gen(function* () {
-            const authService = yield* AuthService;
-            return yield* authService.updatePassword(data.newPassword);
-          }),
-          AuthServiceLayer,
-        );
-
-        toast.alert(
-          MESSAGES.UPDATE_SUCCESS,
-          MESSAGES.PASSWORD_UPDATE_SUCCESS,
-          [
-            {
-              text: 'OK',
-              onPress: async () => {
-                await signOut();
-              },
-            },
-          ],
-          { type: ToastType.SUCCESS, mode: 'auto' },
-        );
-      } catch (error) {
-        toast.alert(
-          ERROR_MESSAGES.UPDATE_FAILED,
-          error instanceof Error
-            ? error.message
-            : ERROR_MESSAGES.UPDATE_PASSWORD_FAILED,
-          [],
-          { type: ToastType.ERROR },
-        );
-      } finally {
-        setIsLoading(false);
-        await signOut();
-      }
-    },
-    [params.access_token, params.refresh_token, signOut, toast],
-  );
+  // Not implemented yet — the API has no password-reset-by-email endpoint,
+  // and Supabase's recovery-link session handling is no longer wired up.
+  const handleSubmitForm = useCallback(() => {
+    toast.alert(
+      ERROR_MESSAGES.UPDATE_FAILED,
+      'Password reset via email is not available yet.',
+      [],
+      { type: ToastType.ERROR },
+    );
+  }, [toast]);
 
   return (
     <View className="flex-1 justify-between" testID="reset-password-form">

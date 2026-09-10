@@ -102,12 +102,6 @@ export class AuthenticationError extends Data.TaggedError(
     });
   };
 
-  static currentPasswordIncorrect = (message: string) => {
-    return new AuthenticationError({
-      message: message,
-    });
-  };
-
   static oauthFailed = (message: string) => {
     return new AuthenticationError({
       message: message,
