@@ -12,15 +12,15 @@ import {
 } from '../useReservations';
 
 // Services
-import { reservationsServiceEffect } from '../../services/reservations';
+import {
+  reservationsServiceEffect,
+  ReservationDetail,
+  ReservationPage,
+} from '../../services/reservations';
 
 // Types
 import { ReservationError } from '../../error/reservation';
 import { Reservation } from '../../schemas/reservation';
-import {
-  ReservationDetail,
-  ReservationPage,
-} from '../../services/reservations';
 
 jest.mock('@/features/booking/services/reservations', () => ({
   reservationsServiceEffect: {
