@@ -54,7 +54,8 @@ export const usePushNotifications = () => {
         if (token) {
           setExpoPushToken(token);
 
-          // Save token to Supabase (only if we have a token)
+          // Register the token server-side (only if we have a token) — not
+          // implemented yet, see PushTokenService; failure is swallowed below.
           const platform = Platform.OS as 'ios' | 'android';
           await pushTokenService.savePushToken(user.id, token, platform);
         } else {

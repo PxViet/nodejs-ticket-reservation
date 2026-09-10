@@ -1,9 +1,6 @@
-import { ROUTES } from '@/constants';
 import { AuthenticationError } from '@/features/auth/error/auth';
 import { apiRequest } from '@/services/api/client';
-import { supabase } from '@/services/supabase/client';
 import { Cause, Chunk, Effect, Exit } from 'effect';
-import { makeRedirectUri } from 'expo-auth-session';
 import { authServiceEffect } from '../auth.effect';
 import {
   clearTokens,
@@ -24,19 +21,6 @@ jest.mock('../token-storage', () => ({
   getAccessToken: jest.fn(),
   getRefreshToken: jest.fn(),
 }));
-
-// Supabase — still backs the password-reset methods
-jest.mock('@/services/supabase/client', () => ({
-  supabase: {
-    auth: {
-      signInWithPassword: jest.fn(),
-      resetPasswordForEmail: jest.fn(),
-      updateUser: jest.fn(),
-    },
-  },
-}));
-
-jest.mock('expo-auth-session');
 
 const mockApiRequest = apiRequest as jest.Mock;
 const mockSaveTokens = saveTokens as jest.Mock;
@@ -290,101 +274,15 @@ describe('AuthService', () => {
     });
   });
 
-  // Password reset / change — still on Supabase
+  // Not implemented yet — no password-reset-by-email endpoint exists.
   describe('resetPassword', () => {
-    beforeEach(() => {
-      (makeRedirectUri as jest.Mock).mockReturnValue(
-        `movieticketbooking://${ROUTES.RESET_PASSWORD}`,
-      );
-    });
-
-    it('sends a reset email', async () => {
-      (supabase.auth.resetPasswordForEmail as jest.Mock).mockResolvedValue({
-        error: null,
-      });
-
-      await Effect.runPromise(authServiceEffect.resetPassword('a@b.com'));
-
-      expect(supabase.auth.resetPasswordForEmail).toHaveBeenCalledWith(
-        'a@b.com',
-        { redirectTo: `movieticketbooking://${ROUTES.RESET_PASSWORD}` },
-      );
-    });
-
-    it('fails with AuthenticationError when Supabase errors', async () => {
-      (supabase.auth.resetPasswordForEmail as jest.Mock).mockResolvedValue({
-        error: new Error('Reset password failed'),
-      });
-
+    it('fails with a not-available AuthenticationError', async () => {
       await expectEffectFailure(
         authServiceEffect.resetPassword('a@b.com'),
         err => {
           expect(err).toBeInstanceOf(AuthenticationError);
           expect((err as AuthenticationError).message).toBe(
-            'Reset password failed',
-          );
-        },
-      );
-    });
-  });
-
-  describe('updatePassword', () => {
-    it('updates the password', async () => {
-      (supabase.auth.updateUser as jest.Mock).mockResolvedValue({
-        error: null,
-      });
-
-      const result = await Effect.runPromise(
-        authServiceEffect.updatePassword('newPassword123'),
-      );
-
-      expect(result).toBe(true);
-      expect(supabase.auth.updateUser).toHaveBeenCalledWith({
-        password: 'newPassword123',
-      });
-    });
-
-    it('fails with AuthenticationError when Supabase errors', async () => {
-      (supabase.auth.updateUser as jest.Mock).mockResolvedValue({
-        error: new Error('Update password failed'),
-      });
-
-      await expectEffectFailure(
-        authServiceEffect.updatePassword('newPassword123'),
-        err => {
-          expect(err).toBeInstanceOf(AuthenticationError);
-          expect((err as AuthenticationError).message).toBe(
-            'Update password failed',
-          );
-        },
-      );
-    });
-  });
-
-  describe('verifyCurrentPassword', () => {
-    it('returns true for the correct password', async () => {
-      (supabase.auth.signInWithPassword as jest.Mock).mockResolvedValue({
-        error: null,
-      });
-
-      const result = await Effect.runPromise(
-        authServiceEffect.verifyCurrentPassword('a@b.com', 'pw'),
-      );
-
-      expect(result).toBe(true);
-    });
-
-    it('fails with AuthenticationError for the wrong password', async () => {
-      (supabase.auth.signInWithPassword as jest.Mock).mockResolvedValue({
-        error: new Error('invalid credentials'),
-      });
-
-      await expectEffectFailure(
-        authServiceEffect.verifyCurrentPassword('a@b.com', 'pw'),
-        err => {
-          expect(err).toBeInstanceOf(AuthenticationError);
-          expect((err as AuthenticationError).message).toBe(
-            'invalid credentials',
+            'Password reset by email is not available yet.',
           );
         },
       );

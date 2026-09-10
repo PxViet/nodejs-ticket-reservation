@@ -1,18 +1,20 @@
-// Supabase
-import { supabase } from '@/services/supabase/client';
-
 // Effect
 import { Effect } from 'effect';
 
 // Types
 import { Cinema } from '@/features/booking/schemas/cinema';
 
-// Utils
-import { keysToCamel } from '@/utils/convert';
-
 // Error
 import { CinemaError } from '@/features/booking/error/cinema';
 
+const NOT_IMPLEMENTED =
+  'Cinema data is not available yet — the API has no cinema entity.';
+
+/**
+ * Not implemented yet — `@movea/api`'s showtime model has no cinema entity
+ * above a hall (see `schemas/showtime.ts`), and Supabase's `cinemas` table is
+ * no longer wired up. Kept as a stub so any remaining caller still compiles.
+ */
 export class CinemaServiceEffect {
   private static instance: CinemaServiceEffect;
 
@@ -25,55 +27,14 @@ export class CinemaServiceEffect {
     return CinemaServiceEffect.instance;
   }
 
-  getCinemas = () =>
-    Effect.tryPromise({
-      try: async () => {
-        const { data, error } = await supabase
-          .from('cinemas')
-          .select('*')
-          .eq('is_active', true);
+  getCinemas = (): Effect.Effect<Cinema[], CinemaError> =>
+    Effect.fail(CinemaError.cinemaNotFound(NOT_IMPLEMENTED));
 
-        if (error) throw CinemaError.cinemaNotFound(error.message);
+  getCinemaById = (_id: string): Effect.Effect<Cinema, CinemaError> =>
+    Effect.fail(CinemaError.cinemaNotFound(NOT_IMPLEMENTED));
 
-        return keysToCamel(data) as Cinema[];
-      },
-      catch: (error: unknown) =>
-        CinemaError.cinemaNotFound(error instanceof Error ? error.message : ''),
-    });
-
-  getCinemaById = (id: string) =>
-    Effect.tryPromise({
-      try: async () => {
-        const { data, error } = await supabase
-          .from('cinemas')
-          .select('*, cinema_halls(*)')
-          .eq('id', id)
-          .single();
-
-        if (error) throw CinemaError.cinemaNotFound(error.message);
-
-        return keysToCamel(data) as Cinema;
-      },
-      catch: (error: unknown) =>
-        CinemaError.cinemaNotFound(error instanceof Error ? error.message : ''),
-    });
-
-  getCinemasByCity = (city: string) =>
-    Effect.tryPromise({
-      try: async () => {
-        const { data, error } = await supabase
-          .from('cinemas')
-          .select('*')
-          .eq('city', city)
-          .eq('is_active', true);
-
-        if (error) throw CinemaError.cinemaNotFound(error.message);
-
-        return keysToCamel(data) as Cinema[];
-      },
-      catch: (error: unknown) =>
-        CinemaError.cinemaNotFound(error instanceof Error ? error.message : ''),
-    });
+  getCinemasByCity = (_city: string): Effect.Effect<Cinema[], CinemaError> =>
+    Effect.fail(CinemaError.cinemaNotFound(NOT_IMPLEMENTED));
 }
 
 export const cinemaServiceEffect = CinemaServiceEffect.getInstance();

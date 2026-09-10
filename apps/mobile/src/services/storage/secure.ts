@@ -2,18 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 
 // Constants
-import {
-  SECURE_STORE_SIZE_LIMIT,
-  SENSITIVE_SESSION_FIELDS,
-  STORAGE_KEYS,
-} from '@/constants';
-
-// Helper to determine if a session field is sensitive
-const isSessionFieldSensitive = (field: string): boolean => {
-  return SENSITIVE_SESSION_FIELDS.some(sensitive =>
-    field.toLowerCase().includes(sensitive.toLowerCase()),
-  );
-};
+import { SECURE_STORE_SIZE_LIMIT, STORAGE_KEYS } from '@/constants';
 
 export class SecureStorageService {
   private static instance: SecureStorageService;
@@ -62,43 +51,6 @@ export class SecureStorageService {
   }
 
   /**
-   * Split session data into sensitive and non-sensitive parts
-   * @param {object} sessionData The session data object
-   * @returns {object} Object with sensitive and nonSensitive parts
-   */
-  private splitSessionData(sessionData: any): {
-    sensitive: Record<string, any>;
-    nonSensitive: Record<string, any>;
-  } {
-    const sensitive: Record<string, any> = {};
-    const nonSensitive: Record<string, any> = {};
-
-    Object.entries(sessionData).forEach(([key, value]) => {
-      if (isSessionFieldSensitive(key)) {
-        sensitive[key] = value;
-      } else {
-        nonSensitive[key] = value;
-      }
-    });
-
-    return { sensitive, nonSensitive };
-  }
-
-  /**
-   * Merge sensitive and non-sensitive session data back together
-   * @param {object} sensitive Sensitive session data
-   * @param {object} nonSensitive Non-sensitive session data
-   * @returns {object} Merged session data
-   */
-  private mergeSessionData(
-    sensitive: Record<string, any> | null,
-    nonSensitive: Record<string, any> | null,
-  ): any {
-    if (!sensitive && !nonSensitive) return null;
-    return { ...nonSensitive, ...sensitive };
-  }
-
-  /**
    * Sets a value for a given key in the appropriate storage.
    * Sensitive keys (like tokens) go to SecureStore if within size limit.
    * Large values automatically fallback to AsyncStorage with warning.
@@ -124,51 +76,6 @@ export class SecureStorageService {
   }
 
   /**
-   * Store session data with smart splitting
-   * Sensitive fields (tokens) → SecureStore
-   * Non-sensitive fields (user info, metadata) → AsyncStorage
-   * @param {object} sessionData The session data to store
-   * @returns {Promise<void>}
-   */
-  async setSession(sessionData: any): Promise<void> {
-    try {
-      if (!sessionData) {
-        return;
-      }
-
-      // Split session data
-      const { sensitive, nonSensitive } = this.splitSessionData(sessionData);
-
-      // Store sensitive parts in SecureStore
-      if (Object.keys(sensitive).length > 0) {
-        const sensitiveJson = JSON.stringify(sensitive);
-
-        if (this.isWithinSecureStoreLimit(sensitiveJson)) {
-          await SecureStore.setItemAsync(
-            `${STORAGE_KEYS.USER_SESSION}_sensitive`,
-            sensitiveJson,
-          );
-        } else {
-          await AsyncStorage.setItem(
-            `${STORAGE_KEYS.USER_SESSION}_sensitive`,
-            sensitiveJson,
-          );
-        }
-      }
-
-      // Store non-sensitive parts in AsyncStorage
-      if (Object.keys(nonSensitive).length > 0) {
-        await AsyncStorage.setItem(
-          STORAGE_KEYS.USER_SESSION,
-          JSON.stringify(nonSensitive),
-        );
-      }
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  /**
    * Retrieves a value from the appropriate storage for a given key.
    * @param {string} key The key to retrieve the value for.
    * @returns {Promise<string | null>} A promise that resolves with the value for the given key if it exists,
@@ -181,72 +88,6 @@ export class SecureStorageService {
       } else {
         return await AsyncStorage.getItem(key);
       }
-    } catch {
-      return null;
-    }
-  }
-
-  /**
-   * Retrieve session data with automatic merging of sensitive and non-sensitive parts
-   * @returns {Promise<object | null>} Complete session object or null
-   */
-  async getSession(): Promise<any> {
-    try {
-      // Get both parts
-      const [sensitiveJson, nonSensitiveJson] = await Promise.all([
-        this.getSessionSensitive(),
-        this.getItem(STORAGE_KEYS.USER_SESSION),
-      ]);
-
-      let sensitive = null;
-      let nonSensitive = null;
-
-      // Parse sensitive data
-      if (sensitiveJson) {
-        try {
-          sensitive = JSON.parse(sensitiveJson);
-        } catch {
-          return null;
-        }
-      }
-
-      // Parse non-sensitive data
-      if (nonSensitiveJson) {
-        try {
-          nonSensitive = JSON.parse(nonSensitiveJson);
-        } catch {
-          return null;
-        }
-      }
-
-      // Merge and return
-      const session = this.mergeSessionData(sensitive, nonSensitive);
-
-      return session;
-    } catch {
-      return null;
-    }
-  }
-
-  /**
-   * Get sensitive session data from SecureStore (with fallback to AsyncStorage)
-   * @returns {Promise<string | null>}
-   */
-  private async getSessionSensitive(): Promise<string | null> {
-    try {
-      // Try SecureStore first
-      const fromSecureStore = await SecureStore.getItemAsync(
-        `${STORAGE_KEYS.USER_SESSION}_sensitive`,
-      );
-
-      if (fromSecureStore) {
-        return fromSecureStore;
-      }
-
-      // Fallback to AsyncStorage (in case it was too large)
-      return await AsyncStorage.getItem(
-        `${STORAGE_KEYS.USER_SESSION}_sensitive`,
-      );
     } catch {
       return null;
     }
@@ -364,97 +205,6 @@ export class SecureStorageService {
   async hasItem(key: string): Promise<boolean> {
     const value = await this.getItem(key);
     return value !== null;
-  }
-
-  /**
-   * Check if session exists
-   * @returns {Promise<boolean>} True if session exists
-   */
-  async hasSession(): Promise<boolean> {
-    const session = await this.getSession();
-    return session !== null;
-  }
-
-  /**
-   * Get storage info for debugging
-   * @returns {Promise<object>} Storage information
-   */
-  async getStorageInfo(): Promise<{
-    secureStoreKeys: string[];
-    asyncStorageKeys: string[];
-    hasSession: boolean;
-    sessionFields: {
-      sensitive: string[];
-      nonSensitive: string[];
-    } | null;
-  }> {
-    try {
-      const asyncKeys = await AsyncStorage.getAllKeys();
-      const allKeys = Object.values(STORAGE_KEYS);
-
-      const secureStoreKeys = allKeys.filter(key => this.isSecureKey(key));
-      const asyncStorageKeys = asyncKeys.filter(
-        key => allKeys.includes(key) && !this.isSecureKey(key),
-      );
-
-      // Check session
-      const session = await this.getSession();
-      let sessionFields = null;
-
-      if (session) {
-        const { sensitive, nonSensitive } = this.splitSessionData(session);
-        sessionFields = {
-          sensitive: Object.keys(sensitive),
-          nonSensitive: Object.keys(nonSensitive),
-        };
-      }
-
-      return {
-        secureStoreKeys,
-        asyncStorageKeys,
-        hasSession: session !== null,
-        sessionFields,
-      };
-    } catch {
-      return {
-        secureStoreKeys: [],
-        asyncStorageKeys: [],
-        hasSession: false,
-        sessionFields: null,
-      };
-    }
-  }
-
-  /**
-   * Migrate old session storage to new split format
-   * Call this once during app upgrade to migrate existing data
-   * @returns {Promise<boolean>} True if migration was needed and successful
-   */
-  async migrateSessionStorage(): Promise<boolean> {
-    try {
-      // Check if old format exists
-      const oldSession = await AsyncStorage.getItem(STORAGE_KEYS.USER_SESSION);
-
-      if (!oldSession) {
-        return false;
-      }
-
-      // Check if new format already exists
-      const newFormatExists = await this.getSessionSensitive();
-
-      if (newFormatExists) {
-        return false;
-      }
-
-      // Parse and migrate
-      const sessionData = JSON.parse(oldSession);
-
-      await this.setSession(sessionData);
-
-      return true;
-    } catch {
-      return false;
-    }
   }
 }
 

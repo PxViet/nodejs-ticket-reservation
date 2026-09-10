@@ -1,8 +1,6 @@
 // Load test environment variables
 if (process.env.NODE_ENV === 'test') {
   process.env.EXPO_PUBLIC_API_URL = 'http://localhost:3000/api/v1';
-  process.env.EXPO_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
-  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
 }
 
 // Mock dependencies
@@ -30,17 +28,6 @@ jest.mock('uniwind', () => ({
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
-
-jest.mock('expo-file-system/legacy', () => ({
-  readAsStringAsync: jest.fn(),
-  EncodingType: {
-    Base64: 'base64',
-  },
-}));
-
-jest.mock('base64-arraybuffer', () => ({
-  decode: jest.fn(),
-}));
 
 // Mock dependencies
 jest.mock('expo', () => ({
