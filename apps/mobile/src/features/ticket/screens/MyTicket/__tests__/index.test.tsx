@@ -3,11 +3,8 @@ import { fireEvent, render } from '@testing-library/react-native';
 import MyTicketScreen from '../index';
 
 // Types
-import { BookingStatus, Ticket } from '@/features/booking/schemas/booking';
-
-// Constants
-import { BOOKING_STATUS, PAYMENT_STATUS } from '@/constants/status';
-import { GENRE_MOVIE } from '@/constants/movie';
+import { ReservationStatus } from '@/features/booking/schemas/reservation';
+import { ReservationWithShowtime } from '@/features/booking/services/reservations';
 
 // Mock expo-router
 const mockPush = jest.fn();
@@ -15,10 +12,6 @@ const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
   router: {
     push: (route: string) => mockPush(route),
-  },
-  useFocusEffect: (callback: () => void | (() => void)) => {
-    const cleanup = callback();
-    return cleanup;
   },
 }));
 
@@ -56,11 +49,18 @@ jest.mock('@/utils/formats', () => ({
 }));
 
 // Mock custom hooks
-const mockCheckExpiredTickets = jest.fn().mockResolvedValue(0);
 const mockFetchNextPage = jest.fn();
 const mockRefetch = jest.fn();
 
-let mockTicketsData: { pages: Ticket[][] } | undefined;
+let mockReservationsData:
+  | {
+      pages: {
+        data: ReservationWithShowtime[];
+        page: number;
+        hasMore: boolean;
+      }[];
+    }
+  | undefined;
 let mockIsLoading = false;
 let mockIsError = false;
 let mockError: Error | null = null;
@@ -68,15 +68,9 @@ let mockIsFetchingNextPage = false;
 let mockHasNextPage = false;
 let mockIsRefetching = false;
 
-jest.mock('@/features/ticket/hooks/useTicketExpiration', () => ({
-  useTicketExpiration: () => ({
-    checkExpiredTickets: mockCheckExpiredTickets,
-  }),
-}));
-
-jest.mock('@/features/ticket/hooks/useTickets', () => ({
-  useTicketsInfinite: () => ({
-    data: mockTicketsData,
+jest.mock('@/features/booking/hooks/useReservations', () => ({
+  useReservationsInfinite: () => ({
+    data: mockReservationsData,
     isLoading: mockIsLoading,
     isError: mockIsError,
     error: mockError,
@@ -124,70 +118,58 @@ jest.mock('@/constants', () => ({
   ],
 }));
 
-// Mock ticket data
-const createMockTicket = (
+// Mock reservation data
+const createMockReservation = (
   id: string,
-  status: BookingStatus = BOOKING_STATUS.ACTIVE as BookingStatus,
-): Ticket =>
-  ({
-    id,
-    bookingId: `booking-${id}`,
-    seatNumber: 'A1',
-    ticketNumber: `TKT-${id}`,
-    qrCodeData: `{"booking_id":"booking-${id}","seat":"A1"}`,
-    price: 50000,
-    status,
-    scannedAt: undefined,
+  status: ReservationStatus = 'confirmed',
+): ReservationWithShowtime => ({
+  id,
+  reservationNumber: `RSV-${id}`,
+  showtimeId: 'showtime-1',
+  status,
+  totalSeats: 1,
+  totalAmount: 50000,
+  createdAt: '2025-01-01T00:00:00Z',
+  showtime: {
+    id: 'showtime-1',
+    movieId: 'movie-1',
+    hallId: 'hall-1',
+    showDate: '2025-01-15',
+    showTime: '14:00',
+    endTime: '16:00',
+    basePrice: 50000,
+    status: 'active',
+    totalSeats: 100,
+    seatsTaken: 10,
+    availableSeats: 90,
     createdAt: '2025-01-01T00:00:00Z',
-    booking: {
-      id: `booking-${id}`,
-      bookingNumber: `BKG-${id}`,
-      bookingStatus: BOOKING_STATUS.USED,
-      userId: 'user-1',
-      showtimeId: 'showtime-1',
-      totalSeats: 1,
-      seatNumbers: ['A1'],
-      subtotal: 50000,
-      discountAmount: 0,
-      totalAmount: 50000,
-      paymentMethod: 'wallet',
-      paymentStatus: PAYMENT_STATUS.PAID,
-      expiresAt: '2025-01-01T00:00:00Z',
-      createdAt: '2025-01-01T00:00:00Z',
-      updatedAt: '2025-01-01T00:00:00Z',
-      showtime: {
-        id: 'showtime-1',
-        showDate: '2025-01-15',
-        showTime: '14:00',
-        endTime: '16:00',
-        price: 50000,
-        movie: {
-          id: 'movie-1',
-          title: `Test Movie ${id}`,
-          posterUrl: 'https://example.com/poster.jpg',
-          genre: [GENRE_MOVIE.ACTION],
-          durationMinutes: 120,
-          rating: 8.5,
-        },
-        cinemaHall: {
-          id: 'hall-1',
-          name: 'Hall 1',
-          hallType: 'Standard',
-          cinema: {
-            id: 'cinema-1',
-            name: 'Test Cinema',
-            city: 'Jakarta',
-            address: '123 Test St',
-          },
-        },
-      },
+    updatedAt: '2025-01-01T00:00:00Z',
+    movie: {
+      id: 'movie-1',
+      title: `Test Movie ${id}`,
+      durationMinutes: 120,
+      posterUrl: 'https://example.com/poster.jpg',
+      language: 'en',
+      rating: 8.5,
     },
-  }) as unknown as Ticket;
+    hall: {
+      id: 'hall-1',
+      name: 'Hall 1',
+      hallType: '2D',
+    },
+  },
+});
+
+const page = (
+  data: ReservationWithShowtime[],
+  pageNumber = 1,
+  hasMore = false,
+) => ({ data, page: pageNumber, hasMore });
 
 describe('MyTicketScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockTicketsData = undefined;
+    mockReservationsData = undefined;
     mockIsLoading = false;
     mockIsError = false;
     mockError = null;
@@ -199,7 +181,7 @@ describe('MyTicketScreen', () => {
   describe('Loading State', () => {
     it('should show skeleton cards when loading', () => {
       mockIsLoading = true;
-      mockTicketsData = { pages: [] };
+      mockReservationsData = { pages: [] };
 
       const { getAllByTestId } = render(<MyTicketScreen />);
 
@@ -209,7 +191,7 @@ describe('MyTicketScreen', () => {
 
     it('should render multiple skeleton cards when loading', () => {
       mockIsLoading = true;
-      mockTicketsData = { pages: [] };
+      mockReservationsData = { pages: [] };
 
       const { getAllByTestId } = render(<MyTicketScreen />);
 
@@ -222,7 +204,7 @@ describe('MyTicketScreen', () => {
     it('should show error message when loading fails', () => {
       mockIsError = true;
       mockError = new Error('Network error');
-      mockTicketsData = { pages: [] };
+      mockReservationsData = { pages: [] };
 
       const { getByText } = render(<MyTicketScreen />);
 
@@ -237,7 +219,7 @@ describe('MyTicketScreen', () => {
     it('should show retry button on error', () => {
       mockIsError = true;
       mockError = new Error('Network error');
-      mockTicketsData = { pages: [] };
+      mockReservationsData = { pages: [] };
 
       const { getByText } = render(<MyTicketScreen />);
 
@@ -247,7 +229,7 @@ describe('MyTicketScreen', () => {
     it('should call refetch when retry button is pressed', () => {
       mockIsError = true;
       mockError = new Error('Network error');
-      mockTicketsData = { pages: [] };
+      mockReservationsData = { pages: [] };
 
       const { getByText } = render(<MyTicketScreen />);
 
@@ -259,7 +241,7 @@ describe('MyTicketScreen', () => {
     it('should show default error message when error has no message', () => {
       mockIsError = true;
       mockError = new Error('');
-      mockTicketsData = { pages: [] };
+      mockReservationsData = { pages: [] };
 
       const { getByText } = render(<MyTicketScreen />);
 
@@ -269,7 +251,7 @@ describe('MyTicketScreen', () => {
 
   describe('Empty State', () => {
     it('should show empty message when no tickets', () => {
-      mockTicketsData = { pages: [] };
+      mockReservationsData = { pages: [] };
 
       const { getByText } = render(<MyTicketScreen />);
 
@@ -280,7 +262,7 @@ describe('MyTicketScreen', () => {
     });
 
     it('should show Book Now button when no tickets', () => {
-      mockTicketsData = { pages: [] };
+      mockReservationsData = { pages: [] };
 
       const { getByText } = render(<MyTicketScreen />);
 
@@ -288,7 +270,7 @@ describe('MyTicketScreen', () => {
     });
 
     it('should navigate to home when Book Now is pressed', () => {
-      mockTicketsData = { pages: [] };
+      mockReservationsData = { pages: [] };
 
       const { getByText } = render(<MyTicketScreen />);
 
@@ -298,7 +280,7 @@ describe('MyTicketScreen', () => {
     });
 
     it('should show active tickets empty message when active tab selected', () => {
-      mockTicketsData = { pages: [] };
+      mockReservationsData = { pages: [] };
 
       const { getByText } = render(<MyTicketScreen />);
 
@@ -312,7 +294,7 @@ describe('MyTicketScreen', () => {
     });
 
     it('should show expired tickets empty message when expired tab selected', () => {
-      mockTicketsData = { pages: [] };
+      mockReservationsData = { pages: [] };
 
       const { getByText } = render(<MyTicketScreen />);
 
@@ -328,8 +310,8 @@ describe('MyTicketScreen', () => {
 
   describe('Ticket Display', () => {
     it('should display tickets when data is available', () => {
-      const ticket = createMockTicket('1');
-      mockTicketsData = { pages: [[ticket]] };
+      const reservation = createMockReservation('1');
+      mockReservationsData = { pages: [page([reservation])] };
 
       const { getByText } = render(<MyTicketScreen />);
 
@@ -337,12 +319,12 @@ describe('MyTicketScreen', () => {
     });
 
     it('should display multiple tickets', () => {
-      const tickets = [
-        createMockTicket('1'),
-        createMockTicket('2'),
-        createMockTicket('3'),
+      const reservations = [
+        createMockReservation('1'),
+        createMockReservation('2'),
+        createMockReservation('3'),
       ];
-      mockTicketsData = { pages: [tickets] };
+      mockReservationsData = { pages: [page(reservations)] };
 
       const { getByText } = render(<MyTicketScreen />);
 
@@ -352,25 +334,25 @@ describe('MyTicketScreen', () => {
     });
 
     it('should navigate to ticket details when ticket is pressed', () => {
-      const ticket = createMockTicket('ticket-123');
-      mockTicketsData = { pages: [[ticket]] };
+      const reservation = createMockReservation('reservation-123');
+      mockReservationsData = { pages: [page([reservation])] };
 
       const { getByText } = render(<MyTicketScreen />);
 
-      fireEvent.press(getByText('Test Movie ticket-123'));
+      fireEvent.press(getByText('Test Movie reservation-123'));
 
-      expect(mockPush).toHaveBeenCalledWith('/(main)/tickets/ticket-123');
+      expect(mockPush).toHaveBeenCalledWith('/(main)/tickets/reservation-123');
     });
   });
 
   describe('Tab Filtering', () => {
     it('should show all tickets by default', () => {
-      const tickets = [
-        createMockTicket('1', BOOKING_STATUS.ACTIVE),
-        createMockTicket('2', BOOKING_STATUS.EXPIRED),
-        createMockTicket('3', BOOKING_STATUS.USED),
+      const reservations = [
+        createMockReservation('1', 'confirmed'),
+        createMockReservation('2', 'completed'),
+        createMockReservation('3', 'cancelled'),
       ];
-      mockTicketsData = { pages: [tickets] };
+      mockReservationsData = { pages: [page(reservations)] };
 
       const { getByText } = render(<MyTicketScreen />);
 
@@ -380,11 +362,11 @@ describe('MyTicketScreen', () => {
     });
 
     it('should filter active tickets when Active tab is selected', () => {
-      const tickets = [
-        createMockTicket('1', BOOKING_STATUS.ACTIVE),
-        createMockTicket('2', BOOKING_STATUS.EXPIRED),
+      const reservations = [
+        createMockReservation('1', 'confirmed'),
+        createMockReservation('2', 'completed'),
       ];
-      mockTicketsData = { pages: [tickets] };
+      mockReservationsData = { pages: [page(reservations)] };
 
       const { getByText, queryByText } = render(<MyTicketScreen />);
 
@@ -396,13 +378,12 @@ describe('MyTicketScreen', () => {
     });
 
     it('should filter expired tickets when Expired tab is selected', () => {
-      const tickets = [
-        createMockTicket('1', BOOKING_STATUS.ACTIVE),
-        createMockTicket('2', BOOKING_STATUS.EXPIRED),
-        createMockTicket('3', BOOKING_STATUS.USED),
-        createMockTicket('4', BOOKING_STATUS.CANCELLED),
+      const reservations = [
+        createMockReservation('1', 'confirmed'),
+        createMockReservation('2', 'completed'),
+        createMockReservation('3', 'cancelled'),
       ];
-      mockTicketsData = { pages: [tickets] };
+      mockReservationsData = { pages: [page(reservations)] };
 
       const { getByText, queryByText } = render(<MyTicketScreen />);
 
@@ -412,15 +393,14 @@ describe('MyTicketScreen', () => {
       expect(queryByText('Test Movie 1')).toBeNull();
       expect(getByText('Test Movie 2')).toBeTruthy();
       expect(getByText('Test Movie 3')).toBeTruthy();
-      expect(getByText('Test Movie 4')).toBeTruthy();
     });
 
     it('should switch back to All tab', () => {
-      const tickets = [
-        createMockTicket('1', BOOKING_STATUS.ACTIVE),
-        createMockTicket('2', BOOKING_STATUS.EXPIRED),
+      const reservations = [
+        createMockReservation('1', 'confirmed'),
+        createMockReservation('2', 'completed'),
       ];
-      mockTicketsData = { pages: [tickets] };
+      mockReservationsData = { pages: [page(reservations)] };
 
       const { getByText } = render(<MyTicketScreen />);
 
@@ -436,8 +416,8 @@ describe('MyTicketScreen', () => {
 
   describe('Pagination', () => {
     it('should call fetchNextPage when end is reached and hasNextPage', () => {
-      const ticket = createMockTicket('1');
-      mockTicketsData = { pages: [[ticket]] };
+      const reservation = createMockReservation('1');
+      mockReservationsData = { pages: [page([reservation])] };
       mockHasNextPage = true;
 
       const { getByLabelText } = render(<MyTicketScreen />);
@@ -449,8 +429,8 @@ describe('MyTicketScreen', () => {
     });
 
     it('should not call fetchNextPage when no next page', () => {
-      const ticket = createMockTicket('1');
-      mockTicketsData = { pages: [[ticket]] };
+      const reservation = createMockReservation('1');
+      mockReservationsData = { pages: [page([reservation])] };
       mockHasNextPage = false;
 
       const { getByLabelText } = render(<MyTicketScreen />);
@@ -462,8 +442,8 @@ describe('MyTicketScreen', () => {
     });
 
     it('should not call fetchNextPage when already fetching', () => {
-      const ticket = createMockTicket('1');
-      mockTicketsData = { pages: [[ticket]] };
+      const reservation = createMockReservation('1');
+      mockReservationsData = { pages: [page([reservation])] };
       mockHasNextPage = true;
       mockIsFetchingNextPage = true;
 
@@ -476,8 +456,8 @@ describe('MyTicketScreen', () => {
     });
 
     it('should show loading footer when fetching next page', () => {
-      const ticket = createMockTicket('1');
-      mockTicketsData = { pages: [[ticket]] };
+      const reservation = createMockReservation('1');
+      mockReservationsData = { pages: [page([reservation])] };
       mockIsFetchingNextPage = true;
 
       const { getByText } = render(<MyTicketScreen />);
@@ -487,9 +467,9 @@ describe('MyTicketScreen', () => {
   });
 
   describe('Pull to Refresh', () => {
-    it('should call checkExpiredTickets and refetch on refresh', async () => {
-      const ticket = createMockTicket('1');
-      mockTicketsData = { pages: [[ticket]] };
+    it('should call refetch on refresh', async () => {
+      const reservation = createMockReservation('1');
+      mockReservationsData = { pages: [page([reservation])] };
 
       const { getByLabelText } = render(<MyTicketScreen />);
 
@@ -498,24 +478,13 @@ describe('MyTicketScreen', () => {
 
       await refreshControl.props.onRefresh();
 
-      expect(mockCheckExpiredTickets).toHaveBeenCalled();
       expect(mockRefetch).toHaveBeenCalled();
-    });
-  });
-
-  describe('Focus Effect', () => {
-    it('should check expired tickets when screen focuses', () => {
-      mockTicketsData = { pages: [] };
-
-      render(<MyTicketScreen />);
-
-      expect(mockCheckExpiredTickets).toHaveBeenCalled();
     });
   });
 
   describe('Accessibility', () => {
     it('should have accessibility label for screen', () => {
-      mockTicketsData = { pages: [] };
+      mockReservationsData = { pages: [] };
 
       const { getByLabelText } = render(<MyTicketScreen />);
 
@@ -523,8 +492,8 @@ describe('MyTicketScreen', () => {
     });
 
     it('should have accessibility label for tickets list', () => {
-      const ticket = createMockTicket('1');
-      mockTicketsData = { pages: [[ticket]] };
+      const reservation = createMockReservation('1');
+      mockReservationsData = { pages: [page([reservation])] };
 
       const { getByLabelText } = render(<MyTicketScreen />);
 
@@ -532,11 +501,11 @@ describe('MyTicketScreen', () => {
     });
 
     it('should update accessibility label based on filter', () => {
-      const tickets = [
-        createMockTicket('1', BOOKING_STATUS.ACTIVE),
-        createMockTicket('2', BOOKING_STATUS.ACTIVE),
+      const reservations = [
+        createMockReservation('1', 'confirmed'),
+        createMockReservation('2', 'confirmed'),
       ];
-      mockTicketsData = { pages: [tickets] };
+      mockReservationsData = { pages: [page(reservations)] };
 
       const { getByLabelText, getByText } = render(<MyTicketScreen />);
 
@@ -549,8 +518,8 @@ describe('MyTicketScreen', () => {
     });
 
     it('should have accessibility label for loading more', () => {
-      const ticket = createMockTicket('1');
-      mockTicketsData = { pages: [[ticket]] };
+      const reservation = createMockReservation('1');
+      mockReservationsData = { pages: [page([reservation])] };
       mockIsFetchingNextPage = true;
 
       const { getByLabelText } = render(<MyTicketScreen />);
@@ -561,7 +530,7 @@ describe('MyTicketScreen', () => {
     it('should have accessibility role for error state', () => {
       mockIsError = true;
       mockError = new Error('Error');
-      mockTicketsData = { pages: [] };
+      mockReservationsData = { pages: [] };
 
       const { UNSAFE_queryAllByProps } = render(<MyTicketScreen />);
 
@@ -574,7 +543,7 @@ describe('MyTicketScreen', () => {
     it('should have accessibility label for retry button', () => {
       mockIsError = true;
       mockError = new Error('Error');
-      mockTicketsData = { pages: [] };
+      mockReservationsData = { pages: [] };
 
       const { getByLabelText } = render(<MyTicketScreen />);
 
@@ -582,7 +551,7 @@ describe('MyTicketScreen', () => {
     });
 
     it('should have accessibility label for book now button', () => {
-      mockTicketsData = { pages: [] };
+      mockReservationsData = { pages: [] };
 
       const { getByLabelText } = render(<MyTicketScreen />);
 
@@ -590,8 +559,8 @@ describe('MyTicketScreen', () => {
     });
 
     it('should have accessibility label for pull to refresh', () => {
-      const ticket = createMockTicket('1');
-      mockTicketsData = { pages: [[ticket]] };
+      const reservation = createMockReservation('1');
+      mockReservationsData = { pages: [page([reservation])] };
 
       const { getByLabelText } = render(<MyTicketScreen />);
 
@@ -604,7 +573,7 @@ describe('MyTicketScreen', () => {
 
   describe('Tabs Display', () => {
     it('should render all tab options', () => {
-      mockTicketsData = { pages: [] };
+      mockReservationsData = { pages: [] };
 
       const { getByText } = render(<MyTicketScreen />);
 
@@ -615,32 +584,12 @@ describe('MyTicketScreen', () => {
   });
 
   describe('Ticket with Missing Data', () => {
-    it('should not render ticket without booking', () => {
-      const ticket = {
-        ...createMockTicket('1'),
-        booking: undefined,
-      } as unknown as Ticket;
-      mockTicketsData = { pages: [[ticket]] };
-
-      const { queryByText } = render(<MyTicketScreen />);
-
-      expect(queryByText('Test Movie 1')).toBeNull();
-    });
-
-    it('should not render ticket without movie', () => {
-      const ticket = createMockTicket('1');
-      (ticket.booking!.showtime as any).movie = undefined;
-      mockTicketsData = { pages: [[ticket]] };
-
-      const { queryByText } = render(<MyTicketScreen />);
-
-      expect(queryByText('Test Movie 1')).toBeNull();
-    });
-
-    it('should not render ticket without cinema', () => {
-      const ticket = createMockTicket('1');
-      (ticket.booking!.showtime!.cinemaHall as any).cinema = undefined;
-      mockTicketsData = { pages: [[ticket]] };
+    it('should not render a reservation without a resolved showtime/movie', () => {
+      const reservation = {
+        ...createMockReservation('1'),
+        showtime: undefined,
+      };
+      mockReservationsData = { pages: [page([reservation])] };
 
       const { queryByText } = render(<MyTicketScreen />);
 
@@ -650,9 +599,9 @@ describe('MyTicketScreen', () => {
 
   describe('Multiple Pages', () => {
     it('should flatten multiple pages of tickets', () => {
-      const page1 = [createMockTicket('1'), createMockTicket('2')];
-      const page2 = [createMockTicket('3'), createMockTicket('4')];
-      mockTicketsData = { pages: [page1, page2] };
+      const page1 = [createMockReservation('1'), createMockReservation('2')];
+      const page2 = [createMockReservation('3'), createMockReservation('4')];
+      mockReservationsData = { pages: [page(page1), page(page2, 2, false)] };
 
       const { getByText } = render(<MyTicketScreen />);
 

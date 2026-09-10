@@ -6,7 +6,7 @@ import CheckoutScreen from '../index';
 // Mock dependencies
 const mockDismissAll = jest.fn();
 const mockReplace = jest.fn();
-const mockCreateBooking = jest.fn();
+const mockConfirmReservation = jest.fn();
 const mockShowLoading = jest.fn();
 const mockHideLoading = jest.fn();
 const mockToastSuccess = jest.fn();
@@ -24,9 +24,9 @@ jest.mock('expo-router', () => ({
   }),
 }));
 
-jest.mock('@/features/booking/hooks/useBookings', () => ({
-  useCreateBooking: () => ({
-    mutate: mockCreateBooking,
+jest.mock('@/features/booking/hooks/useReservations', () => ({
+  useConfirmReservation: () => ({
+    mutate: mockConfirmReservation,
     get isPending() {
       return mockIsPending;
     },
@@ -55,13 +55,6 @@ jest.mock('@/hooks/usePushNotifications', () => ({
   }),
 }));
 
-jest.mock('@/features/auth/store/auth', () => ({
-  useAuthStore: (selector: any) =>
-    selector({
-      user: { id: 'user1', email: 'test@example.com' },
-    }),
-}));
-
 const mockGetTotalAmount = jest.fn(() => 100);
 const mockUseBookingStore = jest.fn((selector: any) =>
   selector({
@@ -88,12 +81,11 @@ const mockUseBookingStore = jest.fn((selector: any) =>
       },
     },
     selectedSeats: [
-      { seatId: 'seat-A1', seatLabel: 'A1' },
-      { seatId: 'seat-A2', seatLabel: 'A2' },
+      { seatId: 'seat-A1', seatLabel: 'A1', holdId: 'hold-1' },
+      { seatId: 'seat-A2', seatLabel: 'A2', holdId: 'hold-2' },
     ],
+    holdIds: ['hold-1', 'hold-2'],
     reservationId: 'reservation123',
-    promoCode: null,
-    discountAmount: 0,
     getTotalAmount: mockGetTotalAmount,
   }),
 );
@@ -203,10 +195,11 @@ describe('CheckoutScreen', () => {
               hallType: 'IMAX',
             },
           },
-          selectedSeats: [{ seatId: 'seat-A1', seatLabel: 'A1' }],
+          selectedSeats: [
+            { seatId: 'seat-A1', seatLabel: 'A1', holdId: 'hold-1' },
+          ],
+          holdIds: ['hold-1'],
           reservationId: null,
-          promoCode: null,
-          discountAmount: 0,
           getTotalAmount: mockGetTotalAmount,
         }),
       );
@@ -220,7 +213,7 @@ describe('CheckoutScreen', () => {
   });
 
   describe('Checkout Flow', () => {
-    it('should call createBooking with correct data on checkout', () => {
+    it('should confirm the reservation with the held seat ids on checkout', () => {
       const { getByTestId } = render(<CheckoutScreen />, {
         wrapper: createWrapper(),
       });
@@ -228,147 +221,32 @@ describe('CheckoutScreen', () => {
       const button = getByTestId('checkout-button');
       fireEvent.press(button);
 
-      expect(mockShowLoading).toHaveBeenCalledWith('Creating your booking...');
-      expect(mockCreateBooking).toHaveBeenCalledWith(
-        {
-          userId: 'user1',
-          showtimeId: 'showtime1',
-          seats: ['A1', 'A2'],
-          totalAmount: 100,
-        },
-        expect.any(Object),
+      expect(mockShowLoading).toHaveBeenCalledWith(
+        'Confirming your reservation...',
       );
-    });
-
-    it('should include promoCodeId when promoCode is available', () => {
-      mockUseBookingStore.mockImplementationOnce((selector: any) =>
-        selector({
-          selectedMovie: {
-            id: 'movie1',
-            title: 'Test Movie',
-            posterUrl: 'https://example.com/poster.jpg',
-            rating: 4.5,
-            genre: ['Action'],
-            durationMinutes: 120,
-          },
-          selectedShowtime: {
-            id: 'showtime1',
-            movieId: 'movie1',
-            hallId: 'hall1',
-            showDate: '2024-01-15',
-            showTime: '14:00',
-            endTime: '16:00',
-            basePrice: 50,
-            hall: {
-              id: 'hall1',
-              name: 'Hall 1',
-              hallType: 'IMAX',
-            },
-          },
-          selectedSeats: [{ seatId: 'seat-A1', seatLabel: 'A1' }],
-          reservationId: 'reservation123',
-          promoCode: 'PROMO123',
-          discountAmount: 10,
-          getTotalAmount: mockGetTotalAmount,
-        }),
-      );
-
-      const { getByTestId } = render(<CheckoutScreen />, {
-        wrapper: createWrapper(),
-      });
-
-      const button = getByTestId('checkout-button');
-      fireEvent.press(button);
-
-      expect(mockCreateBooking).toHaveBeenCalledWith(
-        {
-          userId: 'user1',
-          showtimeId: 'showtime1',
-          seats: ['A1'],
-          totalAmount: 100,
-          promoCodeId: 'PROMO123',
-          discountAmount: 10,
-        },
-        expect.any(Object),
-      );
-    });
-
-    it('should include discountAmount when greater than 0', () => {
-      mockUseBookingStore.mockImplementationOnce((selector: any) =>
-        selector({
-          selectedMovie: {
-            id: 'movie1',
-            title: 'Test Movie',
-            posterUrl: 'https://example.com/poster.jpg',
-            rating: 4.5,
-            genre: ['Action'],
-            durationMinutes: 120,
-          },
-          selectedShowtime: {
-            id: 'showtime1',
-            movieId: 'movie1',
-            hallId: 'hall1',
-            showDate: '2024-01-15',
-            showTime: '14:00',
-            endTime: '16:00',
-            basePrice: 50,
-            hall: {
-              id: 'hall1',
-              name: 'Hall 1',
-              hallType: 'IMAX',
-            },
-          },
-          selectedSeats: [{ seatId: 'seat-A1', seatLabel: 'A1' }],
-          reservationId: 'reservation123',
-          promoCode: null,
-          discountAmount: 20,
-          getTotalAmount: mockGetTotalAmount,
-        }),
-      );
-
-      const { getByTestId } = render(<CheckoutScreen />, {
-        wrapper: createWrapper(),
-      });
-
-      const button = getByTestId('checkout-button');
-      fireEvent.press(button);
-
-      expect(mockCreateBooking).toHaveBeenCalledWith(
-        expect.objectContaining({
-          discountAmount: 20,
-        }),
-        expect.any(Object),
-      );
-    });
-
-    it('should not include discountAmount when 0', () => {
-      const { getByTestId } = render(<CheckoutScreen />, {
-        wrapper: createWrapper(),
-      });
-
-      const button = getByTestId('checkout-button');
-      fireEvent.press(button);
-
-      expect(mockCreateBooking).toHaveBeenCalledWith(
-        expect.not.objectContaining({
-          discountAmount: expect.anything(),
-        }),
+      expect(mockConfirmReservation).toHaveBeenCalledWith(
+        ['hold-1', 'hold-2'],
         expect.any(Object),
       );
     });
   });
 
   describe('Success Flow', () => {
-    it('should schedule notifications on successful booking', async () => {
-      const mockBooking = {
-        id: 'booking1',
+    it('should schedule notifications on successful confirmation', async () => {
+      const mockReservation = {
+        id: 'reservation1',
+        reservationNumber: 'RSV-1',
         userId: 'user1',
         showtimeId: 'showtime1',
+        status: 'confirmed',
+        totalSeats: 2,
+        totalAmount: 100,
+        createdAt: '2024-01-15T00:00:00.000Z',
         tickets: [{ id: 'ticket1' }, { id: 'ticket2' }],
       };
 
-      let onSuccessCallback: (booking: any) => Promise<void>;
-      mockCreateBooking.mockImplementation((data, callbacks) => {
+      let onSuccessCallback: (reservation: any) => Promise<void>;
+      mockConfirmReservation.mockImplementation((holdIds, callbacks) => {
         onSuccessCallback = callbacks.onSuccess;
       });
 
@@ -380,11 +258,11 @@ describe('CheckoutScreen', () => {
       fireEvent.press(button);
 
       await waitFor(() => {
-        expect(mockCreateBooking).toHaveBeenCalled();
+        expect(mockConfirmReservation).toHaveBeenCalled();
       });
 
       if (onSuccessCallback!) {
-        await onSuccessCallback(mockBooking);
+        await onSuccessCallback(mockReservation);
       }
 
       expect(mockScheduleTicketExpiration).toHaveBeenCalledTimes(2);
@@ -401,23 +279,29 @@ describe('CheckoutScreen', () => {
         selector({
           selectedMovie: null,
           selectedShowtime: null,
-          selectedSeats: [{ seatId: 'seat-A1', seatLabel: 'A1' }],
+          selectedSeats: [
+            { seatId: 'seat-A1', seatLabel: 'A1', holdId: 'hold-1' },
+          ],
+          holdIds: ['hold-1'],
           reservationId: 'reservation123',
-          promoCode: null,
-          discountAmount: 0,
           getTotalAmount: mockGetTotalAmount,
         }),
       );
 
-      const mockBooking = {
-        id: 'booking1',
+      const mockReservation = {
+        id: 'reservation1',
+        reservationNumber: 'RSV-1',
         userId: 'user1',
         showtimeId: 'showtime1',
+        status: 'confirmed',
+        totalSeats: 1,
+        totalAmount: 50,
+        createdAt: '2024-01-15T00:00:00.000Z',
         tickets: [{ id: 'ticket1' }],
       };
 
-      let onSuccessCallback: (booking: any) => Promise<void>;
-      mockCreateBooking.mockImplementation((data, callbacks) => {
+      let onSuccessCallback: (reservation: any) => Promise<void>;
+      mockConfirmReservation.mockImplementation((holdIds, callbacks) => {
         onSuccessCallback = callbacks.onSuccess;
       });
 
@@ -429,11 +313,11 @@ describe('CheckoutScreen', () => {
       fireEvent.press(button);
 
       await waitFor(() => {
-        expect(mockCreateBooking).toHaveBeenCalled();
+        expect(mockConfirmReservation).toHaveBeenCalled();
       });
 
       if (onSuccessCallback!) {
-        await onSuccessCallback(mockBooking);
+        await onSuccessCallback(mockReservation);
       }
 
       // Should not schedule notifications when showtime/movie is missing
@@ -449,15 +333,20 @@ describe('CheckoutScreen', () => {
         new Error('Notification error'),
       );
 
-      const mockBooking = {
-        id: 'booking1',
+      const mockReservation = {
+        id: 'reservation1',
+        reservationNumber: 'RSV-1',
         userId: 'user1',
         showtimeId: 'showtime1',
+        status: 'confirmed',
+        totalSeats: 1,
+        totalAmount: 50,
+        createdAt: '2024-01-15T00:00:00.000Z',
         tickets: [{ id: 'ticket1' }],
       };
 
-      let onSuccessCallback: (booking: any) => Promise<void>;
-      mockCreateBooking.mockImplementation((data, callbacks) => {
+      let onSuccessCallback: (reservation: any) => Promise<void>;
+      mockConfirmReservation.mockImplementation((holdIds, callbacks) => {
         onSuccessCallback = callbacks.onSuccess;
       });
 
@@ -469,11 +358,11 @@ describe('CheckoutScreen', () => {
       fireEvent.press(button);
 
       await waitFor(() => {
-        expect(mockCreateBooking).toHaveBeenCalled();
+        expect(mockConfirmReservation).toHaveBeenCalled();
       });
 
       if (onSuccessCallback!) {
-        await onSuccessCallback(mockBooking);
+        await onSuccessCallback(mockReservation);
       }
 
       // Should still complete checkout even if notifications fail
@@ -481,16 +370,21 @@ describe('CheckoutScreen', () => {
       expect(mockDismissAll).toHaveBeenCalled();
     });
 
-    it('should handle booking with no tickets', async () => {
-      const mockBooking = {
-        id: 'booking1',
+    it('should handle a reservation with no tickets', async () => {
+      const mockReservation = {
+        id: 'reservation1',
+        reservationNumber: 'RSV-1',
         userId: 'user1',
         showtimeId: 'showtime1',
+        status: 'confirmed',
+        totalSeats: 0,
+        totalAmount: 0,
+        createdAt: '2024-01-15T00:00:00.000Z',
         tickets: [],
       };
 
-      let onSuccessCallback: (booking: any) => Promise<void>;
-      mockCreateBooking.mockImplementation((data, callbacks) => {
+      let onSuccessCallback: (reservation: any) => Promise<void>;
+      mockConfirmReservation.mockImplementation((holdIds, callbacks) => {
         onSuccessCallback = callbacks.onSuccess;
       });
 
@@ -502,11 +396,11 @@ describe('CheckoutScreen', () => {
       fireEvent.press(button);
 
       await waitFor(() => {
-        expect(mockCreateBooking).toHaveBeenCalled();
+        expect(mockConfirmReservation).toHaveBeenCalled();
       });
 
       if (onSuccessCallback!) {
-        await onSuccessCallback(mockBooking);
+        await onSuccessCallback(mockReservation);
       }
 
       // Should not schedule notifications for empty tickets
@@ -518,10 +412,10 @@ describe('CheckoutScreen', () => {
   });
 
   describe('Error Flow', () => {
-    it('should handle booking creation error', async () => {
-      const mockError = new Error('Booking failed');
+    it('should handle a reservation confirmation error', async () => {
+      const mockError = new Error('Confirmation failed');
       let onErrorCallback: (error: Error) => void;
-      mockCreateBooking.mockImplementation((data, callbacks) => {
+      mockConfirmReservation.mockImplementation((holdIds, callbacks) => {
         onErrorCallback = callbacks.onError;
       });
 
@@ -533,20 +427,20 @@ describe('CheckoutScreen', () => {
       fireEvent.press(button);
 
       await waitFor(() => {
-        expect(mockCreateBooking).toHaveBeenCalled();
+        expect(mockConfirmReservation).toHaveBeenCalled();
       });
 
       if (onErrorCallback!) {
         onErrorCallback(mockError);
       }
 
-      expect(mockToastError).toHaveBeenCalledWith('Booking failed');
+      expect(mockToastError).toHaveBeenCalledWith('Confirmation failed');
     });
 
     it('should use default error message when error message is missing', async () => {
       const mockError = new Error('');
       let onErrorCallback: (error: Error) => void;
-      mockCreateBooking.mockImplementation((data, callbacks) => {
+      mockConfirmReservation.mockImplementation((holdIds, callbacks) => {
         onErrorCallback = callbacks.onError;
       });
 
@@ -558,7 +452,7 @@ describe('CheckoutScreen', () => {
       fireEvent.press(button);
 
       await waitFor(() => {
-        expect(mockCreateBooking).toHaveBeenCalled();
+        expect(mockConfirmReservation).toHaveBeenCalled();
       });
 
       if (onErrorCallback!) {
@@ -570,42 +464,7 @@ describe('CheckoutScreen', () => {
   });
 
   describe('Edge Cases', () => {
-    it('should handle missing showtime ID', () => {
-      mockUseBookingStore.mockImplementationOnce((selector: any) =>
-        selector({
-          selectedMovie: {
-            id: 'movie1',
-            title: 'Test Movie',
-            posterUrl: 'https://example.com/poster.jpg',
-            rating: 4.5,
-            genre: ['Action'],
-            durationMinutes: 120,
-          },
-          selectedShowtime: null,
-          selectedSeats: [{ seatId: 'seat-A1', seatLabel: 'A1' }],
-          reservationId: 'reservation123',
-          promoCode: null,
-          discountAmount: 0,
-          getTotalAmount: mockGetTotalAmount,
-        }),
-      );
-
-      const { getByTestId } = render(<CheckoutScreen />, {
-        wrapper: createWrapper(),
-      });
-
-      const button = getByTestId('checkout-button');
-      fireEvent.press(button);
-
-      expect(mockCreateBooking).toHaveBeenCalledWith(
-        expect.objectContaining({
-          showtimeId: '',
-        }),
-        expect.any(Object),
-      );
-    });
-
-    it('should handle empty seats array', () => {
+    it('should not confirm and should show an error when there are no held seats', () => {
       mockUseBookingStore.mockImplementationOnce((selector: any) =>
         selector({
           selectedMovie: {
@@ -631,9 +490,8 @@ describe('CheckoutScreen', () => {
             },
           },
           selectedSeats: [],
+          holdIds: [],
           reservationId: 'reservation123',
-          promoCode: null,
-          discountAmount: 0,
           getTotalAmount: mockGetTotalAmount,
         }),
       );
@@ -645,12 +503,9 @@ describe('CheckoutScreen', () => {
       const button = getByTestId('checkout-button');
       fireEvent.press(button);
 
-      expect(mockCreateBooking).toHaveBeenCalledWith(
-        expect.objectContaining({
-          seats: [],
-        }),
-        expect.any(Object),
-      );
+      expect(mockConfirmReservation).not.toHaveBeenCalled();
+      expect(mockShowLoading).not.toHaveBeenCalled();
+      expect(mockToastError).toHaveBeenCalled();
     });
   });
 });

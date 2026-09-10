@@ -132,6 +132,29 @@ the application skeleton over a designed schema.
   fabricated client-side (`src/utils/data.ts`) rather than read from
   `GET /showtimes/:id/seats`, and `LocationDropdown` plus `services/cinema.ts` with its tag and
   layer are kept in the tree although nothing references them any more.
+  **Stale as of this entry**: the seat map and holds are no longer fabricated — see the next
+  bullet.
+- **Mobile checkout and tickets now confirm through `@movea/api`'s reservations, with no
+  payment step.** `apps/mobile`'s Seats screen already held seats through
+  `POST /showtimes/:id/hold` (ADR-007); Checkout now calls the real `POST /reservations` with
+  those `holdIds` (`features/booking/services/reservations.ts`,
+  `hooks/useReservations.ts`) instead of the Supabase RPC `create_booking_with_payment`, and
+  `features/ticket`'s list/detail screens read `GET /reservations/me` /
+  `GET /reservations/:id` instead of Supabase's `tickets`/`bookings` tables. Deliberately not
+  done: **no wallet debit** — `ConfirmReservationDto` has no payment field and `apps/api` has
+  no wallet/payment module, so a confirmed reservation is currently free; `features/wallet/**`
+  is untouched and unconnected to checkout. Also not done: ticket QR **validation** — the API
+  has no scan/mark-used endpoint, so the QR code the detail screen renders is a
+  client-generated, cosmetic value with no backend effect, and `useValidateTicket` /
+  `ticketsService.validateTicket` (Supabase) are unused by this flow. `cinema.ts`,
+  `booking.ts`'s Supabase reads, `tickets.ts`, and `ticketExpiration.ts` were left in place —
+  now genuinely dead code on the paths this migrated, kept until a dedicated Supabase-removal
+  pass. The pre-ADR-007 `reserveSeats`/`releaseSeats`/`reservationId` path (`services/booking.ts`,
+  `store/booking.ts`) was already dead before this change (nothing set `reservationId`) and is
+  still not deleted. See
+  [DDR-018](ddr/0018-mobile-migration-scope-and-dead-code-retention.md) for the retention rule
+  and the list of what's genuinely blocked on an API endpoint versus already out of scope by
+  DDR-010.
 
 ## Keeping this current
 
