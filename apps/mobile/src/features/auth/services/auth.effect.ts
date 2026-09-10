@@ -1,16 +1,12 @@
-import { makeRedirectUri } from 'expo-auth-session';
 import { Effect } from 'effect';
 
 import type { AuthUser, TokenPair } from '@movea/api-contract';
 
 // Constants
-import { ERROR_MESSAGES, ROUTES } from '@/constants';
+import { ERROR_MESSAGES } from '@/constants';
 
 // HTTP
 import { apiRequest } from '@/services/api/client';
-
-// Supabase — still backs the password-reset flow until the API grows one
-import { supabase } from '@/services/supabase/client';
 
 // Types
 import {
@@ -181,85 +177,20 @@ export class AuthServiceEffect {
     });
   }
 
-  // ---------------------------------------------------------------------------
-  // Password reset / change — still on Supabase.
-  // TODO: migrate to PATCH /users/me/password once the API exposes reset email.
-  // ---------------------------------------------------------------------------
-
-  resetPassword(email: string) {
-    return Effect.gen(function* () {
-      const redirectUrl = yield* Effect.try({
-        try: () =>
-          makeRedirectUri({
-            scheme: 'movieticketbooking',
-            path: ROUTES.RESET_PASSWORD,
-          }),
-        catch: (error: unknown) =>
-          AuthenticationError.updatePasswordFailed(messageOf(error)),
-      });
-
-      const result = yield* Effect.tryPromise({
-        try: async () =>
-          await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: redirectUrl,
-          }),
-        catch: (error: unknown) =>
-          AuthenticationError.updatePasswordFailed(messageOf(error)),
-      });
-
-      if (result.error) {
-        return yield* Effect.fail(
-          AuthenticationError.updatePasswordFailed(result.error.message),
-        );
-      }
-    });
-  }
-
-  updatePassword(newPassword: string) {
-    return Effect.gen(function* () {
-      const { error } = yield* Effect.tryPromise({
-        try: async () =>
-          await supabase.auth.updateUser({
-            password: newPassword,
-          }),
-        catch: (error: unknown) =>
-          AuthenticationError.updatePasswordFailed(messageOf(error)),
-      });
-
-      if (error) {
-        return yield* Effect.fail(
-          AuthenticationError.updatePasswordFailed(error.message),
-        );
-      }
-
-      return true;
-    });
-  }
-
   /**
-   * Verify the user's current password by signing in with it.
-   * Used by the change-password flow before allowing an update.
+   * Send a password-reset email.
+   *
+   * Not implemented yet — the API has no password-reset-by-email endpoint,
+   * and Supabase's email-link flow is no longer wired up. Kept as a stub so
+   * the "Forgot password?" screen still compiles and renders until this is
+   * built against `@movea/api`.
    */
-  verifyCurrentPassword(email: string, password: string) {
-    return Effect.gen(function* () {
-      const { error } = yield* Effect.tryPromise({
-        try: async () =>
-          await supabase.auth.signInWithPassword({
-            email,
-            password,
-          }),
-        catch: (error: unknown) =>
-          AuthenticationError.currentPasswordIncorrect(messageOf(error)),
-      });
-
-      if (error) {
-        return yield* Effect.fail(
-          AuthenticationError.currentPasswordIncorrect(error.message),
-        );
-      }
-
-      return true;
-    });
+  resetPassword(_email: string) {
+    return Effect.fail(
+      AuthenticationError.updatePasswordFailed(
+        'Password reset by email is not available yet.',
+      ),
+    );
   }
 }
 

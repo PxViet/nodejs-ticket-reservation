@@ -18,11 +18,6 @@ jest.mock('@/features/auth/services/auth.effect', () => ({
   },
 }));
 
-// Mock supabase client so the real client (and its storage adapter using secureStorage) never loads
-jest.mock('@/services/supabase/client', () => ({
-  wipeSupabaseSecrets: jest.fn(),
-}));
-
 jest.mock('@/services/storage/secure', () => ({
   secureStorage: {
     getItem: jest.fn().mockResolvedValue(null),
