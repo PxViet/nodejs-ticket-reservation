@@ -40,6 +40,8 @@ export type AuthUser = Schemas['MeResponseDto'];
 export type UserProfile = Schemas['UserResponseDto'];
 /** `PATCH /users/me` request body. */
 export type UpdateUserProfileRequest = Schemas['UpdateProfileDto'];
+/** `PATCH /users/me/password` request body — proves the current password first (DDR-013). */
+export type ChangePasswordRequest = Schemas['ChangePasswordDto'];
 
 /** A movie in the public catalogue — `GET /movies` / `GET /movies/:id`. */
 export type Movie = Schemas['MovieResponseDto'];

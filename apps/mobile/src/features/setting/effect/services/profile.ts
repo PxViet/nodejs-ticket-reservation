@@ -5,7 +5,11 @@ import { Effect, Context } from 'effect';
 import { SettingError } from '../../error';
 
 // Types
-import { UpdateProfileData, UserProfile } from '@/features/auth/types/auth';
+import {
+  ChangePasswordData,
+  UpdateProfileData,
+  UserProfile,
+} from '@/features/auth/types/auth';
 
 export class ProfileService extends Context.Tag('ProfileServiceTag')<
   ProfileService,
@@ -15,6 +19,10 @@ export class ProfileService extends Context.Tag('ProfileServiceTag')<
     readonly updateProfile: (
       data: UpdateProfileData,
     ) => Effect.Effect<UserProfile, SettingError, never>;
+
+    readonly changePassword: (
+      data: ChangePasswordData,
+    ) => Effect.Effect<void, SettingError, never>;
 
     readonly uploadAvatar: (
       userId: string,

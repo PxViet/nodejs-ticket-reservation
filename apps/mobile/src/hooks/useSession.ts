@@ -4,9 +4,6 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 // Constants
 import { API_CONFIG } from '@/constants';
 
-// Store
-import { useAuthStore } from '@/features/auth/store/auth';
-
 // Types
 import { ChangePasswordData } from '@/features/auth/types/auth';
 
@@ -16,6 +13,8 @@ import { runEffectForQuery } from '@/utils/effect';
 // Effect Services
 import { AuthService } from '@/features/auth/effect/services';
 import { AuthServiceLayer } from '@/features/auth/layer';
+import { ProfileService } from '@/features/setting/effect/services/profile';
+import { ProfileServiceLayer } from '@/features/setting/effect/layer/profile';
 
 export const useSession = () => {
   return useQuery({
@@ -46,8 +45,9 @@ export const useRefreshSession = () => {
 };
 
 /**
- * Hook for requesting password reset email
- * Sends reset link to user's email
+ * Request a password-reset email.
+ *
+ * Not implemented yet — see `AuthServiceEffect.resetPassword`.
  */
 export const useResetPassword = () => {
   return useMutation({
@@ -65,39 +65,18 @@ export const useResetPassword = () => {
 };
 
 /**
- * Hook for updating user password with current password verification
- * Verifies current password before allowing update
+ * Change the authenticated user's password via `PATCH /users/me/password`.
+ * The API proves the current password itself (DDR-013) in one round trip.
  */
 export const useUpdatePassword = () => {
-  const user = useAuthStore(state => state.user);
-
   return useMutation({
-    mutationFn: async (data: ChangePasswordData) => {
-      if (!user?.email) {
-        throw new Error('No authenticated user found');
-      }
-
-      // Step 1: Verify current password
-      await runEffectForQuery(
+    mutationFn: (data: ChangePasswordData) =>
+      runEffectForQuery(
         Effect.gen(function* () {
-          const authService = yield* AuthService;
-          return yield* authService.verifyCurrentPassword(
-            user.email!,
-            data.currentPassword,
-          );
+          const profileService = yield* ProfileService;
+          yield* profileService.changePassword(data);
         }),
-        AuthServiceLayer,
-      );
-
-      // Step 2: Update to new password
-      await runEffectForQuery(
-        Effect.gen(function* () {
-          const authService = yield* AuthService;
-          return yield* authService.updatePassword(data.newPassword);
-        }),
-        AuthServiceLayer,
-      );
-      return { success: true };
-    },
+        ProfileServiceLayer,
+      ).then(() => ({ success: true })),
   });
 };

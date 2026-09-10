@@ -4,7 +4,10 @@ import { Effect, Layer } from 'effect';
 import { profileService } from '../../services/profile';
 
 // Types
-import { UpdateProfileData } from '@/features/auth/types/auth';
+import {
+  ChangePasswordData,
+  UpdateProfileData,
+} from '@/features/auth/types/auth';
 
 // Effect
 import { ProfileService } from '../services/profile';
@@ -17,6 +20,9 @@ export const ProfileServiceLayer = Layer.effect(
 
       updateProfile: (data: UpdateProfileData) =>
         profileService.updateProfile(data),
+
+      changePassword: (data: ChangePasswordData) =>
+        profileService.changePassword(data),
 
       uploadAvatar: (
         userId: string,

@@ -1,4 +1,5 @@
 import { authServiceEffect } from '@/features/auth/services/auth.effect';
+import { profileService } from '@/features/setting/services/profile';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react-native';
 import { Effect } from 'effect';
@@ -15,15 +16,13 @@ jest.mock('@/features/auth/services/auth.effect', () => ({
     getSession: jest.fn(),
     refreshSession: jest.fn(),
     resetPassword: jest.fn(),
-    verifyCurrentPassword: jest.fn(),
-    updatePassword: jest.fn(),
   },
 }));
 
-const mockUseAuthStore = jest.fn();
-
-jest.mock('@/features/auth/store/auth', () => ({
-  useAuthStore: (selector: any) => mockUseAuthStore(selector),
+jest.mock('@/features/setting/services/profile', () => ({
+  profileService: {
+    changePassword: jest.fn(),
+  },
 }));
 
 jest.mock('@/constants', () => ({
@@ -142,16 +141,14 @@ describe('useRefreshSession', () => {
 describe('useResetPassword', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.spyOn(console, 'error').mockImplementation();
   });
 
-  afterEach(() => {
-    jest.restoreAllMocks();
-  });
-
-  it('should call authService.resetPassword with email', async () => {
+  it('is not implemented yet — surfaces the stub error', async () => {
+    const mockError = new Error(
+      'Password reset by email is not available yet.',
+    );
     (authServiceEffect.resetPassword as jest.Mock).mockReturnValue(
-      Effect.succeed(undefined),
+      Effect.fail(mockError),
     );
 
     const { result } = renderHook(() => useResetPassword(), {
@@ -161,70 +158,24 @@ describe('useResetPassword', () => {
     result.current.mutate('test@example.com');
 
     await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
+      expect(result.current.isError).toBe(true);
     });
 
     expect(authServiceEffect.resetPassword).toHaveBeenCalledWith(
       'test@example.com',
     );
-    expect(authServiceEffect.resetPassword).toHaveBeenCalledTimes(1);
-    expect(result.current.data).toEqual({ success: true });
-  });
-
-  it('should handle error when resetPassword fails', async () => {
-    const mockError = new Error('Reset password error');
-    (authServiceEffect.resetPassword as jest.Mock).mockReturnValue(
-      Effect.fail(mockError),
-    );
-
-    const { result } = renderHook(() => useResetPassword(), {
-      wrapper: createWrapper(),
-    });
-
-    result.current.mutate('test@example.com');
-
-    await waitFor(() => {
-      expect(result.current.isError).toBe(true);
-    });
-
     expect(result.current.error).toEqual(mockError);
-  });
-
-  it('should call onError callback when mutation fails', async () => {
-    const mockError = new Error('Reset password error');
-    (authServiceEffect.resetPassword as jest.Mock).mockReturnValue(
-      Effect.fail(mockError),
-    );
-
-    const { result } = renderHook(() => useResetPassword(), {
-      wrapper: createWrapper(),
-    });
-
-    result.current.mutate('test@example.com');
-
-    await waitFor(() => {
-      expect(result.current.isError).toBe(true);
-    });
   });
 });
 
 describe('useUpdatePassword', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.spyOn(console, 'error').mockImplementation();
-    mockUseAuthStore.mockReturnValue({ email: 'test@example.com' });
   });
 
-  afterEach(() => {
-    jest.restoreAllMocks();
-  });
-
-  it('should verify current password and update password successfully', async () => {
-    (authServiceEffect.verifyCurrentPassword as jest.Mock).mockReturnValue(
-      Effect.succeed(true),
-    );
-    (authServiceEffect.updatePassword as jest.Mock).mockReturnValue(
-      Effect.succeed(true),
+  it('changes the password in one call via PATCH /users/me/password', async () => {
+    (profileService.changePassword as jest.Mock).mockReturnValue(
+      Effect.succeed(undefined),
     );
 
     const { result } = renderHook(() => useUpdatePassword(), {
@@ -240,40 +191,16 @@ describe('useUpdatePassword', () => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    expect(authServiceEffect.verifyCurrentPassword).toHaveBeenCalledWith(
-      'test@example.com',
-      'oldPassword',
-    );
-    expect(authServiceEffect.updatePassword).toHaveBeenCalledWith(
-      'newPassword',
-    );
-    expect(result.current.data).toEqual({ success: true });
-  });
-
-  it('should throw error when user is not authenticated', async () => {
-    mockUseAuthStore.mockReturnValue({ email: null });
-
-    const { result } = renderHook(() => useUpdatePassword(), {
-      wrapper: createWrapper(),
-    });
-
-    result.current.mutate({
+    expect(profileService.changePassword).toHaveBeenCalledWith({
       currentPassword: 'oldPassword',
       newPassword: 'newPassword',
     });
-
-    await waitFor(() => {
-      expect(result.current.isError).toBe(true);
-    });
-
-    expect(result.current.error?.message).toBe('No authenticated user found');
-    expect(authServiceEffect.verifyCurrentPassword).not.toHaveBeenCalled();
-    expect(authServiceEffect.updatePassword).not.toHaveBeenCalled();
+    expect(result.current.data).toEqual({ success: true });
   });
 
-  it('should throw error when current password verification fails', async () => {
-    const mockError = new Error('Invalid password');
-    (authServiceEffect.verifyCurrentPassword as jest.Mock).mockReturnValue(
+  it('handles a rejected current password', async () => {
+    const mockError = new Error('Current password is incorrect');
+    (profileService.changePassword as jest.Mock).mockReturnValue(
       Effect.fail(mockError),
     );
 
@@ -290,29 +217,6 @@ describe('useUpdatePassword', () => {
       expect(result.current.isError).toBe(true);
     });
 
-    expect(authServiceEffect.updatePassword).not.toHaveBeenCalled();
-  });
-
-  it('should handle error when password update fails', async () => {
-    (authServiceEffect.verifyCurrentPassword as jest.Mock).mockReturnValue(
-      Effect.succeed(true),
-    );
-    const mockError = new Error('Update failed');
-    (authServiceEffect.updatePassword as jest.Mock).mockReturnValue(
-      Effect.fail(mockError),
-    );
-
-    const { result } = renderHook(() => useUpdatePassword(), {
-      wrapper: createWrapper(),
-    });
-
-    result.current.mutate({
-      currentPassword: 'oldPassword',
-      newPassword: 'newPassword',
-    });
-
-    await waitFor(() => {
-      expect(result.current.isError).toBe(true);
-    });
+    expect(result.current.error).toEqual(mockError);
   });
 });
