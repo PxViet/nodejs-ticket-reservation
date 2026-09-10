@@ -18,7 +18,7 @@ import { Typo } from '@/components/Typo';
 import { ERROR_MESSAGES, PARAMS, ROUTES, Size } from '@/constants';
 
 // Hooks
-import { useCreateBooking } from '@/features/booking/hooks/useBookings';
+import { useConfirmReservation } from '@/features/booking/hooks/useReservations';
 import { useWallet } from '@/features/wallet/hooks/useWallet';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useToastAlert } from '@/hooks/useToast';
@@ -27,7 +27,6 @@ import { useToastAlert } from '@/hooks/useToast';
 import { formatIDR, formatTime } from '@/utils/formats';
 
 // Store
-import { useAuthStore } from '@/features/auth/store/auth';
 import { useBookingStore } from '@/features/booking/store/booking';
 import { useLoadingStore } from '@/stores/loading';
 
@@ -35,7 +34,7 @@ import { useLoadingStore } from '@/stores/loading';
 import { useMovieStore } from '@/stores/movie';
 
 // Utils
-import { Booking } from '@/features/booking/schemas/booking';
+import { Reservation } from '@/features/booking/schemas/reservation';
 import { cn } from '@/utils/cn';
 
 // Icons
@@ -46,7 +45,6 @@ const StyledScrollView = withUniwind(ScrollView);
 
 const CheckoutScreen = () => {
   const router = useRouter();
-  const user = useAuthStore(state => state.user);
   const toast = useToastAlert();
   const { showLoading, hideLoading } = useLoadingStore(
     useShallow(state => ({
@@ -65,24 +63,23 @@ const CheckoutScreen = () => {
     selectedMovie,
     selectedShowtime,
     selectedSeats,
+    holdIds,
     reservationId,
-    promoCode,
-    discountAmount,
     getTotalAmount,
   } = useBookingStore(
     useShallow(state => ({
       selectedMovie: state.selectedMovie,
       selectedShowtime: state.selectedShowtime,
       selectedSeats: state.selectedSeats,
+      holdIds: state.holdIds,
       reservationId: state.reservationId,
-      promoCode: state.promoCode,
-      discountAmount: state.discountAmount,
       getTotalAmount: state.getTotalAmount,
     })),
   );
 
   const { data: wallet } = useWallet();
-  const { mutate: createBooking, isPending: isBooking } = useCreateBooking();
+  const { mutate: confirmReservation, isPending: isBooking } =
+    useConfirmReservation();
 
   // Calculate total price using booking store method (includes discount)
   const totalPrice = getTotalAmount();
@@ -133,10 +130,10 @@ const CheckoutScreen = () => {
   );
 
   /**
-   * Schedule notifications for booking
+   * Schedule notifications for a confirmed reservation
    */
   const scheduleNotifications = useCallback(
-    async (booking: Booking) => {
+    async (reservation: Reservation) => {
       try {
         if (!selectedShowtime || !selectedMovie) {
           return;
@@ -154,8 +151,8 @@ const CheckoutScreen = () => {
           showDateTime.getTime() - 30 * 60 * 1000,
         );
 
-        // Get tickets from booking
-        const tickets = booking.tickets || [];
+        // Get tickets from the confirmed reservation
+        const tickets = reservation.tickets || [];
 
         // Schedule notifications for each ticket
         for (const ticket of tickets) {
@@ -202,21 +199,17 @@ const CheckoutScreen = () => {
   }, [router]);
 
   const handleCheckout = useCallback(() => {
-    const bookingData = {
-      userId: user?.id || '',
-      showtimeId: selectedShowtime?.id || '',
-      seats: selectedSeats.map(seat => seat.seatLabel),
-      totalAmount: totalPrice,
-      ...(promoCode && { promoCodeId: promoCode }),
-      ...(discountAmount > 0 && { discountAmount }),
-    };
+    if (holdIds.length === 0) {
+      toast.error(ERROR_MESSAGES.CHECKOUT_FAILED);
+      return;
+    }
 
-    showLoading('Creating your booking...');
+    showLoading('Confirming your reservation...');
 
-    createBooking(bookingData, {
-      onSuccess: async booking => {
+    confirmReservation(holdIds, {
+      onSuccess: async reservation => {
         // Schedule push notifications
-        await scheduleNotifications(booking);
+        await scheduleNotifications(reservation);
 
         clearSelectedMovie();
 
@@ -235,14 +228,9 @@ const CheckoutScreen = () => {
       onSettled: hideLoading,
     });
   }, [
-    user,
-    selectedShowtime,
-    selectedSeats,
-    totalPrice,
-    promoCode,
-    discountAmount,
+    holdIds,
     router,
-    createBooking,
+    confirmReservation,
     toast,
     showLoading,
     hideLoading,
