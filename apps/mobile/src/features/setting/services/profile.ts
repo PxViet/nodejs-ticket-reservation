@@ -1,21 +1,21 @@
-import { supabase } from '@/services/supabase/client';
-import { decode } from 'base64-arraybuffer';
-import * as FileSystem from 'expo-file-system/legacy';
-
 // HTTP
 import { apiRequest } from '@/services/api/client';
 
 // Types
 import type {
+  ChangePasswordRequest,
   UserProfile as ApiUserProfile,
   UpdateUserProfileRequest,
 } from '@movea/api-contract';
-import { UpdateProfileData, UserProfile } from '@/features/auth/types/auth';
+import {
+  ChangePasswordData,
+  UpdateProfileData,
+  UserProfile,
+} from '@/features/auth/types/auth';
 
 // Utils
 import { Effect } from 'effect';
 import { SettingError } from '../error';
-import { runEffectForQuery } from '@/utils/effect';
 
 const messageOf = (error: unknown): string =>
   error instanceof Error ? error.message : '';
@@ -101,83 +101,49 @@ export class ProfileService {
     });
 
   /**
-   * Upload avatar and return URL (doesn't update profile yet).
-   *
-   * TODO(profile-migration): the binary still goes to Supabase Storage — the
-   * API has no upload endpoint yet. The resulting URL is persisted through
-   * `updateProfile` (`PATCH /users/me`).
+   * Change the authenticated user's password — `PATCH /users/me/password`.
+   * The API proves the current password itself (DDR-013), so this is a
+   * single round trip rather than a separate verify-then-update pair.
    */
-  uploadAvatar = (
-    userId: string,
-    file: { uri: string; type?: string; name?: string },
-  ) =>
+  changePassword = ({ currentPassword, newPassword }: ChangePasswordData) =>
     Effect.tryPromise({
-      try: async () => {
-        const profile = await runEffectForQuery(this.getProfile());
-
-        if (profile?.avatarUrl) {
-          await runEffectForQuery(this.deleteAvatar(profile.avatarUrl));
-        }
-
-        const fileExt = file.uri.split('.').pop() || 'jpg';
-        const fileName = `${userId}-${Date.now()}.${fileExt}`;
-        const filePath = `avatars/${fileName}`;
-
-        // Read file as base64
-        const base64 = await FileSystem.readAsStringAsync(file.uri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-
-        // Convert base64 to ArrayBuffer
-        const arrayBuffer = decode(base64);
-
-        const { data, error: uploadError } = await supabase.storage
-          .from('user-avatar')
-          .upload(filePath, arrayBuffer, {
-            cacheControl: '3600',
-            contentType: file.type || 'image/jpeg',
-            upsert: true,
-          });
-
-        if (uploadError)
-          throw SettingError.uploadAvatarError(uploadError.message);
-
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from('user-avatar').getPublicUrl(data.path);
-
-        await runEffectForQuery(this.updateProfile({ avatarUrl: publicUrl }));
-
-        return publicUrl;
-      },
+      try: () =>
+        apiRequest<void>('/users/me/password', {
+          method: 'PATCH',
+          body: {
+            currentPassword,
+            newPassword,
+          } satisfies ChangePasswordRequest,
+          auth: true,
+        }),
       catch: (error: unknown) =>
-        SettingError.uploadAvatarError(
-          error instanceof Error ? error.message : '',
-        ),
+        SettingError.changePasswordError(messageOf(error)),
     });
 
   /**
-   * Delete old avatar from storage
+   * Upload avatar and return URL.
+   *
+   * Not implemented yet — the API has no upload endpoint, and Supabase
+   * Storage is no longer wired up. Kept as a stub so the edit-profile screen
+   * still compiles and renders until this is built against `@movea/api`.
    */
-  deleteAvatar = (avatarUrl: string) =>
-    Effect.tryPromise({
-      try: async () => {
-        const urlParts = avatarUrl.split('/avatars/');
-        if (urlParts.length < 2) return;
+  uploadAvatar = (
+    _userId: string,
+    _file: { uri: string; type?: string; name?: string },
+  ) =>
+    Effect.fail(
+      SettingError.uploadAvatarError('Avatar upload is not available yet.'),
+    );
 
-        const filePath = `avatars/${urlParts[1]}`;
-
-        const { error } = await supabase.storage
-          .from('user-avatar')
-          .remove([filePath]);
-
-        if (error) throw SettingError.deleteAvatarError(error.message);
-      },
-      catch: (error: unknown) =>
-        SettingError.deleteAvatarError(
-          error instanceof Error ? error.message : '',
-        ),
-    });
+  /**
+   * Delete an existing avatar.
+   *
+   * Not implemented yet — see `uploadAvatar`.
+   */
+  deleteAvatar = (_avatarUrl: string) =>
+    Effect.fail(
+      SettingError.deleteAvatarError('Avatar upload is not available yet.'),
+    );
 }
 
 export const profileService = ProfileService.getInstance();

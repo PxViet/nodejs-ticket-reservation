@@ -24,12 +24,6 @@ export class AuthService extends Effect.Service<AuthService>()(
 
         resetPassword: (email: string) =>
           authServiceEffect.resetPassword(email),
-
-        verifyCurrentPassword: (email: string, password: string) =>
-          authServiceEffect.verifyCurrentPassword(email, password),
-
-        updatePassword: (newPassword: string) =>
-          authServiceEffect.updatePassword(newPassword),
       } as const;
     }),
   },
