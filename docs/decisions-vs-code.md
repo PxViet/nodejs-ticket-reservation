@@ -45,6 +45,7 @@ client joined as `apps/mobile`; API behaviour unchanged).
 | DDR-017 | `pnpm-workspace.yaml` (`apps/*`, `packages/*`), `@movea/*` package names, root `lint-staged` dispatching by path, `apps/api/Dockerfile.dockerignore`                                                                                                                                                                                                                       |
 | DDR-019 | `apps/mobile/src/features/auth/hooks/useAuth.ts` (`isAdmin`), `apps/mobile/src/app/(main)/_layout.tsx` (`Stack.Protected guard={isAdmin}`), `apps/mobile/src/app/(main)/(tabs)/_layout.tsx` + `index.tsx`/`wallet.tsx`/`my-ticket.tsx`, `apps/mobile/src/constants/navigation.ts` (`ADMIN_NAVIGATION_BOTTOM_TABS`), `NavigationTabBar`/`TabBarItem`'s `bottomTabs` prop    |
 | DDR-020 | `apps/mobile/src/features/admin/{schemas,error,services,effect,hooks,components,screens}` for movies — movie CRUD screens/services/hooks against the existing `/movies` endpoints; `apps/mobile/src/app/(main)/admin/movie-form.tsx`; `packages/api-contract/src/index.ts`'s `CreateMovieRequest`/`UpdateMovieRequest` aliases (no backend change)                         |
+| DDR-021 | `apps/mobile/src/features/admin/{error,services,effect,hooks,screens}` for reports — the Revenue/Capacity/Reservations report screen against `/reports/*`; `packages/api-contract/src/index.ts`'s report row/page aliases (no backend change)                                                                                                                              |
 
 ## Diverging — needs a fix or a superseding record
 
@@ -169,11 +170,13 @@ the application skeleton over a designed schema.
   endpoint was needed). Deliberately not built: poster **upload** (posterUrl is a pasted URL —
   no upload endpoint exists, same gap DDR-018 already names for avatars) and genre
   **management** (the form only selects from `GET /genres`; create/rename/delete was
-  explicitly scoped out) — both DDR-020. `packages/api-contract` gained named aliases only
-  (`CreateMovieRequest`, `UpdateMovieRequest`) for schemas the OpenAPI generator already
-  produced — no backend change, no `pnpm contract:generate` run. Admin reporting
-  (revenue/capacity/reservations, DDR-021) is a separate change, not yet landed on this
-  branch.
+  explicitly scoped out) — both DDR-020. A Revenue / Capacity / Reservations report screen
+  against `/reports/*` (DDR-021, ADR-011) switches between the three with the existing `Tabs`
+  component, each its own paginated query with no cross-page running total or export — a page
+  shows exactly what that endpoint returns, matching ADR-011/DDR-003's "nothing computed is
+  invented" stance. `packages/api-contract` gained named aliases only (`CreateMovieRequest`,
+  `UpdateMovieRequest`, report row/page types, …) for schemas the OpenAPI generator already
+  produced — no backend change, no `pnpm contract:generate` run.
 
 ## Keeping this current
 
