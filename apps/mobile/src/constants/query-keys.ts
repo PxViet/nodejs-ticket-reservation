@@ -26,6 +26,17 @@ export const queryKeys = {
     list: () => [...queryKeys.genres.all, 'list'] as const,
   },
 
+  // Admin — movies (separate from `movies` above: an authenticated admin
+  // request also returns inactive movies, so it can't share the public cache).
+  adminMovies: {
+    all: ['admin', 'movies'] as const,
+    lists: () => [...queryKeys.adminMovies.all, 'list'] as const,
+    infinite: (search?: string) =>
+      [...queryKeys.adminMovies.lists(), 'infinite', search] as const,
+    detail: (id: string) =>
+      [...queryKeys.adminMovies.all, 'detail', id] as const,
+  },
+
   // Showtimes
   showtimes: {
     all: ['showtimes'] as const,
