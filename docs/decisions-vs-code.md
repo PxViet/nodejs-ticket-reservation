@@ -43,6 +43,8 @@ client joined as `apps/mobile`; API behaviour unchanged).
 | ADR-015 | `pnpm-workspace.yaml`, `turbo.json`, `apps/api/`, `apps/mobile/`, `packages/api-contract/` — one workspace, one lockfile, one hook set                                                                                                                                                                                                                                     |
 | ADR-016 | `.github/workflows/api-ci.yml` and `mobile-ci.yml` — separate path-filtered workflows, no `needs:` edge between them, one shared `setup-node-and-pnpm` action                                                                                                                                                                                                              |
 | DDR-017 | `pnpm-workspace.yaml` (`apps/*`, `packages/*`), `@movea/*` package names, root `lint-staged` dispatching by path, `apps/api/Dockerfile.dockerignore`                                                                                                                                                                                                                       |
+| DDR-019 | `apps/mobile/src/features/auth/hooks/useAuth.ts` (`isAdmin`), `apps/mobile/src/app/(main)/_layout.tsx` (`Stack.Protected guard={isAdmin}`), `apps/mobile/src/app/(main)/(tabs)/_layout.tsx` + `index.tsx`/`wallet.tsx`/`my-ticket.tsx`, `apps/mobile/src/constants/navigation.ts` (`ADMIN_NAVIGATION_BOTTOM_TABS`), `NavigationTabBar`/`TabBarItem`'s `bottomTabs` prop    |
+| DDR-020 | `apps/mobile/src/features/admin/{schemas,error,services,effect,hooks,components,screens}` for movies — movie CRUD screens/services/hooks against the existing `/movies` endpoints; `apps/mobile/src/app/(main)/admin/movie-form.tsx`; `packages/api-contract/src/index.ts`'s `CreateMovieRequest`/`UpdateMovieRequest` aliases (no backend change)                         |
 
 ## Diverging — needs a fix or a superseding record
 
@@ -155,6 +157,23 @@ the application skeleton over a designed schema.
   [DDR-018](ddr/0018-mobile-migration-scope-and-dead-code-retention.md) for the retention rule
   and the list of what's genuinely blocked on an API endpoint versus already out of scope by
   DDR-010.
+- **Admin RBAC and admin movie management landed in the mobile app.** `useAuth()` now exposes
+  `isAdmin` (DDR-019), `apps/mobile/src/app/(main)/(tabs)/_layout.tsx` swaps in
+  `ADMIN_NAVIGATION_BOTTOM_TABS`, and the `index`/`wallet`/`my-ticket` tab route files each
+  render admin content instead of the customer screen when the signed-in user is an admin —
+  the same three tab slots, not a fourth tab or a second navigator. The one admin-only stack
+  screen, `admin/movie-form`, is gated with `<Stack.Protected guard={isAdmin}>`, mirroring how
+  `(auth)`/`(main)` are already gated by `isAuthenticated`. New `features/admin/` adds movie
+  create/update/deactivate against the existing `/movies` endpoints (DDR-020 — an
+  authenticated request already gets `includeInactive` per DDR-014, so no new backend
+  endpoint was needed). Deliberately not built: poster **upload** (posterUrl is a pasted URL —
+  no upload endpoint exists, same gap DDR-018 already names for avatars) and genre
+  **management** (the form only selects from `GET /genres`; create/rename/delete was
+  explicitly scoped out) — both DDR-020. `packages/api-contract` gained named aliases only
+  (`CreateMovieRequest`, `UpdateMovieRequest`) for schemas the OpenAPI generator already
+  produced — no backend change, no `pnpm contract:generate` run. Admin reporting
+  (revenue/capacity/reservations, DDR-021) is a separate change, not yet landed on this
+  branch.
 
 ## Keeping this current
 

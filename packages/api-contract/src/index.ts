@@ -45,8 +45,12 @@ export type ChangePasswordRequest = Schemas['ChangePasswordDto'];
 
 /** A movie in the public catalogue — `GET /movies` / `GET /movies/:id`. */
 export type Movie = Schemas['MovieResponseDto'];
-/** One page of `GET /movies`. */
+/** One page of `GET /movies`. An admin token additionally includes inactive movies (DDR-014). */
 export type PaginatedMovies = Schemas['PaginatedMovieResponseDto'];
+/** `POST /movies` request body (admin only). */
+export type CreateMovieRequest = Schemas['CreateMovieDto'];
+/** `PATCH /movies/:id` request body (admin only). */
+export type UpdateMovieRequest = Schemas['UpdateMovieDto'];
 /** A catalogue genre — `GET /genres`. */
 export type Genre = Schemas['GenreResponseDto'];
 /** One page of `GET /genres`. */
