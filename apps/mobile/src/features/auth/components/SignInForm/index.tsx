@@ -76,6 +76,7 @@ export const SignInForm = memo(({ isPending, onSubmit }: SignInFormProps) => {
       <Button
         onPress={handleSubmit(handleSubmitForm)}
         disabled={isDisabled}
+        className="mt-2"
         accessibilityHint="Sign in to your account"
         testID="signin-submit-button"
         title="Sign In"

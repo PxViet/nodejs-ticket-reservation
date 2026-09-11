@@ -90,3 +90,19 @@ export type Reservation = Schemas['ReservationResponseDto'];
 export type ReservationSummary = Schemas['ReservationSummaryResponseDto'];
 /** One page of `GET /reservations/me`. */
 export type PaginatedReservations = Schemas['PaginatedReservationResponseDto'];
+
+/** One row of `GET /reports/revenue` (admin only) — ADR-011/DDR-010. */
+export type RevenueReportRow = Schemas['RevenueReportRowDto'];
+/** One page of `GET /reports/revenue`. */
+export type PaginatedRevenueReport =
+  Schemas['PaginatedRevenueReportResponseDto'];
+/** One row of `GET /reports/capacity` (admin only) — occupancy per showtime. */
+export type CapacityReportRow = Schemas['CapacityReportRowDto'];
+/** One page of `GET /reports/capacity`. */
+export type PaginatedCapacityReport =
+  Schemas['PaginatedCapacityReportResponseDto'];
+/** One row of `GET /reports/reservations` (admin only) — every customer's reservations. */
+export type AdminReservationRow = Schemas['AdminReservationRowDto'];
+/** One page of `GET /reports/reservations`. */
+export type PaginatedReservationsReport =
+  Schemas['PaginatedReservationsReportResponseDto'];
