@@ -7,7 +7,6 @@ import { useSignIn } from '../useSignIn';
 
 // Mock dependencies
 const mockSetSession = jest.fn();
-const mockToastSuccess = jest.fn();
 
 jest.mock('@/features/auth/store/auth', () => ({
   useAuthStore: (selector: any) => {
@@ -22,12 +21,6 @@ jest.mock('@/features/auth/services/auth.effect', () => ({
   authServiceEffect: {
     signIn: jest.fn(),
   },
-}));
-
-jest.mock('@/hooks/useToast', () => ({
-  useToastAlert: () => ({
-    success: mockToastSuccess,
-  }),
 }));
 
 const createWrapper = () => {
@@ -73,7 +66,7 @@ describe('useSignIn', () => {
     expect(authServiceEffect.signIn).toHaveBeenCalledTimes(1);
   });
 
-  it('should call setSession and show success toast on success', async () => {
+  it('should call setSession on success, with no success toast', async () => {
     (authServiceEffect.signIn as jest.Mock).mockReturnValue(
       Effect.succeed({ session: mockSession }),
     );
@@ -89,7 +82,6 @@ describe('useSignIn', () => {
     });
 
     expect(mockSetSession).toHaveBeenCalledWith(mockSession);
-    expect(mockToastSuccess).toHaveBeenCalledWith('Successfully signed in!');
   });
 
   it('should handle error when signIn fails', async () => {
@@ -110,6 +102,5 @@ describe('useSignIn', () => {
 
     expect(result.current.error).toEqual(mockError);
     expect(mockSetSession).not.toHaveBeenCalled();
-    expect(mockToastSuccess).not.toHaveBeenCalled();
   });
 });
