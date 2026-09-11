@@ -1,17 +1,11 @@
 // Effect
 import { Effect } from 'effect';
 
-// Services
-import { MESSAGES } from '@/constants';
-
 // Stores
 import { useAuthStore } from '@/features/auth/store/auth';
 
 // Types
 import { SignInData } from '@/features/auth/types/auth';
-
-// Hooks
-import { useToastAlert } from '@/hooks/useToast';
 
 // Utils
 import { runEffectForQuery } from '@/utils/effect';
@@ -23,9 +17,10 @@ import { useMutation } from '@tanstack/react-query';
 import { AuthService } from '@/features/auth/effect/services';
 import { AuthServiceLayer } from '@/features/auth/layer';
 
+// No success toast — signing in takes the user straight to the app, which is
+// feedback enough; the caller (SignInScreen) already shows a toast on error.
 export const useSignIn = () => {
   const setSession = useAuthStore(state => state.setSession);
-  const toast = useToastAlert();
 
   return useMutation({
     mutationFn: async (data: SignInData) => {
@@ -39,7 +34,6 @@ export const useSignIn = () => {
       return result;
     },
     onSuccess: data => {
-      toast.success(MESSAGES.SIGNIN_SUCCESS);
       setSession(data.session);
     },
   });
