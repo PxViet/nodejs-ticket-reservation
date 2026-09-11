@@ -96,4 +96,42 @@ describe('useAuth', () => {
       expect(typeof result.current.signOut).toBe('function');
     });
   });
+
+  describe('isAdmin', () => {
+    it('should be false for a regular user (DDR-019)', () => {
+      const { result } = renderHook(() => useAuth());
+
+      expect(result.current.isAdmin).toBe(false);
+    });
+
+    it('should be true when the token role is admin', () => {
+      (useAuthStore as unknown as jest.Mock).mockReturnValue({
+        user: { ...mockUser, role: 'admin' },
+        session: mockSession,
+        isLoading: false,
+        isAuthenticated: true,
+        initialize: mockInitialize,
+        signOut: mockSignOut,
+      });
+
+      const { result } = renderHook(() => useAuth());
+
+      expect(result.current.isAdmin).toBe(true);
+    });
+
+    it('should be false when there is no signed-in user', () => {
+      (useAuthStore as unknown as jest.Mock).mockReturnValue({
+        user: null,
+        session: null,
+        isLoading: false,
+        isAuthenticated: false,
+        initialize: mockInitialize,
+        signOut: mockSignOut,
+      });
+
+      const { result } = renderHook(() => useAuth());
+
+      expect(result.current.isAdmin).toBe(false);
+    });
+  });
 });

@@ -4,45 +4,42 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Tabs } from 'expo-router';
 
 // Constants
-import { SCREEN_COLOR_PRIMARY, TABS } from '@/constants';
+import {
+  ADMIN_NAVIGATION_BOTTOM_TABS,
+  NAVIGATION_BOTTOM_TABS,
+  SCREEN_COLOR_PRIMARY,
+  TABS,
+} from '@/constants';
+
+// Hooks
+import { useAuth } from '@/features/auth/hooks/useAuth';
 
 // Components
 import { MainHeader } from '@/features/navigation/components/MainHeader';
 import { NavigationTabBar } from '@/features/navigation/components/NavigationTabBar';
 
-// Icons
-import { HomeIcon } from '@/icons/HomeIcon';
-import { TicketIcon } from '@/icons/TicketIcon';
-import { WalletIcon } from '@/icons/WalletIcon';
-
 // Error Boundary
 export { ErrorBoundary } from '@/components/ErrorBoundary';
 
-const BOTTOM_TAB = [
-  {
-    title: TABS.HOME.TITLE,
-    name: TABS.HOME.NAME,
-    Icon: HomeIcon,
-  },
-  {
-    title: TABS.WALLET.TITLE,
-    name: TABS.WALLET.NAME,
-    Icon: WalletIcon,
-  },
-  {
-    title: TABS.MY_TICKET.TITLE,
-    name: TABS.MY_TICKET.NAME,
-    Icon: TicketIcon,
-  },
-];
-
 const TabLayout = () => {
   const insets = useSafeAreaInsets();
+  const { isAdmin } = useAuth();
+
+  // DDR-019: the three tab slots are reused, not duplicated, for the admin
+  // role — same route names (`index`/`wallet`/`my-ticket`), different
+  // titles/icons and (inside each route file) different screen content.
+  const BOTTOM_TAB = isAdmin
+    ? ADMIN_NAVIGATION_BOTTOM_TABS
+    : NAVIGATION_BOTTOM_TABS;
 
   return (
     <Tabs
       tabBar={props => (
-        <NavigationTabBar bottomInset={insets.bottom} {...props} />
+        <NavigationTabBar
+          bottomInset={insets.bottom}
+          bottomTabs={BOTTOM_TAB}
+          {...props}
+        />
       )}
       screenOptions={{
         sceneStyle: {
@@ -51,19 +48,21 @@ const TabLayout = () => {
         header: props => (
           <MainHeader
             isLeftTitle={props.route.name !== TABS.WALLET.NAME}
-            isRenderUserProfile={props.route.name === TABS.HOME.NAME}
+            isRenderUserProfile={
+              !isAdmin && props.route.name === TABS.HOME.NAME
+            }
             topInset={insets.top}
             {...props}
           />
         ),
       }}
     >
-      {BOTTOM_TAB.map(({ name, title }) => (
+      {BOTTOM_TAB.map(({ NAME, TITLE }) => (
         <Tabs.Screen
-          key={name}
-          name={name}
+          key={NAME}
+          name={NAME}
           options={{
-            title: title,
+            title: TITLE,
           }}
         />
       ))}

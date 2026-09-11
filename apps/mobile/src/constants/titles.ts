@@ -25,4 +25,7 @@ export const MAIN_TITLE_MAP = {
   Movies: 'Find Your Best Movie',
   Wallet: 'My Wallet',
   'My Ticket': 'My Ticket',
+  'Manage Movies': 'Manage Movies',
+  Reports: 'Reports',
+  Profile: 'My Profile',
 } as const;
