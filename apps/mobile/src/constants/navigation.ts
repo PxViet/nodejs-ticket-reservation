@@ -113,7 +113,7 @@ export const NAVIGATION_BOTTOM_TABS: BottomTabConfig[] = [
 export const ADMIN_TABS = {
   MOVIES: {
     NAME: TABS.HOME.NAME,
-    TITLE: 'Movies',
+    TITLE: 'Manage Movies',
   },
   REPORTS: {
     NAME: TABS.WALLET.NAME,

@@ -190,14 +190,14 @@ export const HorizontalCard = memo(
           ) : (
             <>
               {/* Rating */}
-              {rating && (
+              {!!rating && (
                 <View testID="horizontal-card-rating">
                   <Rating rating={rating} size={12} spacing={1} />
                 </View>
               )}
 
               {/* Genres and Duration */}
-              {(genresText || durationMinutes) && (
+              {!!(genresText || durationMinutes) && (
                 <View className="gap-1">
                   {/* Genres */}
                   {genresText && (

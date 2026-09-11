@@ -36,6 +36,7 @@ export interface InputProps extends Omit<TextInputProps, 'placeholder'> {
   testID?: string;
   onChangeText: (text: string) => void;
   containerClassName?: string;
+  innerClassName?: string;
   ref?: Ref<TextInput>;
 }
 
@@ -50,6 +51,7 @@ export const Input = memo(
     onBlur,
     secureTextEntry,
     containerClassName,
+    innerClassName,
     ref,
     ...rest
   }: InputProps) => {
@@ -188,6 +190,7 @@ export const Input = memo(
             testID={`${testID}-input`}
             className={cn(
               'w-full h-12 px-4 pb-0.5 text-white text-sm border rounded-base',
+              innerClassName,
               isAndroid() && 'pb-1.5',
               borderColor,
             )}
