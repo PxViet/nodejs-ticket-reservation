@@ -37,6 +37,17 @@ export const queryKeys = {
       [...queryKeys.adminMovies.all, 'detail', id] as const,
   },
 
+  // Admin — reports (ADR-011)
+  adminReports: {
+    all: ['admin', 'reports'] as const,
+    revenue: () =>
+      [...queryKeys.adminReports.all, 'revenue', 'infinite'] as const,
+    capacity: () =>
+      [...queryKeys.adminReports.all, 'capacity', 'infinite'] as const,
+    reservations: () =>
+      [...queryKeys.adminReports.all, 'reservations', 'infinite'] as const,
+  },
+
   // Showtimes
   showtimes: {
     all: ['showtimes'] as const,
