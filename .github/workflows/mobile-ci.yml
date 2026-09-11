@@ -99,6 +99,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [code-quality, test, build-validation]
     if: always()
+    defaults:
+      run:
+        working-directory: .
     steps:
       - name: Check all jobs status
         run: |
