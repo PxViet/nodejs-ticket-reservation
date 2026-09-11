@@ -21,6 +21,7 @@ import {
 
 // Utils
 import { cn } from '@/utils/cn';
+import { Size } from '@/constants';
 
 const StyledImage = withUniwind(Image);
 
@@ -52,7 +53,7 @@ export const MovieForm = memo(
     const {
       control,
       handleSubmit,
-      formState: { errors },
+      formState: { errors, isDirty, isSubmitting },
     } = useForm<MovieFormData>({
       resolver: effectTsResolver(
         movieFormSchema,
@@ -279,31 +280,22 @@ export const MovieForm = memo(
         {/* Sticky footer — stays put while the fields above scroll. */}
         <View className="gap-3 px-6 pt-3 pb-6 border-t border-overlay-soft/10">
           <Button
+            size={Size.SMALL}
             title={isEditing ? 'Save changes' : 'Create movie'}
             testID="admin-movie-submit-button"
-            disabled={isPending}
+            disabled={isPending || isSubmitting || !isDirty}
             onPress={handleSubmit(onSubmit)}
           />
 
           {isEditing && onDelete && (
-            <TouchableOpacity
-              accessible
-              accessibilityRole="button"
-              accessibilityLabel="Deactivate movie"
-              accessibilityState={{ disabled: isDeleting }}
+            <Button
+              size={Size.SMALL}
               testID="admin-movie-delete-button"
+              title="Deactivate movie"
               disabled={isDeleting}
-              activeOpacity={0.8}
-              className={cn(
-                'py-5 px-6 items-center justify-center rounded-xl bg-red',
-                isDeleting && 'opacity-50',
-              )}
+              className="bg-red"
               onPress={onDelete}
-            >
-              <Typo weight="medium" className="text-white text-center">
-                Deactivate movie
-              </Typo>
-            </TouchableOpacity>
+            />
           )}
         </View>
       </View>
