@@ -35,4 +35,8 @@ export const ROUTES = {
 
   // Modal routes
   SEARCH: '/(main)/search',
+
+  // Admin routes (RBAC-gated, see DDR-019) — no id creates, an id edits.
+  ADMIN_MOVIE_FORM: (id?: string): Href =>
+    id ? `/(main)/admin/movie-form?id=${id}` : '/(main)/admin/movie-form',
 } as const;
