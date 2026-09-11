@@ -7,7 +7,11 @@ import { ColorValue, Pressable, View } from 'react-native';
 import { SvgProps } from 'react-native-svg';
 
 // Constants
-import { NAVIGATION_BOTTOM_TABS, TAB_BAR_THEME } from '@/constants';
+import {
+  BottomTabConfig,
+  NAVIGATION_BOTTOM_TABS,
+  TAB_BAR_THEME,
+} from '@/constants';
 
 // Utils
 import { cn } from '@/utils/cn';
@@ -28,6 +32,7 @@ interface TabBarItemProps {
   navigation: NavigationHelpers<ParamListBase, BottomTabNavigationEventMap>;
   colorActive?: ColorValue;
   colorInactive?: ColorValue;
+  bottomTabs?: BottomTabConfig[];
 }
 
 export const TabBarItem = memo(
@@ -39,8 +44,9 @@ export const TabBarItem = memo(
     navigation,
     colorActive,
     colorInactive,
+    bottomTabs = NAVIGATION_BOTTOM_TABS,
   }: TabBarItemProps) => {
-    const tabConfig = Object.values(NAVIGATION_BOTTOM_TABS).find(
+    const tabConfig = Object.values(bottomTabs).find(
       tab => tab.NAME === route.name,
     );
 

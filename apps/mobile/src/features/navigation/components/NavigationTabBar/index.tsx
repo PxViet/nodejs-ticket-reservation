@@ -3,6 +3,9 @@ import { memo } from 'react';
 import { View } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
 
+// Constants
+import { BottomTabConfig, NAVIGATION_BOTTOM_TABS } from '@/constants';
+
 // Utils
 import { cn } from '@/utils/cn';
 import { isIOS } from '@/utils/platform';
@@ -13,6 +16,13 @@ import { TabBarItem } from './TabBarItem';
 type CustomTabBarProps = BottomTabBarProps & {
   disabledRoutes?: string[];
   bottomInset?: number;
+  /**
+   * Which tab config (title/icon per route name) to render. Defaults to the
+   * customer tab set; the admin tab set (DDR-019) reuses the same route
+   * names with different titles/icons, so this is a prop rather than a
+   * second static import inside `TabBarItem`.
+   */
+  bottomTabs?: BottomTabConfig[];
 };
 
 export const NavigationTabBar = memo(
@@ -22,6 +32,7 @@ export const NavigationTabBar = memo(
     descriptors,
     navigation,
     bottomInset = 24,
+    bottomTabs = NAVIGATION_BOTTOM_TABS,
   }: CustomTabBarProps) => {
     const colorIconInActive = useResolveClassNames('text-text-alternative');
     const colorActive = useResolveClassNames('text-text-white');
@@ -50,6 +61,7 @@ export const NavigationTabBar = memo(
               navigation={navigation}
               colorActive={colorActive.color}
               colorInactive={colorIconInActive.color}
+              bottomTabs={bottomTabs}
             />
           );
         })}
