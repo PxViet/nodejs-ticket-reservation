@@ -38,6 +38,7 @@ documents.**
 | [DDR-018](0018-mobile-migration-scope-and-dead-code-retention.md) | Mobile migration scope and dead-code retention              | ADR-007, DDR-010                   |
 | [DDR-019](0019-mobile-rbac-role-gated-navigation.md)              | Mobile RBAC: role-gated navigation and tab reuse            | ADR-005, ADR-006, DDR-014          |
 | [DDR-020](0020-admin-movie-management-ui.md)                      | Admin movie management UI                                   | ADR-006, ADR-010, DDR-014, DDR-018 |
+| [DDR-021](0021-admin-reporting-ui.md)                             | Admin reporting UI                                          | ADR-006, ADR-011, DDR-010          |
 
 ## Open divergences from the code
 
