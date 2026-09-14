@@ -133,12 +133,13 @@ pnpm install
 - Option 1: Create your **.env** file:
 
 ```bash
-EXPO_PUBLIC_API_URL=http://localhost:3000/api/v1
+EXPO_PUBLIC_API_BASE_URL=http://localhost:3000
 GOOGLE_SERVICES_JSON=
 ```
 
-`EXPO_PUBLIC_API_URL` points at the running `@movea/api`. On a device, replace `localhost`
-with your machine's LAN IP.
+`EXPO_PUBLIC_API_BASE_URL` points at the host of the running `@movea/api` — no path. The `api/v1`
+prefix and version are fixed in code (ADR-012), not part of this variable. On a device,
+replace `localhost` with your machine's LAN IP.
 
 - Option 2: Pull environment variables for your local development (need to Expo account)
 
@@ -153,7 +154,7 @@ The created .env.local file will look like this:
 ```bash
 # Environment: development
 
-EXPO_PUBLIC_API_URL=
+EXPO_PUBLIC_API_BASE_URL=
 # GOOGLE_SERVICES_JSON=***** (secret variables are not available for reading)
 ```
 

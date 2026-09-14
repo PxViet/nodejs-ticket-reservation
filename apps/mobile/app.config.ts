@@ -14,7 +14,7 @@ const googleServicesFile =
 // allow cleartext whenever the configured API base is not https — production
 // builds set an https URL and stay locked down.
 const allowCleartextTraffic = !(
-  process.env.EXPO_PUBLIC_API_URL ?? ''
+  process.env.EXPO_PUBLIC_API_BASE_URL ?? ''
 ).startsWith('https');
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
