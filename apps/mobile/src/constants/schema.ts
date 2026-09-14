@@ -113,10 +113,7 @@ export const PhoneNumberBrand = Schema.NullOr(Schema.String)
       decode: val => val ?? '',
       encode: val => val,
     }),
-    Schema.nonEmptyString({
-      message: () => ERROR_MESSAGES.PHONE_NUMBER_REQUIRED,
-    }),
-    Schema.pattern(PHONE_NUMBER_REGEX, {
+    Schema.filter(s => s === '' || PHONE_NUMBER_REGEX.test(s), {
       message: () => ERROR_MESSAGES.INVALID_PHONE_NUMBER,
     }),
     Schema.brand('PhoneNumber'),
@@ -125,7 +122,7 @@ export const PhoneNumberBrand = Schema.NullOr(Schema.String)
     identifier: 'phoneNumber',
     title: 'Phone Number',
     description:
-      'Phone number of the user as leat 9 digits long and start with 0',
+      'Optional phone number: local (starts with 0, 9–11 digits) or international (optional +, 9–15 digits)',
     type: 'string',
     required: false,
     example: '099898379',
@@ -178,7 +175,8 @@ export type SignUpFormData = Schema.Schema.Type<typeof signUpSchema>;
 
 // Edit Profile Schema
 export const editProfileSchema = Schema.Struct({
-  fullName: FullNameBrand,
+  firstName: FirstNameBrand,
+  lastName: LastNameBrand,
   email: EmailBrand,
   address: AddressBrand,
   phoneNumber: PhoneNumberBrand,
