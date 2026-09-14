@@ -28,6 +28,8 @@ export interface AuthSession {
 export const UserProfileSchema = Schema.Struct({
   id: Schema.String,
   fullName: Schema.optional(Schema.String),
+  firstName: Schema.optional(Schema.String),
+  lastName: Schema.optional(Schema.String),
   email: Schema.optional(Schema.String),
   phoneNumber: Schema.optional(Schema.String),
   address: Schema.optional(Schema.String),
@@ -37,7 +39,8 @@ export const UserProfileSchema = Schema.Struct({
 });
 
 export const UpdateProfileDataSchema = Schema.Struct({
-  fullName: Schema.optional(Schema.String),
+  firstName: Schema.optional(Schema.String),
+  lastName: Schema.optional(Schema.String),
   phoneNumber: Schema.optional(Schema.String),
   address: Schema.optional(Schema.String),
   email: Schema.optional(Schema.String),

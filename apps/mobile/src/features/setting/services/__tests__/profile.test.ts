@@ -49,6 +49,8 @@ describe('ProfileService', () => {
       expect(profile).toEqual({
         id: 'user1',
         email: 'user1@example.com',
+        firstName: 'New',
+        lastName: 'Name',
         fullName: 'New Name',
         phoneNumber: undefined,
         address: undefined,
@@ -68,12 +70,13 @@ describe('ProfileService', () => {
   });
 
   describe('updateProfile', () => {
-    it('sends only the API-mappable fields to PATCH /users/me', async () => {
+    it('sends the API-mappable fields to PATCH /users/me, dropping email', async () => {
       mockApiRequest.mockResolvedValue({ ...API_PROFILE, address: '1 New St' });
 
       const profile = await runEffectForQuery(
         service.updateProfile({
-          fullName: 'Ignored',
+          firstName: 'Jane',
+          lastName: 'Roe',
           email: 'ignored@example.com',
           address: '1 New St',
           phoneNumber: '0123456789',
@@ -82,7 +85,12 @@ describe('ProfileService', () => {
 
       expect(mockApiRequest).toHaveBeenCalledWith('/users/me', {
         method: 'PATCH',
-        body: { address: '1 New St', phoneNumber: '0123456789' },
+        body: {
+          firstName: 'Jane',
+          lastName: 'Roe',
+          address: '1 New St',
+          phoneNumber: '0123456789',
+        },
         auth: true,
       });
       expect(profile.address).toBe('1 New St');
