@@ -1,20 +1,16 @@
-// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+// Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`EditProfileScreen Snapshot should match snapshot 1`] = `
 <View
-  accessible={false}
   className="flex-1 bg-bg-primary"
   edges={
     [
       "bottom",
     ]
   }
-  importantForAccessibility="no"
 >
   <View
-    accessible={false}
     className="flex-1"
-    importantForAccessibility="no"
     onLayout={[Function]}
     style={
       {
@@ -22,458 +18,493 @@ exports[`EditProfileScreen Snapshot should match snapshot 1`] = `
       }
     }
   >
-    <RCTScrollView
-      accessibilityState={
-        {
-          "busy": undefined,
-          "checked": undefined,
-          "disabled": undefined,
-          "expanded": undefined,
-          "selected": undefined,
-        }
-      }
-      accessible={false}
-      bounces={false}
-      contentContainerClassName="flex-grow px-6"
-      contentContainerStyle={
-        {
-          "paddingBottom": 0,
-        }
-      }
-      focusable={true}
-      importantForAccessibility="no"
-      keyboardShouldPersistTaps="handled"
-      onClick={[Function]}
-      onResponderGrant={[Function]}
-      onResponderMove={[Function]}
-      onResponderRelease={[Function]}
-      onResponderTerminate={[Function]}
-      onResponderTerminationRequest={[Function]}
-      onStartShouldSetResponder={[Function]}
-      scrollEnabled={true}
-      showsVerticalScrollIndicator={false}
+    <View
+      className="flex-1 w-full"
     >
-      <View>
-        <View
-          className="flex-1 justify-between"
-        >
+      <RCTScrollView
+        bounces={false}
+        className="flex-1"
+        contentContainerClassName="px-6 pt-4 pb-6"
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View>
           <View
-            className="w-full"
+            className="items-center mt-4 mb-12"
           >
             <View
-              className="items-center mt-4 mb-12"
+              className="relative items-center justify-center"
             >
               <View
-                className="relative items-center justify-center"
+                accessibilityLabel="Select avatar"
+                accessibilityRole="image"
+                accessible={true}
+                className="relative w-23 h-23"
+                testID="avatar-container"
               >
-                <View
-                  accessibilityLabel="Select avatar"
-                  accessibilityRole="image"
-                  accessible={true}
-                  className="relative w-23 h-23"
-                  testID="avatar-container"
-                >
-                  Image
-                </View>
-                <View
-                  accessibilityHint="Tap to remove your profile picture"
-                  accessibilityLabel="Remove profile picture"
-                  accessibilityRole="button"
-                  accessibilityState={
-                    {
-                      "busy": false,
-                      "checked": undefined,
-                      "disabled": false,
-                      "expanded": undefined,
-                      "selected": undefined,
-                    }
+                Image
+              </View>
+              <View
+                accessibilityHint="Tap to remove your profile picture"
+                accessibilityLabel="Remove profile picture"
+                accessibilityRole="button"
+                accessibilityState={
+                  {
+                    "busy": false,
+                    "checked": undefined,
+                    "disabled": false,
+                    "expanded": undefined,
+                    "selected": undefined,
                   }
-                  accessibilityValue={
-                    {
-                      "max": undefined,
-                      "min": undefined,
-                      "now": undefined,
-                      "text": undefined,
-                    }
+                }
+                accessibilityValue={
+                  {
+                    "max": undefined,
+                    "min": undefined,
+                    "now": undefined,
+                    "text": undefined,
                   }
-                  accessible={true}
-                  collapsable={false}
-                  focusable={true}
-                  onClick={[Function]}
-                  onResponderGrant={[Function]}
-                  onResponderMove={[Function]}
-                  onResponderRelease={[Function]}
-                  onResponderTerminate={[Function]}
-                  onResponderTerminationRequest={[Function]}
-                  onStartShouldSetResponder={[Function]}
+                }
+                accessible={true}
+                collapsable={false}
+                focusable={true}
+                onClick={[Function]}
+                onResponderGrant={[Function]}
+                onResponderMove={[Function]}
+                onResponderRelease={[Function]}
+                onResponderTerminate={[Function]}
+                onResponderTerminationRequest={[Function]}
+                onStartShouldSetResponder={[Function]}
+                style={
+                  {
+                    "opacity": 1,
+                  }
+                }
+              >
+                <RNSVGSvgView
+                  align="xMidYMid"
+                  bbHeight={24}
+                  bbWidth={24}
+                  fill="none"
+                  focusable={false}
+                  height={24}
+                  meetOrSlice={0}
+                  minX={0}
+                  minY={0}
                   style={
-                    {
-                      "opacity": 1,
-                    }
+                    [
+                      {
+                        "backgroundColor": "transparent",
+                        "borderWidth": 0,
+                      },
+                      {
+                        "flex": 0,
+                        "height": 24,
+                        "width": 24,
+                      },
+                    ]
                   }
+                  vbHeight={24}
+                  vbWidth={24}
+                  width={24}
                 >
-                  <RNSVGSvgView
-                    align="xMidYMid"
-                    bbHeight={24}
-                    bbWidth={24}
-                    fill="none"
-                    focusable={false}
-                    height={24}
-                    meetOrSlice={0}
-                    minX={0}
-                    minY={0}
-                    style={
+                  <RNSVGGroup
+                    fill={null}
+                    propList={
                       [
-                        {
-                          "backgroundColor": "transparent",
-                          "borderWidth": 0,
-                        },
-                        {
-                          "flex": 0,
-                          "height": 24,
-                          "width": 24,
-                        },
+                        "fill",
                       ]
                     }
-                    vbHeight={24}
-                    vbWidth={24}
-                    width={24}
                   >
-                    <RNSVGGroup
-                      fill={null}
+                    <RNSVGPath
+                      clipRule={0}
+                      d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2Zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8Zm0-9.41L15.59 7 17 8.41 13.41 12 17 15.59 15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59Z"
+                      fill={
+                        {
+                          "payload": 4278190080,
+                          "type": 0,
+                        }
+                      }
+                      fillRule={0}
                       propList={
                         [
-                          "fill",
+                          "fillRule",
                         ]
                       }
-                    >
-                      <RNSVGPath
-                        clipRule={0}
-                        d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2Zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8Zm0-9.41L15.59 7 17 8.41 13.41 12 17 15.59 15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59Z"
-                        fill={
-                          {
-                            "payload": 4278190080,
-                            "type": 0,
-                          }
-                        }
-                        fillRule={0}
-                        propList={
-                          [
-                            "fillRule",
-                          ]
-                        }
-                      />
-                    </RNSVGGroup>
-                  </RNSVGSvgView>
-                </View>
-              </View>
-            </View>
-            <View
-              className="mb-9"
-            >
-              <View
-                className="w-full"
-                testID="signup-fullname-input"
-              >
-                <View
-                  className="relative"
-                >
-                  <View
-                    className="bg-dark-blue px-1 z-1 left-4 absolute"
-                    collapsable={false}
-                    style={
-                      {
-                        "top": 14,
-                        "transform": [
-                          {
-                            "translateY": -26,
-                          },
-                        ],
-                      }
-                    }
-                  >
-                    <Text
-                      accessibilityLabel="Full Name"
-                      accessibilityRole="text"
-                      accessible={true}
-                      allowFontScaling={false}
-                      collapsable={false}
-                      onPress={[Function]}
-                    >
-                      <Text
-                        accessible={true}
-                        allowFontScaling={false}
-                        className="text-sm font-montserrat-regular text-overlay-soft"
-                        maxFontSizeMultiplier={1.2}
-                      >
-                        Full Name
-                      </Text>
-                    </Text>
-                  </View>
-                  <TextInput
-                    accessibilityLabel="Full Name input field"
-                    accessibilityRole="text"
-                    accessible={true}
-                    allowFontScaling={false}
-                    autoCapitalize="words"
-                    autoCorrect={false}
-                    className="w-full h-12 px-4 pb-0.5 text-white text-sm border rounded-base border-overlay-soft"
-                    onBlur={[Function]}
-                    onChangeText={[Function]}
-                    onFocus={[Function]}
-                    onSubmitEditing={[Function]}
-                    returnKeyType="next"
-                    testID="signup-fullname-input-input"
-                    value="John Doe"
-                  />
-                </View>
-              </View>
-            </View>
-            <View
-              className="mb-9"
-            >
-              <View
-                className="w-full"
-                testID="signup-email-input"
-              >
-                <View
-                  className="relative"
-                >
-                  <View
-                    className="bg-dark-blue px-1 z-1 left-4 absolute"
-                    collapsable={false}
-                    style={
-                      {
-                        "top": 14,
-                        "transform": [
-                          {
-                            "translateY": -26,
-                          },
-                        ],
-                      }
-                    }
-                  >
-                    <Text
-                      accessibilityLabel="Email Address"
-                      accessibilityRole="text"
-                      accessible={true}
-                      allowFontScaling={false}
-                      collapsable={false}
-                      onPress={[Function]}
-                    >
-                      <Text
-                        accessible={true}
-                        allowFontScaling={false}
-                        className="text-sm font-montserrat-regular text-overlay-soft"
-                        maxFontSizeMultiplier={1.2}
-                      >
-                        Email Address
-                      </Text>
-                    </Text>
-                  </View>
-                  <TextInput
-                    accessibilityHint="Enter your email address"
-                    accessibilityLabel="Email Address input field"
-                    accessibilityRole="text"
-                    accessible={true}
-                    allowFontScaling={false}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    className="w-full h-12 px-4 pb-0.5 text-white text-sm border rounded-base border-overlay-soft"
-                    keyboardType="email-address"
-                    onBlur={[Function]}
-                    onChangeText={[Function]}
-                    onFocus={[Function]}
-                    onSubmitEditing={[Function]}
-                    returnKeyType="next"
-                    testID="signup-email-input-input"
-                    value="john@example.com"
-                  />
-                </View>
-              </View>
-            </View>
-            <View
-              className="mb-9"
-            >
-              <View
-                className="w-full"
-                testID="edit-address-input"
-              >
-                <View
-                  className="relative"
-                >
-                  <View
-                    className="bg-dark-blue px-1 z-1 left-4 absolute"
-                    collapsable={false}
-                    style={
-                      {
-                        "top": 14,
-                        "transform": [
-                          {
-                            "translateY": -26,
-                          },
-                        ],
-                      }
-                    }
-                  >
-                    <Text
-                      accessibilityLabel="Address"
-                      accessibilityRole="text"
-                      accessible={true}
-                      allowFontScaling={false}
-                      collapsable={false}
-                      onPress={[Function]}
-                    >
-                      <Text
-                        accessible={true}
-                        allowFontScaling={false}
-                        className="text-sm font-montserrat-regular text-overlay-soft"
-                        maxFontSizeMultiplier={1.2}
-                      >
-                        Address
-                      </Text>
-                    </Text>
-                  </View>
-                  <TextInput
-                    accessibilityLabel="Address input field"
-                    accessibilityRole="text"
-                    accessible={true}
-                    allowFontScaling={false}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    className="w-full h-12 px-4 pb-0.5 text-white text-sm border rounded-base border-overlay-soft"
-                    onBlur={[Function]}
-                    onChangeText={[Function]}
-                    onFocus={[Function]}
-                    onSubmitEditing={[Function]}
-                    returnKeyType="next"
-                    testID="edit-address-input-input"
-                    value="123 Main St"
-                  />
-                </View>
-              </View>
-            </View>
-            <View
-              className="mb-5"
-            >
-              <View
-                className="w-full mb-7"
-                testID="edit-phone-number-input"
-              >
-                <View
-                  className="relative"
-                >
-                  <View
-                    className="bg-dark-blue px-1 z-1 left-4 absolute"
-                    collapsable={false}
-                    style={
-                      {
-                        "top": 14,
-                        "transform": [
-                          {
-                            "translateY": -26,
-                          },
-                        ],
-                      }
-                    }
-                  >
-                    <Text
-                      accessibilityLabel="Phone Number"
-                      accessibilityRole="text"
-                      accessible={true}
-                      allowFontScaling={false}
-                      collapsable={false}
-                      onPress={[Function]}
-                    >
-                      <Text
-                        accessible={true}
-                        allowFontScaling={false}
-                        className="text-sm font-montserrat-regular text-overlay-soft"
-                        maxFontSizeMultiplier={1.2}
-                      >
-                        Phone Number
-                      </Text>
-                    </Text>
-                  </View>
-                  <TextInput
-                    accessibilityLabel="Phone Number input field"
-                    accessibilityRole="text"
-                    accessible={true}
-                    allowFontScaling={false}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    className="w-full h-12 px-4 pb-0.5 text-white text-sm border rounded-base border-overlay-soft"
-                    inputMode="tel"
-                    keyboardType="phone-pad"
-                    onBlur={[Function]}
-                    onChangeText={[Function]}
-                    onFocus={[Function]}
-                    returnKeyType="done"
-                    testID="edit-phone-number-input-input"
-                    value="+1234567890"
-                  />
-                </View>
+                    />
+                  </RNSVGGroup>
+                </RNSVGSvgView>
               </View>
             </View>
           </View>
           <View
-            className="mb-12"
+            className="mb-9"
           >
             <View
-              accessibilityLabel="Update My Profile"
-              accessibilityRole="button"
-              accessibilityState={
-                {
-                  "busy": undefined,
-                  "checked": undefined,
-                  "disabled": true,
-                  "expanded": undefined,
-                  "selected": undefined,
-                }
-              }
-              accessibilityValue={
-                {
-                  "max": undefined,
-                  "min": undefined,
-                  "now": undefined,
-                  "text": undefined,
-                }
-              }
-              accessible={true}
-              collapsable={false}
-              focusable={false}
-              onClick={[Function]}
-              onResponderGrant={[Function]}
-              onResponderMove={[Function]}
-              onResponderRelease={[Function]}
-              onResponderTerminate={[Function]}
-              onResponderTerminationRequest={[Function]}
-              onStartShouldSetResponder={[Function]}
-              style={
-                {
-                  "opacity": 1,
-                }
-              }
-              testID="update-my-profile-submit-button"
+              className="w-full"
+              testID="signup-firstname-input"
             >
               <View
-                className="py-5 px-6 items-center justify-center rounded-xl bg-gradient-to-r from-bg-none-active to-bg-none-active"
+                className="relative"
               >
-                <Text
-                  accessible={false}
-                  className="font-montserrat-medium text-white text-center text-lg leading-6"
-                  importantForAccessibility="no"
-                  maxFontSizeMultiplier={1.2}
-                  testID="update-my-profile-submit-button-text"
+                <View
+                  className="bg-dark-blue px-1 z-1 left-4 absolute"
+                  collapsable={false}
+                  style={
+                    {
+                      "top": 14,
+                      "transform": [
+                        {
+                          "translateY": -26,
+                        },
+                      ],
+                    }
+                  }
                 >
-                  Update My Profile
-                </Text>
+                  <Text
+                    accessibilityLabel="First Name"
+                    accessibilityRole="text"
+                    accessible={true}
+                    allowFontScaling={false}
+                    collapsable={false}
+                    onPress={[Function]}
+                  >
+                    <Text
+                      accessible={true}
+                      allowFontScaling={false}
+                      className="text-sm font-montserrat-regular text-overlay-soft"
+                      maxFontSizeMultiplier={1.2}
+                    >
+                      First Name
+                    </Text>
+                  </Text>
+                </View>
+                <TextInput
+                  accessibilityHint="Type your first name"
+                  accessibilityLabel="First Name input field"
+                  accessibilityRole="text"
+                  accessible={true}
+                  allowFontScaling={false}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  className="w-full h-12 px-4 pb-0.5 text-white text-sm border rounded-base border-overlay-soft"
+                  onBlur={[Function]}
+                  onChangeText={[Function]}
+                  onFocus={[Function]}
+                  onSubmitEditing={[Function]}
+                  returnKeyType="next"
+                  testID="signup-firstname-input-input"
+                  value="John"
+                />
+              </View>
+            </View>
+          </View>
+          <View
+            className="mb-9"
+          >
+            <View
+              className="w-full"
+              testID="signup-lastname-input"
+            >
+              <View
+                className="relative"
+              >
+                <View
+                  className="bg-dark-blue px-1 z-1 left-4 absolute"
+                  collapsable={false}
+                  style={
+                    {
+                      "top": 14,
+                      "transform": [
+                        {
+                          "translateY": -26,
+                        },
+                      ],
+                    }
+                  }
+                >
+                  <Text
+                    accessibilityLabel="Last Name"
+                    accessibilityRole="text"
+                    accessible={true}
+                    allowFontScaling={false}
+                    collapsable={false}
+                    onPress={[Function]}
+                  >
+                    <Text
+                      accessible={true}
+                      allowFontScaling={false}
+                      className="text-sm font-montserrat-regular text-overlay-soft"
+                      maxFontSizeMultiplier={1.2}
+                    >
+                      Last Name
+                    </Text>
+                  </Text>
+                </View>
+                <TextInput
+                  accessibilityHint="Type your last name"
+                  accessibilityLabel="Last Name input field"
+                  accessibilityRole="text"
+                  accessible={true}
+                  allowFontScaling={false}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  className="w-full h-12 px-4 pb-0.5 text-white text-sm border rounded-base border-overlay-soft"
+                  onBlur={[Function]}
+                  onChangeText={[Function]}
+                  onFocus={[Function]}
+                  onSubmitEditing={[Function]}
+                  returnKeyType="next"
+                  testID="signup-lastname-input-input"
+                  value="Doe"
+                />
+              </View>
+            </View>
+          </View>
+          <View
+            className="mb-9"
+          >
+            <View
+              className="w-full"
+              testID="signup-email-input"
+            >
+              <View
+                className="relative"
+              >
+                <View
+                  className="bg-dark-blue px-1 z-1 left-4 absolute"
+                  collapsable={false}
+                  style={
+                    {
+                      "top": 14,
+                      "transform": [
+                        {
+                          "translateY": -26,
+                        },
+                      ],
+                    }
+                  }
+                >
+                  <Text
+                    accessibilityLabel="Email Address"
+                    accessibilityRole="text"
+                    accessible={true}
+                    allowFontScaling={false}
+                    collapsable={false}
+                    onPress={[Function]}
+                  >
+                    <Text
+                      accessible={true}
+                      allowFontScaling={false}
+                      className="text-sm font-montserrat-regular text-overlay-soft"
+                      maxFontSizeMultiplier={1.2}
+                    >
+                      Email Address
+                    </Text>
+                  </Text>
+                </View>
+                <TextInput
+                  accessibilityHint="Enter your email address"
+                  accessibilityLabel="Email Address input field"
+                  accessibilityRole="text"
+                  accessible={true}
+                  allowFontScaling={false}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  className="w-full h-12 px-4 pb-0.5 text-white text-sm border rounded-base border-overlay-soft"
+                  keyboardType="email-address"
+                  onBlur={[Function]}
+                  onChangeText={[Function]}
+                  onFocus={[Function]}
+                  onSubmitEditing={[Function]}
+                  returnKeyType="next"
+                  testID="signup-email-input-input"
+                  value="john@example.com"
+                />
+              </View>
+            </View>
+          </View>
+          <View
+            className="mb-9"
+          >
+            <View
+              className="w-full"
+              testID="edit-address-input"
+            >
+              <View
+                className="relative"
+              >
+                <View
+                  className="bg-dark-blue px-1 z-1 left-4 absolute"
+                  collapsable={false}
+                  style={
+                    {
+                      "top": 14,
+                      "transform": [
+                        {
+                          "translateY": -26,
+                        },
+                      ],
+                    }
+                  }
+                >
+                  <Text
+                    accessibilityLabel="Address"
+                    accessibilityRole="text"
+                    accessible={true}
+                    allowFontScaling={false}
+                    collapsable={false}
+                    onPress={[Function]}
+                  >
+                    <Text
+                      accessible={true}
+                      allowFontScaling={false}
+                      className="text-sm font-montserrat-regular text-overlay-soft"
+                      maxFontSizeMultiplier={1.2}
+                    >
+                      Address
+                    </Text>
+                  </Text>
+                </View>
+                <TextInput
+                  accessibilityLabel="Address input field"
+                  accessibilityRole="text"
+                  accessible={true}
+                  allowFontScaling={false}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  className="w-full h-12 px-4 pb-0.5 text-white text-sm border rounded-base border-overlay-soft"
+                  onBlur={[Function]}
+                  onChangeText={[Function]}
+                  onFocus={[Function]}
+                  onSubmitEditing={[Function]}
+                  returnKeyType="next"
+                  testID="edit-address-input-input"
+                  value="123 Main St"
+                />
+              </View>
+            </View>
+          </View>
+          <View
+            className="mb-5"
+          >
+            <View
+              className="w-full mb-7"
+              testID="edit-phone-number-input"
+            >
+              <View
+                className="relative"
+              >
+                <View
+                  className="bg-dark-blue px-1 z-1 left-4 absolute"
+                  collapsable={false}
+                  style={
+                    {
+                      "top": 14,
+                      "transform": [
+                        {
+                          "translateY": -26,
+                        },
+                      ],
+                    }
+                  }
+                >
+                  <Text
+                    accessibilityLabel="Phone Number"
+                    accessibilityRole="text"
+                    accessible={true}
+                    allowFontScaling={false}
+                    collapsable={false}
+                    onPress={[Function]}
+                  >
+                    <Text
+                      accessible={true}
+                      allowFontScaling={false}
+                      className="text-sm font-montserrat-regular text-overlay-soft"
+                      maxFontSizeMultiplier={1.2}
+                    >
+                      Phone Number
+                    </Text>
+                  </Text>
+                </View>
+                <TextInput
+                  accessibilityLabel="Phone Number input field"
+                  accessibilityRole="text"
+                  accessible={true}
+                  allowFontScaling={false}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  className="w-full h-12 px-4 pb-0.5 text-white text-sm border rounded-base border-overlay-soft"
+                  inputMode="tel"
+                  keyboardType="phone-pad"
+                  onBlur={[Function]}
+                  onChangeText={[Function]}
+                  onFocus={[Function]}
+                  returnKeyType="done"
+                  testID="edit-phone-number-input-input"
+                  value="+1234567890"
+                />
               </View>
             </View>
           </View>
         </View>
+      </RCTScrollView>
+      <View
+        className="px-6 pt-3 pb-6"
+      >
+        <View
+          accessibilityLabel="Update My Profile"
+          accessibilityRole="button"
+          accessibilityState={
+            {
+              "busy": undefined,
+              "checked": undefined,
+              "disabled": true,
+              "expanded": undefined,
+              "selected": undefined,
+            }
+          }
+          accessibilityValue={
+            {
+              "max": undefined,
+              "min": undefined,
+              "now": undefined,
+              "text": undefined,
+            }
+          }
+          accessible={true}
+          collapsable={false}
+          focusable={false}
+          onClick={[Function]}
+          onResponderGrant={[Function]}
+          onResponderMove={[Function]}
+          onResponderRelease={[Function]}
+          onResponderTerminate={[Function]}
+          onResponderTerminationRequest={[Function]}
+          onStartShouldSetResponder={[Function]}
+          style={
+            {
+              "opacity": 1,
+            }
+          }
+          testID="update-my-profile-submit-button"
+        >
+          <View
+            className="py-5 px-6 items-center justify-center rounded-xl bg-gradient-to-r from-bg-none-active to-bg-none-active"
+          >
+            <Text
+              accessible={false}
+              className="font-montserrat-medium text-white text-center text-lg leading-6"
+              importantForAccessibility="no"
+              maxFontSizeMultiplier={1.2}
+              testID="update-my-profile-submit-button-text"
+            >
+              Update My Profile
+            </Text>
+          </View>
+        </View>
       </View>
-    </RCTScrollView>
+    </View>
   </View>
 </View>
 `;
