@@ -36,6 +36,8 @@ const toUserProfile = ({
 }: ApiUserProfile): UserProfile => ({
   id,
   email,
+  firstName,
+  lastName,
   fullName: [firstName, lastName].filter(Boolean).join(' '),
   phoneNumber: phoneNumber ?? undefined,
   address: address ?? undefined,
@@ -44,14 +46,17 @@ const toUserProfile = ({
   updatedAt,
 });
 
-// `PATCH /users/me` only accepts the fields below. `fullName` and `email` are
-// intentionally dropped: email is not editable via the API, and name needs the
-// firstName/lastName form split that is a follow-up.
+// `PATCH /users/me` accepts the fields below. `email` is intentionally
+// dropped: it is not editable via the API.
 const toUpdateRequest = ({
+  firstName,
+  lastName,
   phoneNumber,
   address,
   avatarUrl,
 }: UpdateProfileData): UpdateUserProfileRequest => ({
+  ...(firstName != null && { firstName }),
+  ...(lastName != null && { lastName }),
   ...(phoneNumber != null && { phoneNumber }),
   ...(address != null && { address }),
   ...(avatarUrl != null && { avatarUrl }),

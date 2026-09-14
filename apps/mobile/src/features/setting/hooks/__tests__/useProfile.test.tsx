@@ -154,7 +154,7 @@ describe('useUpdateProfile', () => {
     });
 
     act(() => {
-      result.current.mutate({ fullName: 'Jane Doe' });
+      result.current.mutate({ firstName: 'Jane' });
     });
 
     await waitFor(() => {
@@ -162,7 +162,7 @@ describe('useUpdateProfile', () => {
     });
 
     expect(profileService.updateProfile).toHaveBeenCalledWith({
-      fullName: 'Jane Doe',
+      firstName: 'Jane',
     });
     expect(result.current.data).toEqual(updatedProfile);
   });
@@ -181,7 +181,7 @@ describe('useUpdateProfile', () => {
     });
 
     act(() => {
-      result.current.mutate({ fullName: 'Jane Doe' });
+      result.current.mutate({ firstName: 'Jane' });
     });
 
     // Check optimistic update was applied
@@ -209,7 +209,7 @@ describe('useUpdateProfile', () => {
     });
 
     act(() => {
-      result.current.mutate({ fullName: 'Jane Doe' });
+      result.current.mutate({ firstName: 'Jane' });
     });
 
     await waitFor(() => {
@@ -235,7 +235,7 @@ describe('useUpdateProfile', () => {
     });
 
     act(() => {
-      result.current.mutate({ fullName: 'Jane Doe' });
+      result.current.mutate({ firstName: 'Jane' });
     });
 
     await waitFor(() => {
@@ -243,7 +243,7 @@ describe('useUpdateProfile', () => {
     });
 
     expect(profileService.updateProfile).toHaveBeenCalledWith({
-      fullName: 'Jane Doe',
+      firstName: 'Jane',
     });
   });
 });
