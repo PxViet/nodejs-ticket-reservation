@@ -19,7 +19,7 @@ import { UpdateProfileData } from '@/features/auth/types/auth';
 import { EditProfileForm } from '@/features/setting/components/EditProfileForm';
 
 // Layout
-import { KeyboardLayout } from '@/layouts/KeyboardLayout';
+import { KeyboardStickyLayout } from '@/layouts/KeyboardStickyLayout';
 
 // Store
 import { useLoadingStore } from '@/stores/loading';
@@ -94,13 +94,13 @@ const EditProfileScreen = () => {
   };
 
   return (
-    <KeyboardLayout>
+    <KeyboardStickyLayout>
       <EditProfileForm
         userInfo={profile}
         isPending={isLoading}
         onSubmit={handleSubmit}
       />
-    </KeyboardLayout>
+    </KeyboardStickyLayout>
   );
 };
 

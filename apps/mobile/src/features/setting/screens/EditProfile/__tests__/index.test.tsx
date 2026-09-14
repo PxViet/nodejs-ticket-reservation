@@ -10,6 +10,8 @@ import { UserProfile } from '@/features/auth/types/auth';
 const mockProfile: UserProfile = {
   id: 'user-123',
   fullName: 'John Doe',
+  firstName: 'John',
+  lastName: 'Doe',
   email: 'john@example.com',
   phoneNumber: '+1234567890',
   address: '123 Main St',
@@ -94,13 +96,13 @@ describe('EditProfileScreen', () => {
   describe('Rendering', () => {
     it('should render without crashing', () => {
       const { getByTestId } = render(<EditProfileScreen />);
-      expect(getByTestId('signup-fullname-input')).toBeTruthy();
+      expect(getByTestId('signup-firstname-input')).toBeTruthy();
     });
 
     it('should render EditProfileForm', () => {
       const { getByTestId } = render(<EditProfileScreen />);
 
-      expect(getByTestId('signup-fullname-input')).toBeTruthy();
+      expect(getByTestId('signup-firstname-input')).toBeTruthy();
       expect(getByTestId('signup-email-input')).toBeTruthy();
       expect(getByTestId('edit-address-input')).toBeTruthy();
       expect(getByTestId('edit-phone-number-input')).toBeTruthy();
@@ -110,12 +112,12 @@ describe('EditProfileScreen', () => {
     it('should display profile data in form fields', () => {
       const { getByTestId } = render(<EditProfileScreen />);
 
-      const fullNameInput = getByTestId('signup-fullname-input-input');
+      const firstNameInput = getByTestId('signup-firstname-input-input');
       const emailInput = getByTestId('signup-email-input-input');
       const addressInput = getByTestId('edit-address-input-input');
       const phoneInput = getByTestId('edit-phone-number-input-input');
 
-      expect(fullNameInput.props.value).toBe('John Doe');
+      expect(firstNameInput.props.value).toBe('John');
       expect(emailInput.props.value).toBe('john@example.com');
       expect(addressInput.props.value).toBe('123 Main St');
       expect(phoneInput.props.value).toBe('+1234567890');
@@ -124,7 +126,8 @@ describe('EditProfileScreen', () => {
     it('should render all input labels', () => {
       const { getByText } = render(<EditProfileScreen />);
 
-      expect(getByText('Full Name')).toBeTruthy();
+      expect(getByText('First Name')).toBeTruthy();
+      expect(getByText('Last Name')).toBeTruthy();
       expect(getByText('Email Address')).toBeTruthy();
       expect(getByText('Address')).toBeTruthy();
       expect(getByText('Phone Number')).toBeTruthy();
@@ -139,16 +142,16 @@ describe('EditProfileScreen', () => {
   describe('Form Submission', () => {
     it('should call updateProfile when form is submitted', async () => {
       const { getByTestId } = render(<EditProfileScreen />);
-      const fullNameInput = getByTestId('signup-fullname-input-input');
+      const firstNameInput = getByTestId('signup-firstname-input-input');
       const submitButton = getByTestId('update-my-profile-submit-button');
 
-      fireEvent.changeText(fullNameInput, 'Jane Doe');
+      fireEvent.changeText(firstNameInput, 'Jane');
       fireEvent.press(submitButton);
 
       await waitFor(() => {
         expect(mockUpdateProfile).toHaveBeenCalledWith(
           expect.objectContaining({
-            fullName: 'Jane Doe',
+            firstName: 'Jane',
           }),
           expect.any(Object),
         );
@@ -157,10 +160,10 @@ describe('EditProfileScreen', () => {
 
     it('should call showLoading before updating profile', async () => {
       const { getByTestId } = render(<EditProfileScreen />);
-      const fullNameInput = getByTestId('signup-fullname-input-input');
+      const firstNameInput = getByTestId('signup-firstname-input-input');
       const submitButton = getByTestId('update-my-profile-submit-button');
 
-      fireEvent.changeText(fullNameInput, 'Jane Doe');
+      fireEvent.changeText(firstNameInput, 'Jane');
       fireEvent.press(submitButton);
 
       await waitFor(() => {
@@ -170,10 +173,10 @@ describe('EditProfileScreen', () => {
 
     it('should call hideLoading after profile update completes', async () => {
       const { getByTestId } = render(<EditProfileScreen />);
-      const fullNameInput = getByTestId('signup-fullname-input-input');
+      const firstNameInput = getByTestId('signup-firstname-input-input');
       const submitButton = getByTestId('update-my-profile-submit-button');
 
-      fireEvent.changeText(fullNameInput, 'Jane Doe');
+      fireEvent.changeText(firstNameInput, 'Jane');
       fireEvent.press(submitButton);
 
       await waitFor(() => {
@@ -185,10 +188,10 @@ describe('EditProfileScreen', () => {
       mockUpdateProfile.mockResolvedValue({});
 
       const { getByTestId } = render(<EditProfileScreen />);
-      const fullNameInput = getByTestId('signup-fullname-input-input');
+      const firstNameInput = getByTestId('signup-firstname-input-input');
       const submitButton = getByTestId('update-my-profile-submit-button');
 
-      fireEvent.changeText(fullNameInput, 'Jane Doe');
+      fireEvent.changeText(firstNameInput, 'Jane');
       fireEvent.press(submitButton);
 
       await waitFor(() => {
@@ -211,10 +214,10 @@ describe('EditProfileScreen', () => {
       });
 
       const { getByTestId } = render(<EditProfileScreen />);
-      const fullNameInput = getByTestId('signup-fullname-input-input');
+      const firstNameInput = getByTestId('signup-firstname-input-input');
       const submitButton = getByTestId('update-my-profile-submit-button');
 
-      fireEvent.changeText(fullNameInput, 'Jane Doe');
+      fireEvent.changeText(firstNameInput, 'Jane');
       fireEvent.press(submitButton);
 
       await waitFor(() => {
@@ -237,10 +240,10 @@ describe('EditProfileScreen', () => {
       });
 
       const { getByTestId } = render(<EditProfileScreen />);
-      const fullNameInput = getByTestId('signup-fullname-input-input');
+      const firstNameInput = getByTestId('signup-firstname-input-input');
       const submitButton = getByTestId('update-my-profile-submit-button');
 
-      fireEvent.changeText(fullNameInput, 'Jane Doe');
+      fireEvent.changeText(firstNameInput, 'Jane');
       fireEvent.press(submitButton);
 
       await waitFor(() => {
@@ -252,10 +255,10 @@ describe('EditProfileScreen', () => {
       mockUpdateProfile.mockResolvedValue({});
 
       const { getByTestId } = render(<EditProfileScreen />);
-      const fullNameInput = getByTestId('signup-fullname-input-input');
+      const firstNameInput = getByTestId('signup-firstname-input-input');
       const submitButton = getByTestId('update-my-profile-submit-button');
 
-      fireEvent.changeText(fullNameInput, 'Jane Doe');
+      fireEvent.changeText(firstNameInput, 'Jane');
       fireEvent.press(submitButton);
 
       await waitFor(() => {
@@ -304,7 +307,8 @@ describe('EditProfileScreen', () => {
     it('should have correct accessibility labels on inputs', () => {
       const { getByLabelText } = render(<EditProfileScreen />);
 
-      expect(getByLabelText('Full Name input field')).toBeTruthy();
+      expect(getByLabelText('First Name input field')).toBeTruthy();
+      expect(getByLabelText('Last Name input field')).toBeTruthy();
       expect(getByLabelText('Email Address input field')).toBeTruthy();
       expect(getByLabelText('Address input field')).toBeTruthy();
       expect(getByLabelText('Phone Number input field')).toBeTruthy();
@@ -320,10 +324,10 @@ describe('EditProfileScreen', () => {
 
     it('should call showLoading before update and hideLoading after update', async () => {
       const { getByTestId } = render(<EditProfileScreen />);
-      const fullNameInput = getByTestId('signup-fullname-input-input');
+      const firstNameInput = getByTestId('signup-firstname-input-input');
       const submitButton = getByTestId('update-my-profile-submit-button');
 
-      fireEvent.changeText(fullNameInput, 'Jane Doe');
+      fireEvent.changeText(firstNameInput, 'Jane');
       fireEvent.press(submitButton);
 
       await waitFor(() => {
