@@ -4,11 +4,6 @@ import { TextInput } from 'react-native';
 // Component
 import { SignUpForm } from '../';
 
-// Mock react-native-safe-area-context
-jest.mock('react-native-safe-area-context', () => ({
-  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
-}));
-
 describe('SignUpForm Component', () => {
   const mockOnSubmit = jest.fn();
 
