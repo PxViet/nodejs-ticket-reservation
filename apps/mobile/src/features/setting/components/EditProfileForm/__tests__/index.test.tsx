@@ -19,6 +19,8 @@ describe('EditProfileForm Component', () => {
   const mockUserInfo: UserProfile = {
     id: 'user-123',
     fullName: 'John Doe',
+    firstName: 'John',
+    lastName: 'Doe',
     email: 'john@example.com',
     phoneNumber: '+1234567890',
     address: '123 Main St',
@@ -43,12 +45,13 @@ describe('EditProfileForm Component', () => {
   describe('Rendering', () => {
     it('should render without crashing', () => {
       const { getByTestId } = render(<EditProfileForm {...defaultProps} />);
-      expect(getByTestId('signup-fullname-input')).toBeTruthy();
+      expect(getByTestId('signup-firstname-input')).toBeTruthy();
     });
 
-    it('should render full name input field', () => {
+    it('should render first and last name input fields', () => {
       const { getByTestId } = render(<EditProfileForm {...defaultProps} />);
-      expect(getByTestId('signup-fullname-input')).toBeTruthy();
+      expect(getByTestId('signup-firstname-input')).toBeTruthy();
+      expect(getByTestId('signup-lastname-input')).toBeTruthy();
     });
 
     it('should render email input field', () => {
@@ -73,7 +76,8 @@ describe('EditProfileForm Component', () => {
 
     it('should display correct labels', () => {
       const { getByText } = render(<EditProfileForm {...defaultProps} />);
-      expect(getByText('Full Name')).toBeTruthy();
+      expect(getByText('First Name')).toBeTruthy();
+      expect(getByText('Last Name')).toBeTruthy();
       expect(getByText('Email Address')).toBeTruthy();
       expect(getByText('Address')).toBeTruthy();
       expect(getByText('Phone Number')).toBeTruthy();
@@ -87,12 +91,14 @@ describe('EditProfileForm Component', () => {
     it('should display default values from userInfo', () => {
       const { getByTestId } = render(<EditProfileForm {...defaultProps} />);
 
-      const fullNameInput = getByTestId('signup-fullname-input-input');
+      const firstNameInput = getByTestId('signup-firstname-input-input');
+      const lastNameInput = getByTestId('signup-lastname-input-input');
       const emailInput = getByTestId('signup-email-input-input');
       const addressInput = getByTestId('edit-address-input-input');
       const phoneNumberInput = getByTestId('edit-phone-number-input-input');
 
-      expect(fullNameInput.props.value).toBe('John Doe');
+      expect(firstNameInput.props.value).toBe('John');
+      expect(lastNameInput.props.value).toBe('Doe');
       expect(emailInput.props.value).toBe('john@example.com');
       expect(addressInput.props.value).toBe('123 Main St');
       expect(phoneNumberInput.props.value).toBe('+1234567890');
@@ -100,12 +106,20 @@ describe('EditProfileForm Component', () => {
   });
 
   describe('Form Interaction', () => {
-    it('should allow typing in full name input', () => {
+    it('should allow typing in first name input', () => {
       const { getByTestId } = render(<EditProfileForm {...defaultProps} />);
-      const fullNameInput = getByTestId('signup-fullname-input-input');
+      const firstNameInput = getByTestId('signup-firstname-input-input');
 
-      fireEvent.changeText(fullNameInput, 'Jane Smith');
-      expect(fullNameInput.props.value).toBe('Jane Smith');
+      fireEvent.changeText(firstNameInput, 'Jane');
+      expect(firstNameInput.props.value).toBe('Jane');
+    });
+
+    it('should allow typing in last name input', () => {
+      const { getByTestId } = render(<EditProfileForm {...defaultProps} />);
+      const lastNameInput = getByTestId('signup-lastname-input-input');
+
+      fireEvent.changeText(lastNameInput, 'Smith');
+      expect(lastNameInput.props.value).toBe('Smith');
     });
 
     it('should allow typing in email input', () => {
@@ -132,13 +146,26 @@ describe('EditProfileForm Component', () => {
       expect(phoneNumberInput.props.value).toBe('+9876543210');
     });
 
-    it('should focus email input when full name input submits', () => {
+    it('should focus last name input when first name input submits', () => {
       const { getByTestId } = render(<EditProfileForm {...defaultProps} />);
-      const fullNameInput = getByTestId('signup-fullname-input-input');
+      const firstNameInput = getByTestId('signup-firstname-input-input');
 
       const focusSpy = jest.spyOn(TextInput.prototype, 'focus');
 
-      fireEvent(fullNameInput, 'submitEditing');
+      fireEvent(firstNameInput, 'submitEditing');
+
+      expect(focusSpy).toHaveBeenCalledTimes(1);
+
+      focusSpy.mockRestore();
+    });
+
+    it('should focus email input when last name input submits', () => {
+      const { getByTestId } = render(<EditProfileForm {...defaultProps} />);
+      const lastNameInput = getByTestId('signup-lastname-input-input');
+
+      const focusSpy = jest.spyOn(TextInput.prototype, 'focus');
+
+      fireEvent(lastNameInput, 'submitEditing');
 
       expect(focusSpy).toHaveBeenCalledTimes(1);
 
@@ -173,32 +200,47 @@ describe('EditProfileForm Component', () => {
   });
 
   describe('Form Validation', () => {
-    it('should show validation error when full name is empty', async () => {
+    it('should show validation error when first name is empty', async () => {
       const { getByTestId, queryByTestId } = render(
         <EditProfileForm {...defaultProps} />,
       );
-      const fullNameInput = getByTestId('signup-fullname-input-input');
+      const firstNameInput = getByTestId('signup-firstname-input-input');
 
-      fireEvent.changeText(fullNameInput, '');
-      fireEvent(fullNameInput, 'blur');
+      fireEvent.changeText(firstNameInput, '');
+      fireEvent(firstNameInput, 'blur');
 
       await waitFor(() => {
-        const errorMessage = queryByTestId('signup-fullname-input-error');
+        const errorMessage = queryByTestId('signup-firstname-input-error');
         expect(errorMessage).toBeTruthy();
       });
     });
 
-    it('should show validation error when full name is too short', async () => {
+    it('should show validation error when first name is too short', async () => {
       const { getByTestId, queryByTestId } = render(
         <EditProfileForm {...defaultProps} />,
       );
-      const fullNameInput = getByTestId('signup-fullname-input-input');
+      const firstNameInput = getByTestId('signup-firstname-input-input');
 
-      fireEvent.changeText(fullNameInput, 'A');
-      fireEvent(fullNameInput, 'blur');
+      fireEvent.changeText(firstNameInput, 'A');
+      fireEvent(firstNameInput, 'blur');
 
       await waitFor(() => {
-        const errorMessage = queryByTestId('signup-fullname-input-error');
+        const errorMessage = queryByTestId('signup-firstname-input-error');
+        expect(errorMessage).toBeTruthy();
+      });
+    });
+
+    it('should show validation error when last name is empty', async () => {
+      const { getByTestId, queryByTestId } = render(
+        <EditProfileForm {...defaultProps} />,
+      );
+      const lastNameInput = getByTestId('signup-lastname-input-input');
+
+      fireEvent.changeText(lastNameInput, '');
+      fireEvent(lastNameInput, 'blur');
+
+      await waitFor(() => {
+        const errorMessage = queryByTestId('signup-lastname-input-error');
         expect(errorMessage).toBeTruthy();
       });
     });
@@ -253,18 +295,46 @@ describe('EditProfileForm Component', () => {
         <EditProfileForm {...defaultProps} />,
       );
 
-      const fullNameInput = getByTestId('signup-fullname-input-input');
+      const firstNameInput = getByTestId('signup-firstname-input-input');
       const emailInput = getByTestId('signup-email-input-input');
 
-      fireEvent.changeText(fullNameInput, 'Valid Name');
-      fireEvent(fullNameInput, 'blur');
+      fireEvent.changeText(firstNameInput, 'Valid');
+      fireEvent(firstNameInput, 'blur');
 
       fireEvent.changeText(emailInput, 'valid@email.com');
       fireEvent(emailInput, 'blur');
 
       await waitFor(() => {
-        expect(queryByTestId('signup-fullname-input-error')).toBeNull();
+        expect(queryByTestId('signup-firstname-input-error')).toBeNull();
         expect(queryByTestId('signup-email-input-error')).toBeNull();
+      });
+    });
+
+    it('should show validation error when phone number is too short', async () => {
+      const { getByTestId, queryByTestId } = render(
+        <EditProfileForm {...defaultProps} />,
+      );
+      const phoneNumberInput = getByTestId('edit-phone-number-input-input');
+
+      fireEvent.changeText(phoneNumberInput, '99');
+      fireEvent(phoneNumberInput, 'blur');
+
+      await waitFor(() => {
+        expect(queryByTestId('edit-phone-number-input-error')).toBeTruthy();
+      });
+    });
+
+    it('should accept a local phone number starting with 0', async () => {
+      const { getByTestId, queryByTestId } = render(
+        <EditProfileForm {...defaultProps} />,
+      );
+      const phoneNumberInput = getByTestId('edit-phone-number-input-input');
+
+      fireEvent.changeText(phoneNumberInput, '0912345678');
+      fireEvent(phoneNumberInput, 'blur');
+
+      await waitFor(() => {
+        expect(queryByTestId('edit-phone-number-input-error')).toBeNull();
       });
     });
 
@@ -300,32 +370,32 @@ describe('EditProfileForm Component', () => {
   describe('Form Submission', () => {
     it('should call onSubmit with only dirty fields on submit', async () => {
       const { getByTestId } = render(<EditProfileForm {...defaultProps} />);
-      const fullNameInput = getByTestId('signup-fullname-input-input');
+      const firstNameInput = getByTestId('signup-firstname-input-input');
       const submitButton = getByTestId('update-my-profile-submit-button');
 
-      fireEvent.changeText(fullNameInput, 'New Name');
+      fireEvent.changeText(firstNameInput, 'New');
       fireEvent.press(submitButton);
 
       await waitFor(() => {
         expect(mockOnSubmit).toHaveBeenCalledWith({
-          fullName: 'New Name',
+          firstName: 'New',
         });
       });
     });
 
     it('should include multiple dirty fields in submission', async () => {
       const { getByTestId } = render(<EditProfileForm {...defaultProps} />);
-      const fullNameInput = getByTestId('signup-fullname-input-input');
+      const firstNameInput = getByTestId('signup-firstname-input-input');
       const addressInput = getByTestId('edit-address-input-input');
       const submitButton = getByTestId('update-my-profile-submit-button');
 
-      fireEvent.changeText(fullNameInput, 'Updated Name');
+      fireEvent.changeText(firstNameInput, 'Updated');
       fireEvent.changeText(addressInput, 'New Address');
       fireEvent.press(submitButton);
 
       await waitFor(() => {
         expect(mockOnSubmit).toHaveBeenCalledWith({
-          fullName: 'Updated Name',
+          firstName: 'Updated',
           address: 'New Address',
         });
       });
@@ -339,6 +409,59 @@ describe('EditProfileForm Component', () => {
 
       await waitFor(() => {
         expect(mockOnSubmit).not.toHaveBeenCalled();
+      });
+    });
+
+    it('should call onSubmit when the profile has no avatar', async () => {
+      const { avatarUrl: _avatarUrl, ...userWithoutAvatar } = mockUserInfo;
+
+      const { getByTestId } = render(
+        <EditProfileForm {...defaultProps} userInfo={userWithoutAvatar} />,
+      );
+      const firstNameInput = getByTestId('signup-firstname-input-input');
+      const submitButton = getByTestId('update-my-profile-submit-button');
+
+      fireEvent.changeText(firstNameInput, 'New');
+      fireEvent.press(submitButton);
+
+      await waitFor(() => {
+        expect(mockOnSubmit).toHaveBeenCalledWith({
+          firstName: 'New',
+        });
+      });
+    });
+
+    it('should call onSubmit when the profile has no phone number', async () => {
+      const { phoneNumber: _phoneNumber, ...userWithoutPhone } = mockUserInfo;
+
+      const { getByTestId } = render(
+        <EditProfileForm {...defaultProps} userInfo={userWithoutPhone} />,
+      );
+      const firstNameInput = getByTestId('signup-firstname-input-input');
+      const submitButton = getByTestId('update-my-profile-submit-button');
+
+      fireEvent.changeText(firstNameInput, 'New');
+      fireEvent.press(submitButton);
+
+      await waitFor(() => {
+        expect(mockOnSubmit).toHaveBeenCalledWith({
+          firstName: 'New',
+        });
+      });
+    });
+
+    it('should call onSubmit when the user removes their phone number', async () => {
+      const { getByTestId } = render(<EditProfileForm {...defaultProps} />);
+      const phoneNumberInput = getByTestId('edit-phone-number-input-input');
+      const submitButton = getByTestId('update-my-profile-submit-button');
+
+      fireEvent.changeText(phoneNumberInput, '');
+      fireEvent.press(submitButton);
+
+      await waitFor(() => {
+        expect(mockOnSubmit).toHaveBeenCalledWith({
+          phoneNumber: '',
+        });
       });
     });
 
@@ -368,10 +491,10 @@ describe('EditProfileForm Component', () => {
 
     it('should have submit button enabled when form is dirty', async () => {
       const { getByTestId } = render(<EditProfileForm {...defaultProps} />);
-      const fullNameInput = getByTestId('signup-fullname-input-input');
+      const firstNameInput = getByTestId('signup-firstname-input-input');
       const submitButton = getByTestId('update-my-profile-submit-button');
 
-      fireEvent.changeText(fullNameInput, 'New Name');
+      fireEvent.changeText(firstNameInput, 'New');
 
       await waitFor(() => {
         expect(submitButton.props.accessibilityState?.disabled).toBe(false);
@@ -398,13 +521,15 @@ describe('EditProfileForm Component', () => {
         />,
       );
 
-      expect(getByTestId('signup-fullname-input')).toBeTruthy();
+      expect(getByTestId('signup-firstname-input')).toBeTruthy();
     });
 
     it('should handle null address and phoneNumber values', () => {
       const userWithNulls: UserProfile = {
         id: 'user-456',
         fullName: 'Test User',
+        firstName: 'Test',
+        lastName: 'User',
         email: 'test@example.com',
         address: undefined,
         phoneNumber: undefined,
