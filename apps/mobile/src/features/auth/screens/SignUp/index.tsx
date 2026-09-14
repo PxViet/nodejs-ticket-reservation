@@ -1,10 +1,4 @@
 import { useEffect } from 'react';
-import { KeyboardAvoidingView, Platform } from 'react-native';
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
-import { withUniwind } from 'uniwind';
 import { useShallow } from 'zustand/react/shallow';
 
 // Hooks
@@ -16,14 +10,13 @@ import { SignUpData } from '@/features/auth/types/auth';
 // Components
 import { SignUpForm } from '@/features/auth/components/SignUpForm';
 
+// Layout
+import { KeyboardStickyLayout } from '@/layouts/KeyboardStickyLayout';
+
 // Store
 import { useLoadingStore } from '@/stores/loading';
 
-const StyledSafeAreaView = withUniwind(SafeAreaView);
-const StyledKeyboardAvoidingView = withUniwind(KeyboardAvoidingView);
-
 const SignupScreen = () => {
-  const insets = useSafeAreaInsets();
   const { mutate: signUp, isPending: isSigningUp } = useSignUp();
 
   const { showLoading, hideLoading } = useLoadingStore(
@@ -47,21 +40,9 @@ const SignupScreen = () => {
   };
 
   return (
-    <StyledSafeAreaView edges={['bottom']} className="flex-1 bg-bg-primary">
-      {/* Not `KeyboardLayout`: that wraps everything in one ScrollView, which
-          leaves no way to keep the Sign Up button outside of it and pinned to
-          the bottom while the fields above scroll. */}
-      <StyledKeyboardAvoidingView
-        className="flex-1"
-        behavior="padding"
-        keyboardVerticalOffset={Platform.select({
-          ios: -insets.bottom,
-          android: 0,
-        })}
-      >
-        <SignUpForm isPending={isSigningUp} onSubmit={handleSubmit} />
-      </StyledKeyboardAvoidingView>
-    </StyledSafeAreaView>
+    <KeyboardStickyLayout>
+      <SignUpForm isPending={isSigningUp} onSubmit={handleSubmit} />
+    </KeyboardStickyLayout>
   );
 };
 

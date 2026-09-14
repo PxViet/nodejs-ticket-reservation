@@ -1,16 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  View,
-} from 'react-native';
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
-import { withUniwind } from 'uniwind';
+import { ActivityIndicator, Alert, View } from 'react-native';
 
 // Types
 import type {
@@ -31,11 +20,11 @@ import {
   useUpdateMovie,
 } from '@/features/admin/hooks/useAdminMovieMutations';
 
+// Layout
+import { KeyboardStickyLayout } from '@/layouts/KeyboardStickyLayout';
+
 // Schema
 import { MovieFormData } from '@/features/admin/schemas/movie-form';
-
-const StyledSafeAreaView = withUniwind(SafeAreaView);
-const StyledKeyboardAvoidingView = withUniwind(KeyboardAvoidingView);
 
 const toRequestPayload = ({
   title,
@@ -61,7 +50,6 @@ const MovieFormScreen = () => {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const isEditing = !!id;
   const toast = useToastAlert();
-  const insets = useSafeAreaInsets();
 
   const { data: movie, isLoading: isMovieLoading } = useAdminMovie(id);
   const { mutateAsync: createMovie, isPending: isCreating } = useCreateMovie();
@@ -127,41 +115,29 @@ const MovieFormScreen = () => {
   };
 
   return (
-    <StyledSafeAreaView edges={['bottom']} className="flex-1 bg-bg-primary">
-      {/* Not `KeyboardLayout`: that wraps everything in one ScrollView, which
-          leaves no way to keep the button group outside of it and pinned to
-          the bottom while the fields above scroll. */}
-      <StyledKeyboardAvoidingView
-        className="flex-1"
-        behavior="padding"
-        keyboardVerticalOffset={Platform.select({
-          ios: -insets.bottom,
-          android: 0,
-        })}
-      >
-        <MovieForm
-          isEditing={isEditing}
-          isPending={isCreating || isUpdating}
-          isDeleting={isDeleting}
-          defaultValues={
-            movie
-              ? {
-                  title: movie.title,
-                  synopsis: movie.synopsis,
-                  posterUrl: movie.posterUrl,
-                  durationMinutes: String(movie.durationMinutes),
-                  language: movie.language,
-                  releaseDate: movie.releaseDate.slice(0, 10),
-                  rating: movie.rating ? String(movie.rating) : '',
-                  genreIds: movie.genres.map(genre => genre.id),
-                }
-              : undefined
-          }
-          onSubmit={handleSubmit}
-          onDelete={isEditing ? handleDelete : undefined}
-        />
-      </StyledKeyboardAvoidingView>
-    </StyledSafeAreaView>
+    <KeyboardStickyLayout>
+      <MovieForm
+        isEditing={isEditing}
+        isPending={isCreating || isUpdating}
+        isDeleting={isDeleting}
+        defaultValues={
+          movie
+            ? {
+                title: movie.title,
+                synopsis: movie.synopsis,
+                posterUrl: movie.posterUrl,
+                durationMinutes: String(movie.durationMinutes),
+                language: movie.language,
+                releaseDate: movie.releaseDate.slice(0, 10),
+                rating: movie.rating ? String(movie.rating) : '',
+                genreIds: movie.genres.map(genre => genre.id),
+              }
+            : undefined
+        }
+        onSubmit={handleSubmit}
+        onDelete={isEditing ? handleDelete : undefined}
+      />
+    </KeyboardStickyLayout>
   );
 };
 
