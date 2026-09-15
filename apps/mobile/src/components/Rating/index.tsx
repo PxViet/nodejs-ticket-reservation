@@ -11,7 +11,7 @@ import { Typo } from '../Typo';
 import { clampedRatingToStars } from '@/utils/formats';
 
 interface RatingProps {
-  rating: number; // 0 to 5
+  rating: number;
   size?: number;
   spacing?: number;
 }
@@ -25,7 +25,7 @@ export const Rating = memo(
         testID="rating"
         className={`flex-row items-center gap-${spacing}`}
         accessibilityRole="image"
-        accessibilityLabel={`Rating: ${rating.toFixed(1)} out of 5 stars`}
+        accessibilityLabel={`Rating: ${rating.toFixed(1)} out of 10`}
         accessible
       >
         {stars.map((filled, index) => (
