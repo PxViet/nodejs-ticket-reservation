@@ -68,6 +68,10 @@ export const TOAST_DURATION = 3000;
 
 export const TEXT_MAX_LENGTH = 150;
 
+// The API has no wallet/payment module yet, so checkout skips the balance
+// check. Flip this back on once wallet lands.
+export const IS_WALLET_ENABLED = process.env.EXPO_PUBLIC_IS_WALLET_ENABLED;
+
 export const TOP_UP_MIN_AMOUNT = 10000;
 export const TOP_UP_MAX_AMOUNT = 10000000;
 export const TOP_UP_AMOUNTS = [
