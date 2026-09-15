@@ -209,13 +209,13 @@ export const formatShowtimeDate = (
   return '';
 };
 
-// Clamp rating between 0 and 5
-// Each star represents 1 point (0-5 scale)
+// Rating is on the API's 0-10 scale (BR-03), rendered as 5 stars
+// Each star represents 2 rating points
 export const clampedRatingToStars = (rating: number) => {
-  // Clamp rating between 0 and 5
-  const clampedRating = Math.max(0, Math.min(5, rating));
+  // Clamp rating between 0 and 10, then convert to the 0-5 star scale
+  const clampedRating = Math.max(0, Math.min(10, rating)) / 2;
 
-  // Calculate filled percentage for each star (each star represents 1 point)
+  // Calculate filled percentage for each star (each star represents 1 star point)
   const stars = Array.from({ length: 5 }, (_, index) => {
     const starValue = index + 1;
     if (clampedRating >= starValue) {
