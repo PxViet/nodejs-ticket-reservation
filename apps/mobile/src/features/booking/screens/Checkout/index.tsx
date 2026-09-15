@@ -15,7 +15,13 @@ import { HorizontalCard } from '@/components/HorizontalCard';
 import { Typo } from '@/components/Typo';
 
 // Constants
-import { ERROR_MESSAGES, PARAMS, ROUTES, Size } from '@/constants';
+import {
+  ERROR_MESSAGES,
+  IS_WALLET_ENABLED,
+  PARAMS,
+  ROUTES,
+  Size,
+} from '@/constants';
 
 // Hooks
 import { useConfirmReservation } from '@/features/booking/hooks/useReservations';
@@ -84,9 +90,11 @@ const CheckoutScreen = () => {
   // Calculate total price using booking store method (includes discount)
   const totalPrice = getTotalAmount();
 
-  const isEnoughBalance = useMemo(() => {
-    return wallet && wallet?.balance ? wallet.balance : 0 >= totalPrice;
-  }, [wallet, totalPrice]);
+  // Without a wallet there is nothing to pay from, so checkout is never gated.
+  const isEnoughBalance = useMemo(
+    () => !IS_WALLET_ENABLED || (wallet?.balance ?? 0) >= totalPrice,
+    [wallet, totalPrice],
+  );
 
   const orderRows = useMemo(
     () => [
@@ -278,17 +286,19 @@ const CheckoutScreen = () => {
           <Divider />
 
           {/* Wallet Information */}
-          <View className="my-6">
-            <DetailRow
-              label="Your Wallet"
-              value={formatIDR(wallet?.balance || 0)}
-              valueClassName={cn(
-                'font-montserrat-semibold',
-                isEnoughBalance ? 'text-primary' : 'text-text-error',
-              )}
-              testID="wallet-balance"
-            />
-          </View>
+          {IS_WALLET_ENABLED && (
+            <View className="my-6">
+              <DetailRow
+                label="Your Wallet"
+                value={formatIDR(wallet?.balance || 0)}
+                valueClassName={cn(
+                  'font-montserrat-semibold',
+                  isEnoughBalance ? 'text-primary' : 'text-text-error',
+                )}
+                testID="wallet-balance"
+              />
+            </View>
+          )}
         </View>
 
         <Button

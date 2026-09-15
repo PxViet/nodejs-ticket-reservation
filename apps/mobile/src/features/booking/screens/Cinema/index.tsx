@@ -50,10 +50,12 @@ const CinemaScreen = () => {
     movieId?: string;
   }>();
   const movieId = params.movieId || '';
+  const DATE_LABELS = getDayOfWeekLabels();
 
-  // '' means every hall — no `hallId` on the request.
   const [selectedHallId, setSelectedHallId] = useState<string>('');
-  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [selectedDate, setSelectedDate] = useState<string>(
+    () => DATE_LABELS[0]?.id || '',
+  );
   const [selectedShowtime, setSelectedShowtime] = useState<{
     hallId: string;
     showtimeId: string;
@@ -64,23 +66,18 @@ const CinemaScreen = () => {
 
   const iconColorConfig = useResolveClassNames('text-white');
 
-  const DATE_LABELS = getDayOfWeekLabels();
-
-  // Use selected date or default to today's date
-  const showDate = selectedDate || DATE_LABELS[0]?.id || '';
-
   const {
     data: showtimesData,
     isLoading,
     isError,
     error: showtimesError,
-  } = useShowtimes(movieId, showDate, selectedHallId || undefined);
+  } = useShowtimes(movieId, selectedDate, selectedHallId || undefined);
 
   const hallsWithShowtimes = useMemo(() => {
     if (!showtimesData || showtimesData.length === 0) return [];
 
-    return formatShowTimes(showtimesData, showDate);
-  }, [showtimesData, showDate]);
+    return formatShowTimes(showtimesData, selectedDate);
+  }, [showtimesData, selectedDate]);
 
   const isDisabled = useMemo(
     () => selectedShowtime && selectedDate,

@@ -152,7 +152,13 @@ describe('CheckoutScreen', () => {
       expect(getByTestId('order-seats')).toBeTruthy();
       expect(getByTestId('order-price')).toBeTruthy();
       expect(getByTestId('order-total')).toBeTruthy();
-      expect(getByTestId('wallet-balance')).toBeTruthy();
+    });
+
+    it('should hide the wallet balance while wallet is disabled', () => {
+      const { queryByTestId } = render(<CheckoutScreen />, {
+        wrapper: createWrapper(),
+      });
+      expect(queryByTestId('wallet-balance')).toBeNull();
     });
 
     it('should render checkout button', () => {
@@ -224,6 +230,21 @@ describe('CheckoutScreen', () => {
       expect(mockShowLoading).toHaveBeenCalledWith(
         'Confirming your reservation...',
       );
+      expect(mockConfirmReservation).toHaveBeenCalledWith(
+        ['hold-1', 'hold-2'],
+        expect.any(Object),
+      );
+    });
+
+    it('should allow checkout without enough wallet balance', () => {
+      mockWalletData = { id: 'wallet1', balance: 0, userId: 'user1' };
+
+      const { getByTestId } = render(<CheckoutScreen />, {
+        wrapper: createWrapper(),
+      });
+
+      fireEvent.press(getByTestId('checkout-button'));
+
       expect(mockConfirmReservation).toHaveBeenCalledWith(
         ['hold-1', 'hold-2'],
         expect.any(Object),
