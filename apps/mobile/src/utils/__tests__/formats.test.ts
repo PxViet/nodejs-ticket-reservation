@@ -400,19 +400,19 @@ describe('formatShowtimeDate', () => {
 
 describe('clampedRatingToStars', () => {
   it('should return 5 star values', () => {
-    const stars = clampedRatingToStars(3.5);
+    const stars = clampedRatingToStars(7);
     expect(stars).toHaveLength(5);
   });
 
-  it('should clamp rating between 0 and 5', () => {
+  it('should clamp rating between 0 and 10', () => {
     const starsNegative = clampedRatingToStars(-1);
-    const starsHigh = clampedRatingToStars(10);
-    expect(starsNegative.every(s => s >= 0 && s <= 1)).toBe(true);
-    expect(starsHigh.every(s => s >= 0 && s <= 1)).toBe(true);
+    const starsHigh = clampedRatingToStars(20);
+    expect(starsNegative.every(s => s === 0)).toBe(true);
+    expect(starsHigh.every(s => s === 1)).toBe(true);
   });
 
   it('should return fully filled stars for rating >= star value', () => {
-    const stars = clampedRatingToStars(3);
+    const stars = clampedRatingToStars(6);
     expect(stars[0]).toBe(1); // First star
     expect(stars[1]).toBe(1); // Second star
     expect(stars[2]).toBe(1); // Third star
@@ -420,8 +420,13 @@ describe('clampedRatingToStars', () => {
   });
 
   it('should return partial fill for fractional rating', () => {
-    const stars = clampedRatingToStars(3.5);
+    const stars = clampedRatingToStars(7);
     expect(stars[3]).toBe(0.5); // Fourth star partially filled
+  });
+
+  it('should map a 10-point rating to half as many stars', () => {
+    const stars = clampedRatingToStars(7.5);
+    expect(stars).toEqual([1, 1, 1, 0.75, 0]);
   });
 
   it('should return all zeros for zero rating', () => {
@@ -429,8 +434,8 @@ describe('clampedRatingToStars', () => {
     expect(stars.every(s => s === 0)).toBe(true);
   });
 
-  it('should return all ones for rating >= 5', () => {
-    const stars = clampedRatingToStars(5);
+  it('should return all ones for rating of 10', () => {
+    const stars = clampedRatingToStars(10);
     expect(stars.every(s => s === 1)).toBe(true);
   });
 });

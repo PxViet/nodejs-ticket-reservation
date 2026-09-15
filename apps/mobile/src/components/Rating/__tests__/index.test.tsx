@@ -45,22 +45,18 @@ describe('Rating Component', () => {
       expect(getByTestId('rating')).toBeTruthy();
     });
 
-    it('should display clamped rating in accessibility label for rating above 5', () => {
+    it('should display clamped rating in accessibility label for rating above 10', () => {
       const { getByTestId } = render(<Rating rating={11} />);
       const container = getByTestId('rating');
 
-      expect(container.props.accessibilityLabel).toBe(
-        'Rating: 11.0 out of 5 stars',
-      );
+      expect(container.props.accessibilityLabel).toBe('Rating: 11.0 out of 10');
     });
 
     it('should display clamped rating in accessibility label for rating below 0', () => {
       const { getByTestId } = render(<Rating rating={-1} />);
       const container = getByTestId('rating');
 
-      expect(container.props.accessibilityLabel).toBe(
-        'Rating: -1.0 out of 5 stars',
-      );
+      expect(container.props.accessibilityLabel).toBe('Rating: -1.0 out of 10');
     });
   });
 });
