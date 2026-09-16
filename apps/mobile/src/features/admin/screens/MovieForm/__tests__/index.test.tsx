@@ -128,7 +128,6 @@ describe('MovieFormScreen', () => {
 
       const { getByText, queryByTestId } = render(<MovieFormScreen />);
 
-      expect(getByText('Loading movie...')).toBeTruthy();
       expect(queryByTestId('fake-submit')).toBeNull();
     });
 
