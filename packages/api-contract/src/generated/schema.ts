@@ -621,6 +621,7 @@ export interface components {
             releaseDate?: string;
             rating?: number;
             genreIds?: string[];
+            isActive?: boolean;
         };
         HallResponseDto: {
             id: string;

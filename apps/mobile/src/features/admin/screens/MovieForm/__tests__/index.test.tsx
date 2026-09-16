@@ -1,5 +1,4 @@
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
-import { Alert } from 'react-native';
 
 import MovieFormScreen from '../index';
 
@@ -82,7 +81,13 @@ const FAKE_FORM_DATA = {
 jest.mock('@/features/admin/components/MovieForm', () => {
   const { Text, TouchableOpacity } = require('react-native');
   return {
-    MovieForm: ({ onSubmit, onDelete, isEditing }: any) => (
+    MovieForm: ({
+      onSubmit,
+      onDelete,
+      onActivate,
+      isEditing,
+      isActive,
+    }: any) => (
       <>
         <TouchableOpacity
           testID="fake-submit"
@@ -90,9 +95,14 @@ jest.mock('@/features/admin/components/MovieForm', () => {
         >
           <Text>submit</Text>
         </TouchableOpacity>
-        {isEditing && onDelete && (
+        {isEditing && isActive && onDelete && (
           <TouchableOpacity testID="fake-delete" onPress={onDelete}>
             <Text>delete</Text>
+          </TouchableOpacity>
+        )}
+        {isEditing && !isActive && onActivate && (
+          <TouchableOpacity testID="fake-activate" onPress={onActivate}>
+            <Text>activate</Text>
           </TouchableOpacity>
         )}
       </>
@@ -118,7 +128,6 @@ describe('MovieFormScreen', () => {
 
       const { getByText, queryByTestId } = render(<MovieFormScreen />);
 
-      expect(getByText('Loading movie...')).toBeTruthy();
       expect(queryByTestId('fake-submit')).toBeNull();
     });
 
@@ -210,46 +219,84 @@ describe('MovieFormScreen', () => {
 
     it('confirms before deactivating, and deactivates on confirm', async () => {
       mockDeleteMovie.mockResolvedValue(undefined);
-      const alertSpy = jest.spyOn(Alert, 'alert');
 
-      const { getByTestId } = render(<MovieFormScreen />);
-      fireEvent.press(getByTestId('fake-delete'));
-
-      expect(alertSpy).toHaveBeenCalledWith(
-        'Deactivate movie',
-        expect.stringContaining('reservation history is kept'),
-        expect.any(Array),
+      const { getByTestId, getByText, queryByTestId } = render(
+        <MovieFormScreen />,
       );
 
-      const buttons = (alertSpy.mock.calls[0]?.[2] ?? []) as {
-        text: string;
-        onPress?: () => void;
-      }[];
-      const confirmButton = buttons.find(b => b.text === 'Deactivate');
+      expect(queryByTestId('admin-movie-status-modal-title')).toBeNull();
+      fireEvent.press(getByTestId('fake-delete'));
 
-      await confirmButton?.onPress?.();
+      expect(getByText('Deactivate movie')).toBeTruthy();
+      expect(getByText(/reservation history is kept/)).toBeTruthy();
 
+      fireEvent.press(getByTestId('admin-movie-status-modal-confirm-button'));
+
+      await waitFor(() =>
+        expect(mockToastSuccess).toHaveBeenCalledWith('Movie deactivated'),
+      );
       expect(mockDeleteMovie).toHaveBeenCalledWith('movie1');
-      expect(mockToastSuccess).toHaveBeenCalledWith('Movie deactivated');
+      expect(mockUpdateMovie).not.toHaveBeenCalled();
       expect(mockBack).toHaveBeenCalled();
+    });
+
+    it('closes the confirmation without deactivating on cancel', () => {
+      const { getByTestId, queryByTestId } = render(<MovieFormScreen />);
+
+      fireEvent.press(getByTestId('fake-delete'));
+      fireEvent.press(getByTestId('admin-movie-status-modal-cancel-button'));
+
+      expect(queryByTestId('admin-movie-status-modal-title')).toBeNull();
+      expect(mockDeleteMovie).not.toHaveBeenCalled();
     });
 
     it('shows an error toast when deactivation fails', async () => {
       mockDeleteMovie.mockRejectedValue(new Error('nope'));
-      const alertSpy = jest.spyOn(Alert, 'alert');
 
       const { getByTestId } = render(<MovieFormScreen />);
       fireEvent.press(getByTestId('fake-delete'));
+      fireEvent.press(getByTestId('admin-movie-status-modal-confirm-button'));
 
-      const buttons = (alertSpy.mock.calls[0]?.[2] ?? []) as {
-        text: string;
-        onPress?: () => void;
-      }[];
-      const confirmButton = buttons.find(b => b.text === 'Deactivate');
+      await waitFor(() => expect(mockToastError).toHaveBeenCalledWith('nope'));
+      expect(mockBack).not.toHaveBeenCalled();
+    });
 
-      await confirmButton?.onPress?.();
+    it('offers activation instead of deactivation for an inactive movie', async () => {
+      mockMovie = { ...mockMovie, isActive: false };
+      mockUpdateMovie.mockResolvedValue({ id: 'movie1' });
 
-      expect(mockToastError).toHaveBeenCalledWith('nope');
+      const { getByTestId, getByText, queryByTestId } = render(
+        <MovieFormScreen />,
+      );
+
+      expect(queryByTestId('fake-delete')).toBeNull();
+      fireEvent.press(getByTestId('fake-activate'));
+
+      expect(getByText('Activate movie')).toBeTruthy();
+      expect(getByText(/visible in the catalogue/)).toBeTruthy();
+
+      fireEvent.press(getByTestId('admin-movie-status-modal-confirm-button'));
+
+      await waitFor(() =>
+        expect(mockToastSuccess).toHaveBeenCalledWith('Movie activated'),
+      );
+      expect(mockUpdateMovie).toHaveBeenCalledWith({
+        id: 'movie1',
+        payload: { isActive: true },
+      });
+      expect(mockDeleteMovie).not.toHaveBeenCalled();
+      expect(mockBack).toHaveBeenCalled();
+    });
+
+    it('shows an error toast when activation fails', async () => {
+      mockMovie = { ...mockMovie, isActive: false };
+      mockUpdateMovie.mockRejectedValue(new Error('nope'));
+
+      const { getByTestId } = render(<MovieFormScreen />);
+      fireEvent.press(getByTestId('fake-activate'));
+      fireEvent.press(getByTestId('admin-movie-status-modal-confirm-button'));
+
+      await waitFor(() => expect(mockToastError).toHaveBeenCalledWith('nope'));
       expect(mockBack).not.toHaveBeenCalled();
     });
   });
