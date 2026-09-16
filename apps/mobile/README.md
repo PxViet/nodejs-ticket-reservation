@@ -1,307 +1,245 @@
-# Movea App - Movie Ticket App
+# @movea/mobile — Movea Movie Ticket App
 
-## 📱 Overview
+Expo / React Native client for the Movie Reservation System. Part of the [Movea workspace](../../README.md); it talks to [`@movea/api`](../api/README.md) through the generated [`@movea/api-contract`](../../packages/api-contract), which is the only thing the two apps share.
 
-This document provides information about React Native Expo big practice.
+## Overview
 
-## ✨ Features
+A movie ticket app: browse the catalogue, pick a showtime and seats, hold them, and confirm a
+reservation. Admins manage the catalogue and read reports from the same app, behind role-gated
+navigation ([DDR-019](../../docs/ddr/0019-mobile-rbac-role-gated-navigation.md)).
+
+## Features
 
 - **Authentication**
-  - Sign In / Sign Up functionality
-  - Secure user session management
-  - Social sign in
+  - Sign In / Sign Up against `@movea/api`
+  - Secure session management with refresh tokens
 
-- **Movie Management**
-  - Paginated movies list (100+ items)
-  - Search movies
-  - Filter movies by genre and ratings
-  - Booking a movie
+- **Movies & Booking**
+  - Paginated movies list, search, and genre / rating filters
+  - Showtime selection, seat map, and seat holds
+  - Checkout and ticket confirmation
+
+- **Admin**
+  - Movie management — create, edit, activate and deactivate ([DDR-020](../../docs/ddr/0020-admin-movie-management-ui.md))
+  - Reporting screens ([DDR-021](../../docs/ddr/0021-admin-reporting-ui.md))
 
 - **Profile**
-  - View and edit user profile
+  - View and edit profile, change password
   - Change avatar using Camera or Image Picker
-  - Profile settings management
-  - Change password
 
 - **My Ticket**
-  - Paginated tickets list (100+ items)
-  - Filter tickets by status
+  - Paginated tickets list, filtered by status
 
 - **Wallet**
-  - Paginated transactions list (100+ items)
-  - Top up my wallet
+  - Paginated transactions, top up (currently behind a feature flag)
 
 - **UI/UX**
-  - Custom splash screen
-  - Custom app icon
+  - Custom splash screen and app icon
   - Accessibility support
-  - Platform-specific optimizations (Android & iOS)
+  - Platform-specific handling for Android and iOS
 
-## 🛠 Technical Stack
+## Technical Stack
 
-- [**React Native & Expo**](https://docs.expo.dev/)
-- [**React**](https://react.dev/)
+- [**React Native & Expo**](https://docs.expo.dev/) — expo-router for navigation
 - [**TypeScript**](https://www.typescriptlang.org/)
-- [**Zustand**](https://zustand-demo.pmnd.rs/)
-- [**React Query**](https://tanstack.com/)
-- [**React Hook Form**](https://react-hook-form.com/)
-- [**Uniwind - Tailwind bindings for React Native**](https://docs.uniwind.dev/quickstart)
-- [**Storybook**](https://storybook.js.org/)
+- [**Effect**](https://effect.website/) — services and validation
+- [**Zustand**](https://zustand-demo.pmnd.rs/) — stores
+- [**React Query**](https://tanstack.com/) — server state
+- [**React Hook Form**](https://react-hook-form.com/) — forms
+- [**Uniwind**](https://docs.uniwind.dev/quickstart) — Tailwind bindings for React Native
+- [**Storybook**](https://storybook.js.org/) — on-device component workshop
 - [**Jest & React Native Testing Library**](https://jestjs.io/)
 - [**ESLint & Prettier**](https://eslint.org/)
-- [**Husky**](https://typicode.github.io/husky/)
 
-## 📂 Project Structure
+This app's ESLint, Prettier, TypeScript and Jest configs are its own and deliberately differ
+from the API's ([DDR-017](../../docs/ddr/0017-workspace-layout-and-package-naming.md)); they are not meant to be unified. Its dependency versions are pinned exactly — see detail at [ADR-015](../../docs/adr/0015-pnpm-workspace-monorepo.md).
+
+## Project Structure
 
 ```
-movea-app/
+apps/mobile/
 ├── src/
-│   ├── app/                    # Expo Router screens & navigation
-│   ├── components/             # Reusable UI components
+│   ├── app/                    # Expo Router routes — (auth), (main), (storybook)
+│   ├── components/             # Reusable UI components (+ stories and tests)
 │   ├── constants/              # App-wide constants & config
-│   ├── features/               # Feature-based modules (logic + UI)
-│   |   ├── auth
-│   │   ├── booking
-│   │   ├── setting
-│   │   ├── ticket
-│   │   └── wallet
+│   ├── features/               # Feature modules (logic + UI)
+│   │   ├── admin               # Catalogue management and reports
+│   │   ├── auth
+│   │   ├── booking
+│   │   ├── camera
+│   │   ├── navigation
+│   │   ├── setting
+│   │   ├── ticket
+│   │   └── wallet
 │   ├── hooks/                  # Custom React hooks
 │   ├── icons/                  # SVG & icon components
-│   ├── layouts/                # Layout components (Auth, Main, etc.)
+│   ├── layouts/                # Layout components
 │   ├── mocks/                  # Mock data for development & testing
-│   ├── services/               # API services
-│   ├── stores/                 # State management (Zustand, etc.)
+│   ├── services/               # api/, notification/, storage/
+│   ├── stores/                 # Zustand stores
 │   ├── types/                  # Global TypeScript types
 │   ├── utils/                  # Utility & helper functions
-│   ├── global.css              # Global styles (UniWind)
-│   ├── uniwind-types.d.ts      # UniWind type definitions
-│   └── index.ts                # App entry helpers / exports
+│   ├── global.css              # Design tokens and theme variants (uniwind)
+│   └── uniwind-types.d.ts      # Generated uniwind type definitions
 │
+├── .rnstorybook/               # Storybook config (generated requires file)
 ├── assets/                     # Images, fonts, static assets
-├── .editorconfig               # Editor configuration
-├── .env.example                # Environment examples
-├── .gitignore                  # Git ignore rules
-├── .lintstagedrc.js            # Lint-staged configuration
-├── .prettierrc                 # Prettier configuration
-├── app.json                    # Expo app configuration
-├── babel.config.js             # Babel configuration
+├── android/                    # Native project (expo prebuild)
+├── plugins/                    # Expo config plugins
+├── app.config.ts               # Expo app configuration
 ├── eas.json                    # EAS build configuration
-├── eslint.config.js            # ESLint configuration
-├── google-services.json        # Example for set up Google services for local development
+├── metro.config.js             # Metro + uniwind + Storybook
 ├── jest.config.js              # Jest configuration
-├── jest.setup.ts               # Jest setup
-├── metro.config.js             # Metro bundler configuration
-├── package.json                # Dependencies
-├── tsconfig.json               # TypeScript configuration
-├── pnpm-lock.yaml              # PNPM lock file
-└── README.md                   # Project documentation
+└── eslint.config.js            # ESLint configuration
 ```
 
-## 🚀 Getting Started
+A feature never reaches across `apps/` — the only shared code is the generated contract.
+
+## Getting Started
 
 ### Prerequisites
 
-- Node.js (v18 or higher)
-- npm or pnpm
-- Expo CLI
-- iOS Simulator (Mac only) or Android Emulator
+- Node.js 22+
+- pnpm 10+
+- Expo CLI, plus an iOS Simulator (Mac only), an Android Emulator, or Expo Go on a device
+- A running `@movea/api` — see [apps/api](../api/README.md)
 
 ### Installation
 
-1. Clone the repository:
+Install from the **workspace root**, not this directory — the lockfile and the `node_modules`
+layout are shared:
 
 ```bash
-git@gitlab.asoft-python.com:viet.pham/reactnative.git
-```
-
-and
-
-```bash
-git checkout feat/expo-practice
-```
-
-2. Install dependencies:
-
-```bash
-npm install
-# or
 pnpm install
 ```
 
-3. Setup environment variables
-
-- Option 1: Create your **.env** file:
+### Environment
 
 ```bash
-EXPO_PUBLIC_API_BASE_URL=http://localhost:3000
-GOOGLE_SERVICES_JSON=
+cp apps/mobile/.env.example apps/mobile/.env
 ```
 
-`EXPO_PUBLIC_API_BASE_URL` points at the host of the running `@movea/api` — no path. The `api/v1`
-prefix and version are fixed in code (ADR-012), not part of this variable. On a device,
-replace `localhost` with your machine's LAN IP.
+| Variable                   | Notes                                                             |
+| -------------------------- | ----------------------------------------------------------------- |
+| `EXPO_PUBLIC_API_BASE_URL` | Host only — `api/v1` is appended by `src/services/api/config.ts`  |
+| `EXPO_PUBLIC_API_PREFIX`   | Optional override, defaults to `api`                              |
+| `EXPO_PUBLIC_API_VERSION`  | Optional override, defaults to `v1`                               |
+| `EXPO_PUBLIC_SUPABASE_*`   | Placeholders retained during the migration off Supabase (DDR-018) |
+| `GOOGLE_SERVICES_JSON`     | Path to your local `google-services.json`                         |
 
-- Option 2: Pull environment variables for your local development (need to Expo account)
+The prefix and version are fixed in code by [ADR-012](../../docs/adr/0012-rest-api-with-generated-openapi.md), not per-environment config. Pick the host to match where the app runs:
 
-Run the following command to create a .env file in the root of your project:
+- iOS simulator — `http://localhost:3000`
+- Android emulator — `http://10.0.2.2:3000` (`localhost` inside an emulator is the emulator)
+- Physical device — your machine's LAN IP
+
+Alternatively, pull the values from EAS (needs an Expo account):
 
 ```bash
 eas env:pull --environment development
 ```
 
-The created .env.local file will look like this:
+### Google Services - Disable at this phase
+
+`google-services.json` holds Firebase configuration and must **not** be committed. Download it
+from your Firebase project settings, place it in `apps/mobile/`, and confirm it is git-ignored.
+`google-services.json.example` shows the expected shape.
+
+### Run
 
 ```bash
-# Environment: development
-
-EXPO_PUBLIC_API_BASE_URL=
-# GOOGLE_SERVICES_JSON=***** (secret variables are not available for reading)
+pnpm mobile start
 ```
 
-4. Google Services Configuration
+Then press `i` for the iOS simulator, `a` for the Android emulator, or scan the QR code with
+Expo Go. `pnpm mobile android` / `pnpm mobile ios` build and run the native projects directly.
 
-The `google-services.json` file contains sensitive configuration details for Google services (e.g., Firebase). This file should **NOT** be committed directly to version control.
+## The generated contract
 
-A placeholder file, `google-services.json.example`, has been provided in the project root. To set up Google services for your local development:
-
-- Obtain your `google-services.json` file from your Firebase project settings.
-- Rename the downloaded file to `google-services.json` and place it in the root of this project.
-- **Ensure `google-services.json` is added to your `.gitignore` file** to prevent accidental commits.
-
-Example of `google-services.json.example`:
-
-```json
-{
-  "project_info": {
-    "project_number": "YOUR_PROJECT_NUMBER",
-    "firebase_url": "https://YOUR_FIREBASE_PROJECT_ID.firebaseio.com",
-    "project_id": "YOUR_PROJECT_ID",
-    "storage_bucket": "YOUR_STORAGE_BUCKET"
-  },
-  "client": [
-    {
-      "client_info": {
-        "mobilesdk_app_id": "YOUR_MOBILE_SDK_APP_ID",
-        "android_client_info": {
-          "package_name": "YOUR_PACKAGE_NAME"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "YOUR_CLIENT_ID",
-          "client_type": 1
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "YOUR_API_KEY"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "YOUR_CLIENT_ID_2",
-              "client_type": 3
-            }
-          ]
-        }
-      }
-    }
-  ],
-  "configuration_version": "1"
-}
-```
-
-5. Start the development server:
+Request and response types come from `@movea/api-contract`. After an API controller or DTO
+changes, regenerate from the workspace root (it boots the API, so the database must be up):
 
 ```bash
-npx expo start
+pnpm contract:generate
 ```
 
-6. Run on your preferred platform:
+Do not retype API types by hand. This matters most for status vocabularies —
+[ADR-008](../../docs/adr/0008-guarded-state-machines.md) ties seat-hold state to a database
+index, so a hand-copied enum is a correctness bug waiting to happen.
 
-- Press `i` for iOS simulator
-- Press `a` for Android emulator
-- Scan QR code with Expo Go app on your physical device
-
-## 🧪 Testing
-
-Run unit tests:
+## Testing
 
 ```bash
-npm test
-# or
-yarn test
+pnpm mobile test
 ```
-
-Run tests with coverage:
 
 ```bash
-npm test -- --coverage
-# or
-yarn test --coverage
+pnpm mobile test:coverage
 ```
 
-## 📚 Storybook
-
-Launch Storybook for component development:
+## Storybook
 
 ```bash
-npm run storybook:start
-# or
-yarn storybook:start
+pnpm mobile storybook:start
 ```
 
-## 🎨 Code Quality
-
-Format code:
+Regenerate the story index after adding a `*.stories.tsx` file:
 
 ```bash
-npm run format
-# or
-yarn format
+pnpm mobile storybook:generate
 ```
 
-Lint code:
+## Code Quality
 
 ```bash
-npm run lint
-# or
-yarn lint
+pnpm mobile lint
 ```
 
-## 📅 Timeline
+```bash
+pnpm mobile typecheck
+```
+
+```bash
+pnpm mobile format
+```
+
+Hooks run `lint-staged` on commit, `commitlint` on the message, and
+`turbo run typecheck lint:check test` on push, so a commit that compiles is not yet a commit
+that pushes. Commits use a mandatory `[#N]` issue prefix and no scope:
+`[#248] feat: let admins activate and deactivate a movie`.
+
+## CI
+
+`mobile-ci.yml` runs lint, Prettier, typecheck and tests on changes under `apps/mobile/**` or
+`packages/**`; `mobile-build-development.yml`, `-staging.yml` and `-production.yml` drive EAS
+builds. It is independent of the API pipeline and runs in parallel with it
+([ADR-016](../../docs/adr/0016-independent-per-app-ci-pipelines.md)).
+
+## Timeline
 
 - **Estimation**: Dec 2, 2025 (2 Sprints)
 - **Started**: Dec 3, 2025
 
-## 🎯 Project Goals
+## Project Goals
 
-- ✅ Handle platform differences between Android, iOS
-- ✅ Unit test coverage should be greater than 80%
-- ✅ Configure the AppIcon and SplashScreen that match the Expo app.
-- ✅ Must have a form with multiple inputs
-- ✅ Must have a Home screen with a list greater than 1000 items
-- ✅ Must have a screen using Camera and Image Picker
-- ✅ Apply Linking and Deep Linking
-- ✅ Push Notifications
-- ✅ Social authentications (Facebook, Google)
-- ✅ Integrate Expo Application Services (EAS)
-- ✅ Set up Github Actions
+- Handle platform differences between Android and iOS
+- Unit test coverage greater than 80%
+- AppIcon and SplashScreen matching the Expo app
+- A form with multiple inputs
+- A Home screen with a list greater than 1000 items
+- A screen using Camera and Image Picker
+- Linking and Deep Linking
+- Push Notifications
+- Social authentication (Facebook, Google)
+- Expo Application Services (EAS)
+- GitHub Actions
 
-## 📝 Design
+## Design
 
-Design specifications can be found at: [Design Link](https://www.figma.com/design/g9Fn2CZXGHlHescFFIVBP7/Movea---Movie-Ticket-App?node-id=122-120&t=CMiMONaFu5Gcypz9-1)
+Design specifications: [Figma](https://www.figma.com/design/g9Fn2CZXGHlHescFFIVBP7/Movea---Movie-Ticket-App?node-id=122-120&t=CMiMONaFu5Gcypz9-1)
 
-## 📄 License
+## Team
 
-This project is licensed under the MIT License.
-
-## 👥 Team
-
-- Developer: [Nhat Duong Cong](mailto:nhat.duong@asnet.com.vn), [Viet Pham](mailto:viet.pham@asnet.com.vn)
-
-- GitLab: [@nhat.duong](https://gitlab.asoft-python.com/nhat.duong), [@viet.pham](https://gitlab.asoft-python.com/viet.pham)
-
-- Slack: nhat.duong, viet.pham
+- Developers:
+  - Nhat Duong
+  - Viet Pham
