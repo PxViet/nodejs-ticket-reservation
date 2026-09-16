@@ -1,6 +1,9 @@
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { TextInput } from 'react-native';
 
+// Constants
+import { ERROR_MESSAGES } from '@/constants';
+
 // Component
 import { SignUpForm } from '../';
 
@@ -204,6 +207,59 @@ describe('SignUpForm Component', () => {
       await waitFor(() => {
         const errorMessage = queryByTestId('signup-password-input-error');
         expect(errorMessage).toBeTruthy();
+      });
+    });
+
+    it('should show validation error when passwords do not match', async () => {
+      const { getByTestId, queryByTestId } = render(
+        <SignUpForm {...defaultProps} />,
+      );
+      const firstNameInput = getByTestId('signup-firstname-input-input');
+      const lastNameInput = getByTestId('signup-lastname-input-input');
+      const emailInput = getByTestId('signup-email-input-input');
+      const passwordInput = getByTestId('signup-password-input-input');
+      const confirmPasswordInput = getByTestId(
+        'signup-confirmpassword-input-input',
+      );
+
+      fireEvent.changeText(firstNameInput, 'John');
+      fireEvent.changeText(lastNameInput, 'Doe');
+      fireEvent.changeText(emailInput, 'john@example.com');
+      fireEvent.changeText(passwordInput, 'Test123!@');
+      fireEvent.changeText(confirmPasswordInput, 'Different123!@');
+      fireEvent(confirmPasswordInput, 'blur');
+
+      await waitFor(() => {
+        expect(
+          queryByTestId('signup-confirmpassword-input-error'),
+        ).toBeTruthy();
+      });
+      expect(
+        getByTestId('signup-confirmpassword-input-error'),
+      ).toHaveTextContent(ERROR_MESSAGES.PASSWORD_NOT_MATCH);
+    });
+
+    it('should not call onSubmit when passwords do not match', async () => {
+      const { getByTestId } = render(<SignUpForm {...defaultProps} />);
+      const firstNameInput = getByTestId('signup-firstname-input-input');
+      const lastNameInput = getByTestId('signup-lastname-input-input');
+      const emailInput = getByTestId('signup-email-input-input');
+      const passwordInput = getByTestId('signup-password-input-input');
+      const confirmPasswordInput = getByTestId(
+        'signup-confirmpassword-input-input',
+      );
+      const submitButton = getByTestId('signup-submit-button');
+
+      fireEvent.changeText(firstNameInput, 'John');
+      fireEvent.changeText(lastNameInput, 'Doe');
+      fireEvent.changeText(emailInput, 'john@example.com');
+      fireEvent.changeText(passwordInput, 'Test123!@');
+      fireEvent.changeText(confirmPasswordInput, 'Different123!@');
+
+      fireEvent.press(submitButton);
+
+      await waitFor(() => {
+        expect(mockOnSubmit).not.toHaveBeenCalled();
       });
     });
   });
