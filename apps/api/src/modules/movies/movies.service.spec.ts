@@ -193,6 +193,17 @@ describe('MoviesService', () => {
 
       expect(manager.delete).not.toHaveBeenCalled();
     });
+
+    it('reactivates a deactivated movie through isActive', async () => {
+      repo.findOne.mockResolvedValue({ ...baseMovie, isActive: false });
+
+      await service.updateMovie('m1', { isActive: true });
+
+      expect(manager.save).toHaveBeenCalledWith(
+        Movie,
+        expect.objectContaining({ id: 'm1', isActive: true }),
+      );
+    });
   });
 
   describe('remove', () => {

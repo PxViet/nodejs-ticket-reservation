@@ -213,13 +213,13 @@ Create a movie.
 Update a movie.
 
 - Auth: Bearer, admin
-- Request: `{ title?, synopsis?, posterUrl?, durationMinutes?, language?, releaseDate?, rating?, genreIds? }`
+- Request: `{ title?, synopsis?, posterUrl?, durationMinutes?, language?, releaseDate?, rating?, genreIds?, isActive? }`
 - Success: `200 OK` — movie with nested `genres[]`
 - Errors: `401 UNAUTHENTICATED`, `403 FORBIDDEN`, `400 MOVIE_REQUIRES_GENRE`, `404 NOT_FOUND`
 
 ### `DELETE /movies/:id` — Implemented
 
-Deactivate a movie (soft delete).
+Deactivate a movie (soft delete). Reactivating is `PATCH /movies/:id { isActive: true }`.
 
 - Auth: Bearer, admin
 - Request: —

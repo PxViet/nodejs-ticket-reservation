@@ -33,6 +33,9 @@ interface MovieFormProps {
   onSubmit: (data: MovieFormData) => void;
   onDelete?: () => void;
   isDeleting?: boolean;
+  isActive?: boolean;
+  onActivate?: () => void;
+  isActivating?: boolean;
 }
 
 export const MovieForm = memo(
@@ -43,6 +46,9 @@ export const MovieForm = memo(
     onSubmit,
     onDelete,
     isDeleting,
+    isActive = true,
+    onActivate,
+    isActivating,
   }: MovieFormProps) => {
     const { data: genres = [] } = useGenres();
 
@@ -87,7 +93,8 @@ export const MovieForm = memo(
               onPress={handleSubmit(onSubmit)}
             />
 
-            {isEditing && onDelete && (
+            {/* A deactivated movie can only be reactivated, never deactivated again */}
+            {isEditing && isActive && onDelete && (
               <Button
                 size={Size.SMALL}
                 testID="admin-movie-delete-button"
@@ -95,6 +102,17 @@ export const MovieForm = memo(
                 disabled={isDeleting}
                 className="bg-red"
                 onPress={onDelete}
+              />
+            )}
+
+            {isEditing && !isActive && onActivate && (
+              <Button
+                size={Size.SMALL}
+                testID="admin-movie-activate-button"
+                title="Activate movie"
+                disabled={isActivating}
+                className="bg-primary"
+                onPress={onActivate}
               />
             )}
           </>

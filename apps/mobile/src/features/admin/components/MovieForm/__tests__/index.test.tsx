@@ -6,6 +6,7 @@ import { MovieForm } from '../';
 // Mock dependencies
 const mockOnSubmit = jest.fn();
 const mockOnDelete = jest.fn();
+const mockOnActivate = jest.fn();
 
 const mockGenres = [
   { id: 'g1', name: 'Action' },
@@ -394,6 +395,59 @@ describe('MovieForm', () => {
       fireEvent.press(getByTestId('admin-movie-delete-button'));
 
       expect(mockOnDelete).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows an activate button instead of deactivate for an inactive movie', () => {
+      const { getByTestId, getByText, queryByTestId } = render(
+        <MovieForm
+          isPending={false}
+          isEditing
+          isActive={false}
+          onSubmit={mockOnSubmit}
+          onDelete={mockOnDelete}
+          onActivate={mockOnActivate}
+        />,
+      );
+
+      expect(queryByTestId('admin-movie-delete-button')).toBeNull();
+      expect(getByText('Activate movie')).toBeTruthy();
+
+      fireEvent.press(getByTestId('admin-movie-activate-button'));
+
+      expect(mockOnActivate).toHaveBeenCalledTimes(1);
+      expect(mockOnDelete).not.toHaveBeenCalled();
+    });
+
+    it('does not render an activate button for an active movie', () => {
+      const { queryByTestId } = render(
+        <MovieForm
+          isPending={false}
+          isEditing
+          onSubmit={mockOnSubmit}
+          onDelete={mockOnDelete}
+          onActivate={mockOnActivate}
+        />,
+      );
+
+      expect(queryByTestId('admin-movie-activate-button')).toBeNull();
+    });
+
+    it('disables the activate button while activating', () => {
+      const { getByTestId } = render(
+        <MovieForm
+          isPending={false}
+          isEditing
+          isActive={false}
+          isActivating
+          onSubmit={mockOnSubmit}
+          onActivate={mockOnActivate}
+        />,
+      );
+
+      expect(
+        getByTestId('admin-movie-activate-button').props.accessibilityState
+          ?.disabled,
+      ).toBe(true);
     });
 
     it('disables the deactivate button while deleting', () => {
