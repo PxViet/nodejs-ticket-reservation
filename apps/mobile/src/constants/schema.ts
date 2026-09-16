@@ -167,9 +167,16 @@ export const signUpSchema = Schema.Struct({
     }),
   ),
 }).pipe(
-  Schema.filter(data => data.password === data.confirmPassword, {
-    message: () => ERROR_MESSAGES.PASSWORD_NOT_MATCH,
-  }),
+  Schema.filter(data =>
+    data.password === data.confirmPassword
+      ? undefined
+      : [
+          {
+            path: ['confirmPassword'],
+            message: ERROR_MESSAGES.PASSWORD_NOT_MATCH,
+          },
+        ],
+  ),
 );
 export type SignUpFormData = Schema.Schema.Type<typeof signUpSchema>;
 
@@ -190,9 +197,16 @@ export const changePasswordSchema = Schema.Struct({
   newPassword: PasswordBrand,
   confirmPassword: PasswordBrand,
 }).pipe(
-  Schema.filter(data => data.newPassword === data.confirmPassword, {
-    message: () => ERROR_MESSAGES.PASSWORD_NOT_MATCH,
-  }),
+  Schema.filter(data =>
+    data.newPassword === data.confirmPassword
+      ? undefined
+      : [
+          {
+            path: ['confirmPassword'],
+            message: ERROR_MESSAGES.PASSWORD_NOT_MATCH,
+          },
+        ],
+  ),
 );
 export type ChangePasswordFormData = Schema.Schema.Type<
   typeof changePasswordSchema
@@ -203,9 +217,16 @@ export const resetPasswordSchema = Schema.Struct({
   newPassword: PasswordBrand,
   confirmPassword: PasswordBrand,
 }).pipe(
-  Schema.filter(data => data.newPassword === data.confirmPassword, {
-    message: () => ERROR_MESSAGES.PASSWORD_NOT_MATCH,
-  }),
+  Schema.filter(data =>
+    data.newPassword === data.confirmPassword
+      ? undefined
+      : [
+          {
+            path: ['confirmPassword'],
+            message: ERROR_MESSAGES.PASSWORD_NOT_MATCH,
+          },
+        ],
+  ),
 );
 export type ResetPasswordFormData = Schema.Schema.Type<
   typeof resetPasswordSchema
