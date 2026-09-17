@@ -6,7 +6,8 @@ import { ScreenHeader } from '..';
 
 // Type
 import { ParamListBase } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+// expo-router's own NativeStackNavigationProp — see index.tsx for why.
+import { NativeStackNavigationProp } from 'expo-router';
 import {
   GenreMovie,
   Movie,

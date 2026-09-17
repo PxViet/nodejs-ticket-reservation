@@ -1,3 +1,4 @@
+import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Expo
@@ -38,7 +39,7 @@ const TabLayout = () => {
         <NavigationTabBar
           bottomInset={insets.bottom}
           bottomTabs={BOTTOM_TAB}
-          {...props}
+          {...(props as unknown as BottomTabBarProps)}
         />
       )}
       screenOptions={{

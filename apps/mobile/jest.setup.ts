@@ -30,7 +30,11 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 );
 
 // Mock dependencies
+// SDK 57: expo-camera and expo-crypto now import createPermissionHook /
+// requireNativeModule from 'expo' itself, so keep the real module and only
+// override useEvent rather than replacing the export list wholesale.
 jest.mock('expo', () => ({
+  ...jest.requireActual('expo'),
   useEvent: jest.fn((player, event, initialState) => initialState),
 }));
 

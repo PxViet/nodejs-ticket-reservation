@@ -404,7 +404,7 @@ describe('MyWalletScreen', () => {
 
       const retryButtons = getAllByText('Retry');
       // Find the retry button in the error state
-      fireEvent.press(retryButtons[retryButtons.length - 1]);
+      fireEvent.press(retryButtons[retryButtons.length - 1]!);
 
       expect(mockRefetchTransactions).toHaveBeenCalled();
     });

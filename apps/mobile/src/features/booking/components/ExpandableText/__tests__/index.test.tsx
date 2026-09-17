@@ -126,7 +126,7 @@ describe('ExpandableText Component', () => {
         />,
       );
       const container = getAllByTestId('expandable-container');
-      expect(container[0].props.className).toContain('px-4 py-2');
+      expect(container[0]?.props.className).toContain('px-4 py-2');
     });
   });
 });
