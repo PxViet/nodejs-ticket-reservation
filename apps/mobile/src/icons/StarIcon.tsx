@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import Svg, {
   Defs,
   LinearGradient,
@@ -12,7 +13,7 @@ interface StarProps extends SvgProps {
 }
 
 export const StarIcon = ({ filled, size = 24 }: StarProps) => {
-  const fillId = `star-fill-${Math.random()}`;
+  const fillId = `star-fill-${useId()}`;
 
   return (
     <Svg width={size} height={size} viewBox="0 0 12 12" fill="none">

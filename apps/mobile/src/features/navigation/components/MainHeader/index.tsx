@@ -1,4 +1,3 @@
-import { BottomTabHeaderProps } from '@react-navigation/bottom-tabs';
 import { useMemo } from 'react';
 import { TouchableOpacity, View } from 'react-native';
 
@@ -23,7 +22,8 @@ import { cn } from '@/utils/cn';
 import { STATUS_BAR_HEIGHT } from '@/utils/platform';
 import { Skeleton } from '@/components/Skeleton';
 
-export interface MainHeaderProps extends BottomTabHeaderProps {
+export interface MainHeaderProps {
+  options: { title?: string };
   isLeftTitle?: boolean;
   isRenderUserProfile?: boolean;
   topInset?: number;
