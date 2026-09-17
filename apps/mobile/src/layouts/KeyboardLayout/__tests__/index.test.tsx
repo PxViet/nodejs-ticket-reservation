@@ -86,7 +86,7 @@ describe('KeyboardLayout', () => {
       </KeyboardLayout>,
     );
 
-    const touchable = getByTestId('child').parent.parent.parent;
+    const touchable = getByTestId('child').parent!.parent!.parent!;
     fireEvent.press(touchable);
 
     expect(dismissSpy).toHaveBeenCalled();

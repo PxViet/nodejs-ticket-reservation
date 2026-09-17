@@ -28,6 +28,7 @@ export const usePushNotifications = () => {
   const handleNotificationResponse = useCallback(
     (response: Notifications.NotificationResponse) => {
       const data = response.notification.request.content.data;
+      if (!data) return;
 
       // Navigate based on notification type
       if (data.type === 'ticket_expiring' || data.type === 'show_reminder') {

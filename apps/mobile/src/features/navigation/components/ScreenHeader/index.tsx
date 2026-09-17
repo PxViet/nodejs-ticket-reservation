@@ -4,8 +4,7 @@ import { SvgProps } from 'react-native-svg';
 import { useShallow } from 'zustand/react/shallow';
 
 // Expo
-import { NativeStackHeaderProps } from '@react-navigation/native-stack';
-import { usePathname, useRouter } from 'expo-router';
+import { NativeStackHeaderProps, usePathname, useRouter } from 'expo-router';
 
 // Components
 import { Typo } from '@/components/Typo';

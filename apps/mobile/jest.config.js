@@ -1,5 +1,9 @@
 module.exports = {
   preset: 'jest-expo',
+  // SDK 57 / reanimated 4.5: without this, Jest resolves worklets' native
+  // module bindings (NativeWorklets.native.ts) instead of a jest-safe
+  // variant, which crashes on import outside a real native runtime.
+  resolver: 'react-native-worklets/jest/resolver.js',
   // Raised from Jest's 5s default when this app moved into the workspace
   // (ADR-015). Workers now share a root node_modules holding both apps' trees,
   // and under full parallelism the slowest test here (TopUp, Effect validation
