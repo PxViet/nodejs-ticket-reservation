@@ -13,13 +13,13 @@ let mockMovies: any[] = [
   {
     id: '1',
     title: 'Movie 1',
-    rating: 4.5,
+    rating: 9.5,
     posterUrl: 'https://example.com/1.jpg',
   },
   {
     id: '2',
     title: 'Movie 2',
-    rating: 3.8,
+    rating: 6.8,
     posterUrl: 'https://example.com/2.jpg',
   },
 ];
@@ -81,13 +81,13 @@ describe('SearchScreen', () => {
       {
         id: '1',
         title: 'Movie 1',
-        rating: 4.5,
+        rating: 9.5,
         posterUrl: 'https://example.com/1.jpg',
       },
       {
         id: '2',
         title: 'Movie 2',
-        rating: 3.8,
+        rating: 6.8,
         posterUrl: 'https://example.com/2.jpg',
       },
     ];
@@ -224,11 +224,11 @@ describe('SearchScreen', () => {
         wrapper: createWrapper(),
       });
 
-      // Select 4+ rating filter
-      const highRatingTab = getByTestId('tab-4+');
+      // Select 9-10 rating filter
+      const highRatingTab = getByTestId('tab-9-10');
       fireEvent.press(highRatingTab);
 
-      // Only Movie 1 with rating >= 4 should be shown
+      // Only Movie 1 with rating in [9, 10] should be shown
       expect(getAllByTestId('horizontal-card').length).toBe(1);
     });
 
@@ -249,13 +249,13 @@ describe('SearchScreen', () => {
         {
           id: '3',
           title: 'Search Movie 1',
-          rating: 4.5,
+          rating: 9.5,
           posterUrl: 'https://example.com/3.jpg',
         },
         {
           id: '4',
           title: 'Search Movie 2',
-          rating: 3.0,
+          rating: 6.0,
           posterUrl: 'https://example.com/4.jpg',
         },
       ];
@@ -265,8 +265,8 @@ describe('SearchScreen', () => {
         wrapper: createWrapper(),
       });
 
-      // Select 4+ rating filter
-      const highRatingTab = getByTestId('tab-4+');
+      // Select 9-10 rating filter
+      const highRatingTab = getByTestId('tab-9-10');
       fireEvent.press(highRatingTab);
 
       // Only high-rated search result should show
@@ -305,11 +305,11 @@ describe('SearchScreen', () => {
         wrapper: createWrapper(),
       });
 
-      // Select 4+ rating filter
-      const highRatingTab = getByTestId('tab-4+');
+      // Select 9-10 rating filter
+      const highRatingTab = getByTestId('tab-9-10');
       fireEvent.press(highRatingTab);
 
-      expect(getByText(/with 4\+/)).toBeTruthy();
+      expect(getByText(/with 9-10/)).toBeTruthy();
     });
 
     it('should handle plural/singular in results count', () => {
