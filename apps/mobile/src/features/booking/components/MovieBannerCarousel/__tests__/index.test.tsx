@@ -371,13 +371,13 @@ describe('MovieBannerCarousel Component', () => {
 
       render(<MovieBannerCarousel movies={multipleMovies} />);
 
-      fireEvent.press(screen.getAllByTestId('movie-banner')[0]);
+      fireEvent.press(screen.getAllByTestId('movie-banner')[0]!);
       expect(mockPush).toHaveBeenCalledWith('/(main)/movies/id-1');
 
-      fireEvent.press(screen.getAllByTestId('movie-banner')[1]);
+      fireEvent.press(screen.getAllByTestId('movie-banner')[1]!);
       expect(mockPush).toHaveBeenCalledWith('/(main)/movies/id-2');
 
-      fireEvent.press(screen.getAllByTestId('movie-banner')[2]);
+      fireEvent.press(screen.getAllByTestId('movie-banner')[2]!);
       expect(mockPush).toHaveBeenCalledWith('/(main)/movies/id-3');
 
       expect(mockPush).toHaveBeenCalledTimes(3);
