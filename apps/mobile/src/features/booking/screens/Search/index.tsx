@@ -66,9 +66,12 @@ const SearchScreen = () => {
   const displayedMovies = useMemo(() => {
     if (selectedRating === 'all') return movies;
 
-    const minRating =
-      RATING_FILTERS.find(f => f.id === selectedRating)?.minRating || 0;
-    return movies.filter((movie: Movie) => (movie.rating || 0) >= minRating);
+    const { minRating, maxRating } =
+      RATING_FILTERS.find(f => f.id === selectedRating) ?? {};
+    return movies.filter((movie: Movie) => {
+      const rating = movie.rating || 0;
+      return rating >= (minRating ?? 0) && rating <= (maxRating ?? 10);
+    });
   }, [movies, selectedRating]);
 
   const handleMoviePress = useCallback(
