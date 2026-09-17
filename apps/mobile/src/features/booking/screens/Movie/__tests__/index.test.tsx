@@ -234,7 +234,7 @@ describe('MovieScreen', () => {
       });
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { TouchableOpacity } = require('react-native');
-      const [backButton] = UNSAFE_getAllByType(TouchableOpacity);
+      const backButton = UNSAFE_getAllByType(TouchableOpacity)[0]!;
       fireEvent.press(backButton);
 
       expect(mockBack).toHaveBeenCalled();

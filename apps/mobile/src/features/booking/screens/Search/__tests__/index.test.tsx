@@ -212,7 +212,7 @@ describe('SearchScreen', () => {
         wrapper: createWrapper(),
       });
       const horizontalCards = getAllByTestId('horizontal-card');
-      fireEvent.press(horizontalCards[0]);
+      fireEvent.press(horizontalCards[0]!);
 
       expect(mockPush).toHaveBeenCalledWith('/(main)/movies/1');
     });
