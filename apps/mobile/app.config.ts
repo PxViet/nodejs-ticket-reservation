@@ -27,7 +27,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   icon: './assets/images/movea-icon.png',
   scheme: 'movieticketbooking',
   userInterfaceStyle: 'automatic',
-  newArchEnabled: true,
+  // SDK 57: the New Architecture is mandatory and the toggle was removed
+  // from the config schema.
   assetBundlePatterns: ['**/*'],
   backgroundColor: '#0B0F2F',
   ios: {
@@ -51,7 +52,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       foregroundImage: './assets/images/movea-icon.png',
       backgroundImage: './assets/images/movea-icon.png',
     },
-    edgeToEdgeEnabled: true,
+    // SDK 57: edge-to-edge is mandatory (targets Android 15+/API 35+) and
+    // the toggle was removed from the config schema — it's always on now.
     softwareKeyboardLayoutMode: 'pan',
     package: 'com.anonymous.movieticketbooking',
     predictiveBackGestureEnabled: false,
@@ -82,6 +84,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     'expo-router',
+    // SDK 57: these now ship a config plugin and must be listed explicitly,
+    // even with no options — expo-doctor/`expo install --fix` flags them
+    // otherwise.
+    '@react-native-community/datetimepicker',
+    'expo-asset',
+    'expo-font',
+    'expo-image',
+    'expo-status-bar',
+    'expo-web-browser',
     [
       'expo-splash-screen',
       {
@@ -150,7 +161,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // against the repo root, so `:app:createBundleReleaseJsAndAssets` fails with
     // "Unable to resolve ./index.ts". Reapplies the absolute --entry-file patch
     // to android/app/build.gradle on every prebuild.
-    // './plugins/withMonorepoEntryFile',
+    './plugins/withMonorepoEntryFile',
   ],
   experiments: {
     typedRoutes: true,

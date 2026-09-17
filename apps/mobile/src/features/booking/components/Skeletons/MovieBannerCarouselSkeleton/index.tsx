@@ -51,19 +51,15 @@ const SkeletonItem = ({ variant = 'horizontal' }: { variant: Variant }) => {
 export const MovieBannerCarouselSkeleton = ({
   variant = 'horizontal',
   count = 3,
-}: MovieBannerCarouselSkeletonProps) => {
-  const spacing = variant === 'horizontal' ? 4 : 8;
-
-  return (
-    <View
-      testID="movie-banner-carousel-skeleton"
-      accessibilityRole="none"
-      accessibilityLabel="Loading movies"
-      className={cn('flex-row px-6', `gap-${spacing}`)}
-    >
-      {Array.from({ length: count }).map((_, index) => (
-        <SkeletonItem key={index} variant={variant} />
-      ))}
-    </View>
-  );
-};
+}: MovieBannerCarouselSkeletonProps) => (
+  <View
+    testID="movie-banner-carousel-skeleton"
+    accessibilityRole="none"
+    accessibilityLabel="Loading movies"
+    className={cn('flex-row px-6', `gap-${variant === 'horizontal' ? 4 : 8}`)}
+  >
+    {Array.from({ length: count }).map((_, index) => (
+      <SkeletonItem key={index} variant={variant} />
+    ))}
+  </View>
+);
