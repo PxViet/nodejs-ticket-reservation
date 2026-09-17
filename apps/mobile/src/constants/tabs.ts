@@ -40,11 +40,13 @@ export const TICKET_TABS = [
   { id: BOOKING_STATUS.EXPIRED, label: 'Expired' },
 ];
 
-// NEW: Rating filter options
+// Rating is stored on the API's 0-10 scale (BR-03), so filter buckets are
+// ranges over that scale rather than a 0-5 star threshold.
 export const RATING_FILTERS = [
-  { id: 'all', label: 'All Ratings', minRating: 0 },
-  { id: '4+', label: '4+', minRating: 4 },
-  { id: '3+', label: '3+', minRating: 3 },
-  { id: '2+', label: '2+', minRating: 2 },
-  { id: '1+', label: '1+', minRating: 1 },
+  { id: 'all', label: 'All Ratings', minRating: 0, maxRating: 10 },
+  { id: '9-10', label: '9-10', minRating: 9, maxRating: 10 },
+  { id: '7-8', label: '7-8', minRating: 7, maxRating: 8 },
+  { id: '5-6', label: '5-6', minRating: 5, maxRating: 6 },
+  { id: '3-4', label: '3-4', minRating: 3, maxRating: 4 },
+  { id: '0-2', label: '0-2', minRating: 0, maxRating: 2 },
 ];
