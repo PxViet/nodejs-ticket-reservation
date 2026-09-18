@@ -165,6 +165,8 @@ export const MovieForm = memo(
                 autoCapitalize="none"
                 autoCorrect={false}
                 keyboardType="url"
+                multiline={false}
+                numberOfLines={1}
                 onChangeText={onChange}
                 onBlur={onBlur}
               />
