@@ -6,9 +6,6 @@ import { Skeleton } from '@/components/Skeleton';
 // Types
 import { type Variant } from '../../MovieBannerCarousel/CarouseItem';
 
-// Utils
-import { cn } from '@/utils/cn';
-
 interface MovieBannerCarouselSkeletonProps {
   variant?: Variant;
   count?: number;
@@ -56,7 +53,7 @@ export const MovieBannerCarouselSkeleton = ({
     testID="movie-banner-carousel-skeleton"
     accessibilityRole="none"
     accessibilityLabel="Loading movies"
-    className={cn('flex-row px-6', `gap-${variant === 'horizontal' ? 4 : 8}`)}
+    className="flex-row px-6 gap-4"
   >
     {Array.from({ length: count }).map((_, index) => (
       <SkeletonItem key={index} variant={variant} />

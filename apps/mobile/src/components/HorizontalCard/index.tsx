@@ -192,7 +192,7 @@ export const HorizontalCard = memo(
               {/* Rating */}
               {!!rating && (
                 <View testID="horizontal-card-rating">
-                  <Rating rating={rating} size={12} spacing={1} />
+                  <Rating rating={rating} size={12} />
                 </View>
               )}
 
