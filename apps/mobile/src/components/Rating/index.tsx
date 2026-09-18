@@ -21,7 +21,7 @@ export const Rating = memo(({ rating, size = 12 }: RatingProps) => {
   return (
     <View
       testID="rating"
-      className={`flex-row items-center gap-4`}
+      className={`flex-row items-center gap-1`}
       accessibilityRole="image"
       accessibilityLabel={`Rating: ${rating.toFixed(1)} out of 10`}
       accessible

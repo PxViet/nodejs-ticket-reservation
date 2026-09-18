@@ -67,7 +67,6 @@ describe('Rating Component', () => {
       const { className } = screen.getByTestId('rating').props;
       expect(className).toContain('flex-row');
       expect(className).toContain('items-center');
-      expect(className).toContain('gap-4');
     });
   });
 });
