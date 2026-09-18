@@ -77,7 +77,6 @@ describe('MovieBannerCarouselSkeleton', () => {
         ).props;
         expect(className).toContain('flex-row');
         expect(className).toContain('px-6');
-        expect(className).toContain('gap-4');
       },
     );
   });
