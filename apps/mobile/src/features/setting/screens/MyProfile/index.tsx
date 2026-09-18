@@ -84,7 +84,7 @@ const MyProfileScreen = () => {
       accessibilityHint="Profile screen"
     >
       <StyledScrollView
-        contentContainerClassName="flex-1 px-6"
+        contentContainerClassName="px-6"
         showsVerticalScrollIndicator={false}
       >
         <View className="justify-center items-center gap-6">
