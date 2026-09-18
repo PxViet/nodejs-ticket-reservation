@@ -1,4 +1,4 @@
-// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+// Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`MyProfileScreen Snapshot should match snapshot 1`] = `
 <View
@@ -12,7 +12,7 @@ exports[`MyProfileScreen Snapshot should match snapshot 1`] = `
   }
 >
   <RCTScrollView
-    contentContainerClassName="flex-1 px-6"
+    contentContainerClassName="px-6"
     showsVerticalScrollIndicator={false}
   >
     <View>
