@@ -59,4 +59,15 @@ describe('Rating Component', () => {
       expect(container.props.accessibilityLabel).toBe('Rating: -1.0 out of 10');
     });
   });
+
+  describe('Layout', () => {
+    it('should lay stars out in a row with gap-4', () => {
+      render(<Rating rating={3} />);
+
+      const { className } = screen.getByTestId('rating').props;
+      expect(className).toContain('flex-row');
+      expect(className).toContain('items-center');
+      expect(className).toContain('gap-4');
+    });
+  });
 });

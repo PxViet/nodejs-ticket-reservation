@@ -65,6 +65,43 @@ describe('DetailRow Component', () => {
     });
   });
 
+  describe('Layout', () => {
+    it('should separate label and value with a gap', () => {
+      render(<DetailRow {...defaultProps} testID="row" />);
+      expect(screen.getByTestId('row').props.className).toContain('gap-4');
+    });
+
+    it('should let the label shrink', () => {
+      render(<DetailRow {...defaultProps} />);
+      expect(screen.getByText('Test Label').props.className).toContain(
+        'shrink',
+      );
+    });
+
+    it('should right-align the value', () => {
+      render(<DetailRow {...defaultProps} />);
+      expect(screen.getByText('Test Value').props.className).toContain(
+        'text-right',
+      );
+    });
+
+    it('should cap the value to half the row width', () => {
+      render(<DetailRow {...defaultProps} />);
+      let node = screen.getByText('Test Value').parent;
+      while (node && node.props.className !== 'max-w-1/2') {
+        node = node.parent;
+      }
+      expect(node).toBeTruthy();
+    });
+
+    it('should keep base value classes when a custom className is passed', () => {
+      render(<DetailRow {...defaultProps} valueClassName="text-primary" />);
+      const { className } = screen.getByText('Test Value').props;
+      expect(className).toContain('text-right');
+      expect(className).toContain('text-primary');
+    });
+  });
+
   describe('Edge Cases', () => {
     it('should handle empty label', () => {
       render(<DetailRow label="" value="Test Value" />);
