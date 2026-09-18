@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "36d003fd-c40c-47c3-8f16-3eb497324288"
+      }
+    },
+    "android": {
+      "package": "com.viet.pham_agilityio.movea"
+    }
+  }
+}
