@@ -66,6 +66,22 @@ describe('MovieBannerCarouselSkeleton', () => {
     });
   });
 
+  describe('Layout', () => {
+    it.each(['horizontal', 'vertical'] as const)(
+      'should apply row layout with gap-4 for %s variant',
+      variant => {
+        render(<MovieBannerCarouselSkeleton variant={variant} />);
+
+        const { className } = screen.getByTestId(
+          'movie-banner-carousel-skeleton',
+        ).props;
+        expect(className).toContain('flex-row');
+        expect(className).toContain('px-6');
+        expect(className).toContain('gap-4');
+      },
+    );
+  });
+
   describe('Skeleton Items', () => {
     it('should render skeleton items with correct accessibility label', () => {
       render(<MovieBannerCarouselSkeleton count={2} />);
