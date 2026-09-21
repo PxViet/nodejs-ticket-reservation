@@ -9,7 +9,7 @@
     "clean": "expo prebuild --clean",
     "test": "jest --watchAll=false",
     "test:watch": "jest --watchAll",
-    "test:coverage": "jest --coverage --detectOpenHandles",
+    "test:coverage": "jest --coverage",
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
