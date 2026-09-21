@@ -24,6 +24,17 @@ function mockQueryBuilder(result: { holds: SeatHold[]; total: number }) {
   return qb;
 }
 
+function mockUpdateQueryBuilder() {
+  const qb = {
+    update: jest.fn().mockReturnThis(),
+    set: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    execute: jest.fn().mockResolvedValue({ affected: 0 }),
+  };
+  return qb;
+}
+
 // heldUntil/status/id are DB-computed defaults, so the mock save() populates
 // them the same way Postgres's RETURNING clause would for a real insert.
 function mockManager() {
@@ -40,6 +51,7 @@ function mockManager() {
       ),
     ),
     update: jest.fn().mockResolvedValue(undefined),
+    createQueryBuilder: jest.fn(() => mockUpdateQueryBuilder()),
   };
 }
 
@@ -131,6 +143,37 @@ describe('SeatHoldsService', () => {
         },
       ],
     });
+  });
+
+  it('expires stale held rows for the requested seats before inserting, so a hold past its heldUntil does not block a new one ahead of the sweep', async () => {
+    await service.holdSeats('st1', { seatIds: ['seat-a1'] }, 'user-1');
+
+    const updateQb = manager.createQueryBuilder.mock.results[0]
+      .value as ReturnType<typeof mockUpdateQueryBuilder>;
+
+    expect(updateQb.update).toHaveBeenCalledWith(SeatHold);
+    expect(updateQb.set).toHaveBeenCalledWith({
+      status: SeatHoldStatus.EXPIRED,
+    });
+    expect(updateQb.where).toHaveBeenCalledWith('showtimeId = :showtimeId', {
+      showtimeId: 'st1',
+    });
+    expect(updateQb.andWhere).toHaveBeenCalledWith('seatId IN (:...seatIds)', {
+      seatIds: ['seat-a1'],
+    });
+    expect(updateQb.andWhere).toHaveBeenCalledWith('status = :status', {
+      status: SeatHoldStatus.HELD,
+    });
+    expect(updateQb.andWhere).toHaveBeenCalledWith(
+      'heldUntil <= :now',
+      expect.objectContaining({ now: expect.any(Date) }),
+    );
+    expect(updateQb.execute).toHaveBeenCalled();
+
+    // and it must run before the insert, not after
+    const updateOrder = updateQb.execute.mock.invocationCallOrder[0];
+    const saveOrder = manager.save.mock.invocationCallOrder[0];
+    expect(updateOrder).toBeLessThan(saveOrder);
   });
 
   it('throws NotFoundException for a missing showtime', async () => {

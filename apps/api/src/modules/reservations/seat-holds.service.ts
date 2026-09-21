@@ -37,6 +37,12 @@ export class SeatHoldsService {
   // ADR-007: the partial unique index uq_seat_hold_active is the actual
   // overbooking guarantee — this method just gets a well-formed INSERT to it
   // and translates the 23505 a losing concurrent request gets back.
+  //
+  // The 60s sweep (BR-27) isn't relied on for correctness here either: a
+  // HELD row past its heldUntil still satisfies the index until it's swept,
+  // so we expire any stale rows for these seats in the same transaction
+  // before inserting — same reasoning as the heldUntil re-check in
+  // findMyActiveHolds and confirmReservation (DDR-002).
   async holdSeats(
     showtimeId: string,
     { seatIds }: CreateSeatHoldDto,
@@ -67,13 +73,25 @@ export class SeatHoldsService {
     );
 
     try {
-      const holds = await this.seatHolds.manager.transaction(async (manager) =>
-        manager.save(
-          SeatHold,
-          seatIds.map((seatId) =>
-            manager.create(SeatHold, { showtimeId, seatId, userId }),
-          ),
-        ),
+      const holds = await this.seatHolds.manager.transaction(
+        async (manager) => {
+          await manager
+            .createQueryBuilder()
+            .update(SeatHold)
+            .set({ status: SeatHoldStatus.EXPIRED })
+            .where('showtimeId = :showtimeId', { showtimeId })
+            .andWhere('seatId IN (:...seatIds)', { seatIds })
+            .andWhere('status = :status', { status: SeatHoldStatus.HELD })
+            .andWhere('heldUntil <= :now', { now: new Date() })
+            .execute();
+
+          return manager.save(
+            SeatHold,
+            seatIds.map((seatId) =>
+              manager.create(SeatHold, { showtimeId, seatId, userId }),
+            ),
+          );
+        },
       );
 
       return {
