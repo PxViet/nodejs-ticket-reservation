@@ -39,6 +39,7 @@ documents.**
 | [DDR-019](0019-mobile-rbac-role-gated-navigation.md)              | Mobile RBAC: role-gated navigation and tab reuse            | ADR-005, ADR-006, DDR-014          |
 | [DDR-020](0020-admin-movie-management-ui.md)                      | Admin movie management UI                                   | ADR-006, ADR-010, DDR-014, DDR-018 |
 | [DDR-021](0021-admin-reporting-ui.md)                             | Admin reporting UI                                          | ADR-006, ADR-011, DDR-010          |
+| [DDR-022](0022-seat-hold-creation-expiry-recheck.md)              | Seat-hold creation re-checks heldUntil before inserting     | ADR-007, ADR-009, DDR-001, DDR-002 |
 
 ## Open divergences from the code
 
