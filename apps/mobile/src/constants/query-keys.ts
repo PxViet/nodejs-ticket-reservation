@@ -12,7 +12,7 @@ export const queryKeys = {
     lists: () => [...queryKeys.movies.all, 'list'] as const,
     list: (filters?: { genreId?: string }) =>
       [...queryKeys.movies.lists(), filters] as const,
-    infinite: (filters?: { genreId?: string }) =>
+    infinite: (filters?: { genreId?: string; isComingSoon?: boolean }) =>
       [...queryKeys.movies.lists(), 'infinite', filters] as const,
     details: () => [...queryKeys.movies.all, 'detail'] as const,
     detail: (id: string) => [...queryKeys.movies.details(), id] as const,
