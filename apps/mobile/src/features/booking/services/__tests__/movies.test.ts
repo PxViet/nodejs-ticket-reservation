@@ -24,6 +24,7 @@ const API_MOVIE = {
   releaseDate: '2000-01-01',
   rating: 7.5,
   isActive: true,
+  isComingSoon: false,
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z',
   genres: [{ id: 'g1', name: 'Action' }],
@@ -87,6 +88,28 @@ describe('MoviesService', () => {
         hasMore: true,
       });
     });
+
+    it('maps isComingSoon: true onto status: coming_soon', async () => {
+      mockApiRequest.mockResolvedValue(
+        apiPage([{ ...API_MOVIE, isComingSoon: true }], 1, false),
+      );
+
+      const result = await runEffectForQuery(
+        moviesServiceEffect.getMoviesPaginated(1),
+      );
+
+      expect(result.data[0]).toMatchObject({ status: 'coming_soon' });
+    });
+
+    it('passes isComingSoon through as a query param', async () => {
+      mockApiRequest.mockResolvedValue(apiPage([], 1, false));
+
+      await runEffectForQuery(moviesServiceEffect.getMoviesPaginated(1, true));
+
+      expect(mockApiRequest).toHaveBeenCalledWith(
+        '/movies?page=1&limit=20&isComingSoon=true',
+      );
+    });
   });
 
   describe('searchMoviesPaginated', () => {
@@ -113,6 +136,18 @@ describe('MoviesService', () => {
 
       expect(mockApiRequest).toHaveBeenCalledWith(
         '/movies?genreId=g1&page=1&limit=20',
+      );
+    });
+
+    it('passes isComingSoon through as a query param', async () => {
+      mockApiRequest.mockResolvedValue(apiPage([], 1, false));
+
+      await runEffectForQuery(
+        moviesServiceEffect.getMoviesByGenrePaginated('g1', 1, false),
+      );
+
+      expect(mockApiRequest).toHaveBeenCalledWith(
+        '/movies?genreId=g1&page=1&limit=20&isComingSoon=false',
       );
     });
   });

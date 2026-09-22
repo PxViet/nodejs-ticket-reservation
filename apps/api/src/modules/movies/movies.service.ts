@@ -33,7 +33,7 @@ export class MoviesService extends BaseAbstractService<Movie> {
   }
 
   async findAllMovies(
-    { page, limit, skip, genreId, title }: MovieListQueryDto,
+    { page, limit, skip, genreId, title, isComingSoon }: MovieListQueryDto,
     { includeInactive }: VisibilityOptions,
   ): Promise<PaginatedResponseDto<MovieResponseDto>> {
     const qb = this.repository
@@ -54,6 +54,13 @@ export class MoviesService extends BaseAbstractService<Movie> {
       qb.andWhere(
         'movie.id IN (SELECT movie_id FROM movie_genres WHERE genre_id = :genreId)',
         { genreId },
+      );
+    }
+    if (isComingSoon !== undefined) {
+      qb.andWhere(
+        isComingSoon
+          ? 'movie.releaseDate > CURRENT_DATE'
+          : 'movie.releaseDate <= CURRENT_DATE',
       );
     }
 
@@ -164,6 +171,7 @@ export class MoviesService extends BaseAbstractService<Movie> {
   private toResponse({ movieGenres, ...movie }: Movie): MovieResponseDto {
     return {
       ...movie,
+      isComingSoon: movie.releaseDate > new Date().toISOString().slice(0, 10),
       genres: (movieGenres ?? []).map(({ genre }) => ({
         id: genre.id,
         name: genre.name,

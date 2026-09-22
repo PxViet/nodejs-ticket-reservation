@@ -768,6 +768,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "isComingSoon",
+            "required": false,
+            "in": "query",
+            "description": "Filter by release status: true for not-yet-released movies.",
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -2253,6 +2262,10 @@
           "isActive": {
             "type": "boolean"
           },
+          "isComingSoon": {
+            "type": "boolean",
+            "description": "True when releaseDate is in the future."
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
@@ -2275,6 +2288,7 @@
           "language",
           "releaseDate",
           "isActive",
+          "isComingSoon",
           "createdAt",
           "updatedAt",
           "genres"

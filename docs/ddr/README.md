@@ -40,6 +40,7 @@ documents.**
 | [DDR-020](0020-admin-movie-management-ui.md)                      | Admin movie management UI                                   | ADR-006, ADR-010, DDR-014, DDR-018 |
 | [DDR-021](0021-admin-reporting-ui.md)                             | Admin reporting UI                                          | ADR-006, ADR-011, DDR-010          |
 | [DDR-022](0022-seat-hold-creation-expiry-recheck.md)              | Seat-hold creation re-checks heldUntil before inserting     | ADR-007, ADR-009, DDR-001, DDR-002 |
+| [DDR-023](0023-computed-is-coming-soon.md)                        | Computed `isComingSoon` instead of a stored flag            | ADR-012, DDR-014                   |
 
 ## Open divergences from the code
 
