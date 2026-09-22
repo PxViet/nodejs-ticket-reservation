@@ -16,7 +16,7 @@ export const codeOf = (error: unknown): string | undefined =>
 
 /** Build a query string, dropping params that are undefined or empty. */
 export const toQuery = (
-  params: Record<string, string | number | undefined>,
+  params: Record<string, string | number | boolean | undefined>,
 ): string => {
   const search = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {

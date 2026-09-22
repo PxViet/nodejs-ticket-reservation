@@ -117,6 +117,55 @@ describe('MoviesService', () => {
 
       expect(qb.andWhere).not.toHaveBeenCalledWith('movie.isActive = true');
     });
+
+    it('derives isComingSoon as false for a past releaseDate', async () => {
+      qb.getManyAndCount.mockResolvedValue([[baseMovie], 1]);
+
+      const result = await service.findAllMovies(
+        { page: 1, limit: 20, skip: 0 },
+        { includeInactive: false },
+      );
+
+      expect(result.data[0].isComingSoon).toBe(false);
+    });
+
+    it('derives isComingSoon as true for a future releaseDate', async () => {
+      const upcoming = { ...baseMovie, releaseDate: '2099-01-01' };
+      qb.getManyAndCount.mockResolvedValue([[upcoming], 1]);
+
+      const result = await service.findAllMovies(
+        { page: 1, limit: 20, skip: 0 },
+        { includeInactive: false },
+      );
+
+      expect(result.data[0].isComingSoon).toBe(true);
+    });
+
+    it('filters by isComingSoon when requested', async () => {
+      qb.getManyAndCount.mockResolvedValue([[baseMovie], 1]);
+
+      await service.findAllMovies(
+        { page: 1, limit: 20, skip: 0, isComingSoon: true },
+        { includeInactive: false },
+      );
+
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        'movie.releaseDate > CURRENT_DATE',
+      );
+    });
+
+    it('does not apply an isComingSoon filter when omitted', async () => {
+      qb.getManyAndCount.mockResolvedValue([[baseMovie], 1]);
+
+      await service.findAllMovies(
+        { page: 1, limit: 20, skip: 0 },
+        { includeInactive: false },
+      );
+
+      expect(qb.andWhere).not.toHaveBeenCalledWith(
+        expect.stringContaining('CURRENT_DATE'),
+      );
+    });
   });
 
   describe('createMovie', () => {

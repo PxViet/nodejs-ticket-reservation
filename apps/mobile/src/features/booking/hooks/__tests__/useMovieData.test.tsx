@@ -75,10 +75,14 @@ describe('useMovieData', () => {
         { wrapper: createWrapper() },
       );
 
-      expect(mockUseMoviesInfinite).toHaveBeenCalledWith({ enabled: true });
+      expect(mockUseMoviesInfinite).toHaveBeenCalledWith({
+        enabled: true,
+        isComingSoon: false,
+      });
       expect(mockUseMoviesByGenreInfinite).toHaveBeenCalledWith({
         genreId: '',
         enabled: false,
+        isComingSoon: false,
       });
       expect(result.current.movies).toHaveLength(3);
     });
@@ -92,31 +96,16 @@ describe('useMovieData', () => {
       expect(result.current.movies.map(m => m.rating)).toEqual([9.1, 8.5, 7.2]);
     });
 
-    it('filters out movies whose derived status does not match', () => {
-      mockUseMoviesInfinite.mockReturnValue({
-        ...baseQueryResult,
-        data: {
-          pages: [
-            pageOf([
-              ...nowPlaying,
-              {
-                id: '4',
-                title: 'Soon',
-                rating: 5,
-                status: MOVIE_STATUS.COMING_SOON,
-              },
-            ]),
-          ],
-        },
-      } as any);
-
+    it('filters by isComingSoon server-side rather than in the client', () => {
       const { result } = renderHook(
         () => useMovieData({ status: MOVIE_STATUS.NOW_PLAYING as MovieStatus }),
         { wrapper: createWrapper() },
       );
 
+      expect(mockUseMoviesInfinite).toHaveBeenCalledWith(
+        expect.objectContaining({ isComingSoon: false }),
+      );
       expect(result.current.movies).toHaveLength(3);
-      expect(result.current.movies.find(m => m.id === '4')).toBeUndefined();
     });
 
     it('limits to 10 movies', () => {
@@ -154,10 +143,14 @@ describe('useMovieData', () => {
         { wrapper: createWrapper() },
       );
 
-      expect(mockUseMoviesInfinite).toHaveBeenCalledWith({ enabled: false });
+      expect(mockUseMoviesInfinite).toHaveBeenCalledWith({
+        enabled: false,
+        isComingSoon: false,
+      });
       expect(mockUseMoviesByGenreInfinite).toHaveBeenCalledWith({
         genreId: 'g1',
         enabled: true,
+        isComingSoon: false,
       });
       expect(result.current.movies).toHaveLength(3);
     });

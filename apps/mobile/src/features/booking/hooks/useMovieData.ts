@@ -16,16 +16,19 @@ export const useMovieData = ({
   enabled = true,
 }: UseMovieDataParams) => {
   const isAllCategory = !genreId;
+  const isComingSoon = status === MOVIE_STATUS.COMING_SOON;
 
-  // Fetch all movies
+  // Fetch all movies, filtered server-side by isComingSoon
   const allMoviesQuery = useMoviesInfinite({
     enabled: enabled && isAllCategory,
+    isComingSoon,
   });
 
-  // Fetch movies by genre
+  // Fetch movies by genre, filtered server-side by isComingSoon
   const genreMoviesQuery = useMoviesByGenreInfinite({
     genreId: genreId ?? '',
     enabled: enabled && !isAllCategory,
+    isComingSoon,
   });
 
   // Select active query based on category
@@ -35,10 +38,7 @@ export const useMovieData = ({
   const movies = useMemo(() => {
     if (!activeQuery.data?.pages) return [];
 
-    // The API has no status filter, so partition by the derived status here.
-    const flatMovies = activeQuery.data.pages
-      .flatMap(page => page.data)
-      .filter(movie => movie.status === status);
+    const flatMovies = activeQuery.data.pages.flatMap(page => page.data);
 
     // Sort by rating for NOW_PLAYING, keep order for COMING_SOON
     if (status === MOVIE_STATUS.NOW_PLAYING) {
