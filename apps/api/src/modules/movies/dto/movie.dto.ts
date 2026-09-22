@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
@@ -141,6 +141,17 @@ export class MovieListQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsString()
   title?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by release status: true for not-yet-released movies.',
+  })
+  @IsOptional()
+  @Transform(({ obj }: { obj: Record<string, unknown> }) => {
+    const raw = obj.isComingSoon;
+    return typeof raw === 'string' ? raw === 'true' : raw;
+  })
+  @IsBoolean()
+  isComingSoon?: boolean;
 }
 
 export class MovieResponseDto {
@@ -170,6 +181,11 @@ export class MovieResponseDto {
 
   @ApiProperty()
   isActive: boolean;
+
+  @ApiProperty({
+    description: 'True when releaseDate is in the future.',
+  })
+  isComingSoon: boolean;
 
   @ApiProperty()
   createdAt: Date;
