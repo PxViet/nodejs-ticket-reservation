@@ -19,15 +19,15 @@ import { PAGINATION } from '@/constants';
 // Error
 import { MovieError } from '@/features/booking/error/movie';
 
-// A wider page than the shared default: status is filtered client-side after
-// paging, so a bigger page keeps the "now playing" / "coming soon" carousels
-// full (see useMovieData).
+// A wider page than the shared default keeps the "now playing" / "coming
+// soon" carousels full even though each is now filtered server-side (see
+// useMovieData).
 const PAGE_LIMIT = PAGINATION.PAGE_LIMIT_MAX;
 
-// The API has no status field; "now playing" vs "coming soon" is a function of
-// the release date.
-const deriveStatus = (releaseDate: string): MovieStatus =>
-  new Date(releaseDate).getTime() > Date.now() ? 'coming_soon' : 'now_playing';
+// The API's isComingSoon is derived from releaseDate at read time; this just
+// maps it onto the client's status vocabulary.
+const toStatus = (isComingSoon: boolean): MovieStatus =>
+  isComingSoon ? 'coming_soon' : 'now_playing';
 
 const toMovie = ({
   id,
@@ -39,6 +39,7 @@ const toMovie = ({
   releaseDate,
   rating,
   genres,
+  isComingSoon,
   createdAt,
   updatedAt,
 }: ApiMovie): Movie => ({
@@ -51,7 +52,7 @@ const toMovie = ({
   releaseDate,
   rating: rating ?? 0,
   genre: genres.map(({ name }) => name),
-  status: deriveStatus(releaseDate),
+  status: toStatus(isComingSoon),
   createdAt,
   updatedAt,
 });
@@ -86,12 +87,12 @@ export class MoviesServiceEffect {
       catch: (error: unknown) => MovieError.movieNotFound(messageOf(error)),
     });
 
-  getMoviesPaginated = (page = 1) =>
+  getMoviesPaginated = (page = 1, isComingSoon?: boolean) =>
     Effect.tryPromise({
       try: async () =>
         toMoviePage(
           await apiRequest<PaginatedMovies>(
-            `/movies${toQuery({ page, limit: PAGE_LIMIT })}`,
+            `/movies${toQuery({ page, limit: PAGE_LIMIT, isComingSoon })}`,
           ),
         ),
       catch: (error: unknown) => MovieError.movieNotFound(messageOf(error)),
@@ -108,12 +109,16 @@ export class MoviesServiceEffect {
       catch: (error: unknown) => MovieError.searchFailed(messageOf(error)),
     });
 
-  getMoviesByGenrePaginated = (genreId: string, page = 1) =>
+  getMoviesByGenrePaginated = (
+    genreId: string,
+    page = 1,
+    isComingSoon?: boolean,
+  ) =>
     Effect.tryPromise({
       try: async () =>
         toMoviePage(
           await apiRequest<PaginatedMovies>(
-            `/movies${toQuery({ genreId, page, limit: PAGE_LIMIT })}`,
+            `/movies${toQuery({ genreId, page, limit: PAGE_LIMIT, isComingSoon })}`,
           ),
         ),
       catch: (error: unknown) => MovieError.movieNotFound(messageOf(error)),
