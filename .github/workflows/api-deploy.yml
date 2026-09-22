@@ -1,0 +1,54 @@
+name: Deploy API to Railway
+
+# Railway's own image polling is schedule-based, so it is switched off in the
+# dashboard and this workflow is what decides when a deploy happens.
+on:
+  workflow_call:
+    inputs:
+      service:
+        description: Railway service to redeploy; blank falls back to the RAILWAY_SERVICE variable.
+        type: string
+        required: false
+        default: ''
+    secrets:
+      RAILWAY_TOKEN:
+        required: true
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Railway service to redeploy (blank = the RAILWAY_SERVICE repository variable)'
+        type: string
+        required: false
+        default: ''
+
+concurrency:
+  group: api-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Redeploy Railway service
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+
+      - name: Resolve service name
+        id: service
+        run: |
+          SERVICE="${{ inputs.service }}"
+          SERVICE="${SERVICE:-${{ vars.RAILWAY_SERVICE }}}"
+          if [ -z "$SERVICE" ]; then
+            echo "::error::No Railway service name. Set the RAILWAY_SERVICE repository variable, or pass one when dispatching this workflow."
+            exit 1
+          fi
+          echo "name=$SERVICE" >> "$GITHUB_OUTPUT"
+
+      # No build here. The service source is a Docker image, so a redeploy
+      # re-pulls the :latest digest — which is the image the docker job in
+      # api-ci.yml has just pushed.
+      - name: Redeploy service
+        run: railway redeploy --service "${{ steps.service.outputs.name }}" --yes
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
