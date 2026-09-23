@@ -26,15 +26,21 @@
 | **MO-18** Report on seating capacity and occupancy for each showtime.   | R11 — Administrators must be able to see capacity.                                             |
 | **MO-19** Report on all reservations across all customers.              | R11 — Administrators must be able to see all reservations.                                     |
 | **MO-20** Maintain an initial administrator account set at deployment.  | R13 — The initial administrator is created using seed data.                                    |
+| **MO-21** Maintain each customer's token wallet and its top-up history. | R14 — Customers buy tokens by card from fixed packages and see their balance and history.      |
 
 MO-14 (ticket admission tracking), MO-15 (wallet balance and transactions) and MO-16
 (promotional codes) were **removed rather than renumbered**, so the remaining MO-01…MO-13 and
 MO-17…MO-20 keep the numbers other phases already cite. MO-06 was narrowed from "cinema and
 hall information" to "hall information" — there is no separate cinema/venue entity.
 
+MO-21 brings the wallet back as a **new** objective rather than reinstating MO-15. It is
+narrower than MO-15 was: buying tokens only, not paying for reservations with them (ADR-017,
+DDR-024).
+
 ## Requirement sources
 
-R-codes are stated requirements of the capstone brief.
+R1–R13 are stated requirements of the capstone brief. R14 is a product extension adopted by
+ADR-017.
 
 | Code | Brief section                       | Requirement                                                                     |
 | ---- | ----------------------------------- | ------------------------------------------------------------------------------- |
@@ -51,22 +57,23 @@ R-codes are stated requirements of the capstone brief.
 | R11  | Reservation Management              | Admins should be able to see all reservations, capacity, and revenue.           |
 | R12  | Implementation Considerations       | The design must avoid overbooking and handle seat reservations correctly.       |
 | R13  | User Authentication & Authorization | The initial admin may be created using seed data.                               |
+| R14  | Extension — not in the brief        | Users should be able to buy tokens by card into a wallet (ADR-017).             |
 
 ## Out of scope
 
 Recorded here so later phases do not silently reintroduce them.
 
-| Excluded                                     | Reason                                                                                                                                                   |
-| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Payment processing and wallet                | The requirements list payment as a possible later extension, not a deliverable. A reservation is complete without it. This is what DDR-010 works around. |
-| Promotional codes and discounts              | Not part of the approved Proposal's Reservations scope.                                                                                                  |
-| QR codes and admission scanning              | The Proposal covers reserving and viewing reservations only. A reservation still yields a ticket with a reference number (MO-12).                        |
-| Push notification delivery and device tokens | Present in the existing mobile application, but supports no mission objective above.                                                                     |
-| Multiple cinema locations                    | Showtimes are scheduled into halls directly, with no separate cinema/venue entity.                                                                       |
-| Social sign-in provider records              | Authentication is by email and password (R1); ADR-005 self-issues JWTs rather than delegating to a third-party provider.                                 |
-| Cast, crew and trailers                      | Movie Management is limited to title, description, poster image and genre.                                                                               |
-| Multi-currency and multi-region pricing      | No objective requires more than a single currency.                                                                                                       |
-| Seat-level dynamic pricing                   | A showtime has a single price (BR-07); no requirement varies it. The `seat_type` field is dropped for the same reason.                                   |
+| Excluded                                     | Reason                                                                                                                                              |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Paying for a reservation with tokens         | Tokens can be bought (MO-21) but not yet spent; a reservation still confirms with no payment step. Out of scope until its own record — see DDR-024. |
+| Promotional codes and discounts              | Not part of the approved Proposal's Reservations scope.                                                                                             |
+| QR codes and admission scanning              | The Proposal covers reserving and viewing reservations only. A reservation still yields a ticket with a reference number (MO-12).                   |
+| Push notification delivery and device tokens | Present in the existing mobile application, but supports no mission objective above.                                                                |
+| Multiple cinema locations                    | Showtimes are scheduled into halls directly, with no separate cinema/venue entity.                                                                  |
+| Social sign-in provider records              | Authentication is by email and password (R1); ADR-005 self-issues JWTs rather than delegating to a third-party provider.                            |
+| Cast, crew and trailers                      | Movie Management is limited to title, description, poster image and genre.                                                                          |
+| Multi-currency and multi-region pricing      | No objective requires more than a single currency.                                                                                                  |
+| Seat-level dynamic pricing                   | A showtime has a single price (BR-07); no requirement varies it. The `seat_type` field is dropped for the same reason.                              |
 
 ## Where the current schema came from
 
