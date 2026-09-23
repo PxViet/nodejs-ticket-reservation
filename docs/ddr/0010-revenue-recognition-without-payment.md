@@ -1,6 +1,6 @@
 # DDR-010 — Revenue recognition without a payment step
 
-Accepted · 14 Aug 2026 · Implements ADR-011 · Related: DDR-003
+Superseded by DDR-024 · 14 Aug 2026 · Implements ADR-011 · Related: DDR-003
 
 ## Context
 
