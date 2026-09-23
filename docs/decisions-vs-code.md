@@ -39,7 +39,7 @@ client joined as `apps/mobile`; API behaviour unchanged).
 | DDR-002 | `apps/api/src/modules/reservations/reservations.service.ts` — `confirmReservation`: lock the holds (`pessimistic_write`), re-validate (`SEAT_HOLD_NOT_OWNED`/`SEAT_HOLD_EXPIRED`), then write — the exact DDR-002 order                                                                                                                                                    |
 | DDR-004 | `apps/api/src/modules/reservations/utils/reference-number.util.ts` plus `withReferenceRetry` in `reservations.service.ts` — retries the whole confirmation attempt (not a `SAVEPOINT`) on a `23505`, regenerating both the reservation and ticket numbers                                                                                                                  |
 | ADR-011 | `apps/api/src/modules/reports/reports.service.ts` — `getRevenueReport`/`getCapacityReport`/`getReservationsReport`, each a `GROUP BY`/`COUNT`/`SUM` query builder against indexed columns, no summary table                                                                                                                                                                |
-| DDR-010 | `apps/api/src/modules/reports/reports.service.ts` — `getRevenueReport` filters `ticket.status = 'valid' AND reservation.status != 'cancelled'`, the exact DDR-010 predicate                                                                                                                                                                                                |
+| DDR-010 | `apps/api/src/modules/reports/reports.service.ts` — `getRevenueReport` filters `ticket.status = 'valid' AND reservation.status != 'cancelled'`, the exact DDR-010 predicate. DDR-010 is superseded by DDR-024, which keeps this query unchanged                                                                                                                            |
 | ADR-015 | `pnpm-workspace.yaml`, `turbo.json`, `apps/api/`, `apps/mobile/`, `packages/api-contract/` — one workspace, one lockfile, one hook set                                                                                                                                                                                                                                     |
 | ADR-016 | `.github/workflows/api-ci.yml` and `mobile-ci.yml` — separate path-filtered workflows, no `needs:` edge between them, one shared `setup-node-and-pnpm` action                                                                                                                                                                                                              |
 | DDR-017 | `pnpm-workspace.yaml` (`apps/*`, `packages/*`), `@movea/*` package names, root `lint-staged` dispatching by path, `apps/api/Dockerfile.dockerignore`                                                                                                                                                                                                                       |
@@ -67,9 +67,10 @@ change the code, or supersede the record — but do not leave them silently disa
 Records that are accepted but have no code behind them yet. This is expected; the branch is
 the application skeleton over a designed schema.
 
-| Record | Waiting on                                                                                                                                                                                                                                            |
-| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| —      | Nothing currently outstanding. `DELETE /seat-holds/:id` (voluntary release) was the last endpoint left undocumented as _Planned_ in `docs/api/README.md` — it's now implemented in `seat-hold.controller.ts`, alongside the new `GET /seat-holds/me`. |
+| Record  | Waiting on                                                                                                                                                                                                                                                                                                                             |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ADR-017 | Everything. `apps/api` has no `stripe` dependency, no Stripe env vars, no `rawBody` in `main.ts` and no webhook route. The endpoints are documented as _Planned_ in `docs/api/README.md`.                                                                                                                                              |
+| DDR-024 | Everything. There is no Wallets module and no migration for `wallets`/`token_packages`/`wallet_transactions`. `AuthService.register()` still saves the user outside a transaction and creates no wallet. BR-35…BR-40 are unenforced. `apps/mobile`'s `features/wallet/services/wallet.ts` is still the stub that throws on every call. |
 
 ## Notes
 
@@ -159,7 +160,8 @@ the application skeleton over a designed schema.
   still not deleted. See
   [DDR-018](ddr/0018-mobile-migration-scope-and-dead-code-retention.md) for the retention rule
   and the list of what's genuinely blocked on an API endpoint versus already out of scope by
-  DDR-010.
+  DDR-010. **Update, 23 Sep 2026:** DDR-024 superseded DDR-010. Buying tokens is now in scope
+  (ADR-017), but spending them at checkout is still not, so "no wallet debit" remains correct.
 - **Admin RBAC and admin movie management landed in the mobile app.** `useAuth()` now exposes
   `isAdmin` (DDR-019), `apps/mobile/src/app/(main)/(tabs)/_layout.tsx` swaps in
   `ADMIN_NAVIGATION_BOTTOM_TABS`, and the `index`/`wallet`/`my-ticket` tab route files each
