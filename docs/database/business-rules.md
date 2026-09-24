@@ -1,6 +1,6 @@
 # Business Rules
 
-Forty rules, each with the mechanism that enforces it — BR-35…BR-40 are planned, not yet built. Tables and keys (Phase 3) and
+Forty rules, each with the mechanism that enforces it. Tables and keys (Phase 3) and
 relationships and delete rules (Phase 4) cannot express a rule about the values inside a
 column, the legal states a row may move through, or a constraint spanning more than one
 table. Those are collected here.
@@ -93,10 +93,10 @@ BR-30 and BR-31 are the two gaps a foreign key cannot close — see
 BR-33 is the rule DDR-007's `whitelist: true` enforces structurally, and DDR-009 is why no
 route can create the first admin at all.
 
-## Wallet and payment rules — planned
+## Wallet and payment rules
 
-Added by ADR-017 and DDR-024 for MO-21. None is built yet; see
-[decisions-vs-code.md](../decisions-vs-code.md#not-yet-built).
+Added by ADR-017 and DDR-024 for MO-21, enforced by `apps/api/src/modules/wallets/` and the
+`AddWallets` migration.
 
 | ID    | Rule                                                                                                                                                                           | Mechanism                                                     | Source           |
 | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- | ---------------- |

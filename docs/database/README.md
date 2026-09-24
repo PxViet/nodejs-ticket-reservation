@@ -31,7 +31,7 @@ Owner names are the module names from the Technical Design.
 | `reservations`   | reservation | Reservations | A confirmed reservation covering one or more seats for a showtime.        |
 | `tickets`        | reservation | Reservations | A ticket issued for one seat of a reservation, identified by a reference. |
 
-### Planned — not yet migrated (ADR-017, DDR-024)
+### Wallet tables (ADR-017, DDR-024) — `1790240623162-AddWallets.ts`
 
 | Table                 | Schema | Owner   | Description                                                                     |
 | --------------------- | ------ | ------- | ------------------------------------------------------------------------------- |
@@ -55,7 +55,7 @@ Owner names are the module names from the Technical Design.
 | `reservations`   | id, reservation_number, user_id, showtime_id, status, created_at, updated_at                                                               |
 | `tickets`        | id, reservation_id, seat_id, ticket_number, price, status, created_at                                                                      |
 
-Planned tables (DDR-024):
+Wallet tables (DDR-024):
 
 | Table                 | Fields                                                                                                                                                         |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -92,7 +92,7 @@ be null (Optional) or must be set (Mandatory).
 | RESERVATIONS confirms SEAT_HOLDS    | 0..1 : 0..N | Optional      | `seat_holds.reservation_id` | RESTRICT  |
 | RESERVATIONS yields TICKETS         | 1 : 0..N    | Mandatory     | `tickets.reservation_id`    | RESTRICT  |
 
-Planned with the wallet tables (DDR-024). Every foreign key is indexed (ADR-013):
+The wallet tables (DDR-024). Every foreign key is indexed (ADR-013):
 
 | Relationship                                    | Cardinality | Participation | Foreign key                            | On delete |
 | ----------------------------------------------- | ----------- | ------------- | -------------------------------------- | --------- |
