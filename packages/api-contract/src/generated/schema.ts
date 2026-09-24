@@ -177,6 +177,125 @@ export interface paths {
         patch: operations["UsersController_updateByAdmin"];
         trace?: never;
     };
+    "/token-packages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List active token packages, in display order */
+        get: operations["TokenPackagesController_findAll"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wallet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the authenticated user's wallet */
+        get: operations["WalletController_findMine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wallet/transactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the wallet's ledger, newest first */
+        get: operations["WalletController_findTransactions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wallet/payment-methods/setup-intent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start adding a card with Stripe's PaymentSheet (setup mode) */
+        post: operations["WalletController_createSetupIntent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wallet/payment-methods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the caller's saved cards */
+        get: operations["WalletController_findPaymentMethods"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wallet/top-ups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Buy a token package with a saved card */
+        post: operations["WalletController_topUp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wallet/top-ups/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one of the caller's top-ups */
+        get: operations["WalletController_findTopUp"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/genres": {
         parameters: {
             query?: never;
@@ -568,6 +687,93 @@ export interface components {
             role?: "user" | "admin";
             isActive?: boolean;
         };
+        TokenPackageResponseDto: {
+            id: string;
+            code: string;
+            name: string;
+            tokens: number;
+            /** @description Price in the smallest currency unit */
+            priceCents: number;
+            /** @example usd */
+            currency: string;
+        };
+        PaginatedTokenPackageResponseDto: {
+            data: components["schemas"]["TokenPackageResponseDto"][];
+            meta: components["schemas"]["PaginationMetaDto"];
+        };
+        WalletResponseDto: {
+            id: string;
+            /** @description Whole tokens */
+            balance: number;
+            /** @description Whether a card is saved for top-ups */
+            hasPaymentMethod: boolean;
+        };
+        WalletTransactionResponseDto: {
+            id: string;
+            /** @enum {string} */
+            type: "top_up" | "payment" | "refund";
+            /** @enum {string} */
+            status: "pending" | "succeeded" | "failed";
+            tokens: number;
+            amountCents: number | null;
+            currency: string | null;
+            tokenPackage?: components["schemas"]["TokenPackageResponseDto"];
+            /** @description Stripe's decline reason — safe to show the customer */
+            failureMessage?: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        PaginatedWalletTransactionResponseDto: {
+            data: components["schemas"]["WalletTransactionResponseDto"][];
+            meta: components["schemas"]["PaginationMetaDto"];
+        };
+        SetupIntentResponseDto: {
+            setupIntentClientSecret: string;
+            ephemeralKeySecret: string;
+            customerId: string;
+            publishableKey: string;
+        };
+        PaymentMethodResponseDto: {
+            /** @example pm_1Nx… */
+            id: string;
+            /** @example visa */
+            brand: string;
+            /** @example 4242 */
+            last4: string;
+            expMonth: number;
+            expYear: number;
+        };
+        PaginatedPaymentMethodResponseDto: {
+            data: components["schemas"]["PaymentMethodResponseDto"][];
+            meta: components["schemas"]["PaginationMetaDto"];
+        };
+        CreateTopUpDto: {
+            tokenPackageId: string;
+            /** @example pm_1Nx… */
+            paymentMethodId: string;
+        };
+        TopUpResponseDto: {
+            /** @enum {string} */
+            status: "succeeded" | "requires_action" | "pending";
+            transactionId: string;
+            /** @description Present when status is succeeded */
+            transaction?: components["schemas"]["WalletTransactionResponseDto"];
+            /** @description Present when status is succeeded */
+            balance?: number;
+            /** @description Present when status is requires_action — pass to Stripe's SDK to complete 3-D Secure */
+            clientSecret?: string;
+        };
+        TopUpDetailResponseDto: {
+            id: string;
+            /** @enum {string} */
+            status: "pending" | "succeeded" | "failed";
+            tokens: number;
+            amountCents: number;
+            currency: string;
+            failureMessage?: string;
+            /** @description Wallet balance after this top-up, if settled */
+            balance: number;
+        };
         GenreResponseDto: {
             id: string;
             name: string;
@@ -592,6 +798,7 @@ export interface components {
             releaseDate: string;
             rating?: number | null;
             isActive: boolean;
+            /** @description True when releaseDate is in the future. */
             isComingSoon: boolean;
             /** Format: date-time */
             createdAt: string;
@@ -1194,6 +1401,164 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    TokenPackagesController_findAll: {
+        parameters: {
+            query?: {
+                page?: components["schemas"]["Object"];
+                limit?: components["schemas"]["Object"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedTokenPackageResponseDto"];
+                };
+            };
+        };
+    };
+    WalletController_findMine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WalletResponseDto"];
+                };
+            };
+        };
+    };
+    WalletController_findTransactions: {
+        parameters: {
+            query?: {
+                page?: components["schemas"]["Object"];
+                limit?: components["schemas"]["Object"];
+                type?: "top_up" | "payment" | "refund";
+                status?: "pending" | "succeeded" | "failed";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedWalletTransactionResponseDto"];
+                };
+            };
+        };
+    };
+    WalletController_createSetupIntent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupIntentResponseDto"];
+                };
+            };
+        };
+    };
+    WalletController_findPaymentMethods: {
+        parameters: {
+            query?: {
+                page?: components["schemas"]["Object"];
+                limit?: components["schemas"]["Object"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedPaymentMethodResponseDto"];
+                };
+            };
+        };
+    };
+    WalletController_topUp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTopUpDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopUpResponseDto"];
+                };
+            };
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopUpResponseDto"];
+                };
+            };
+        };
+    };
+    WalletController_findTopUp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopUpDetailResponseDto"];
+                };
             };
         };
     };
