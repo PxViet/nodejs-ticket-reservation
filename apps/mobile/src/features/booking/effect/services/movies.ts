@@ -20,6 +20,7 @@ export class MoviesService extends Context.Tag('MoviesServiceTag')<
 
     readonly getMoviesPaginated: (
       page?: number,
+      isComingSoon?: boolean,
     ) => Effect.Effect<MoviePage, MovieError, never>;
 
     readonly searchMoviesPaginated: (
@@ -30,6 +31,7 @@ export class MoviesService extends Context.Tag('MoviesServiceTag')<
     readonly getMoviesByGenrePaginated: (
       genreId: string,
       page?: number,
+      isComingSoon?: boolean,
     ) => Effect.Effect<MoviePage, MovieError, never>;
 
     readonly getGenres: () => Effect.Effect<Genre[], MovieError, never>;

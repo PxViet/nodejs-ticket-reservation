@@ -17,6 +17,7 @@ import type { MoviePage } from '@/features/booking/services/movies';
 
 interface UseMoviesOptions {
   enabled?: boolean;
+  isComingSoon?: boolean;
 }
 
 interface UseMoviesByGenreOptions extends UseMoviesOptions {
@@ -32,15 +33,18 @@ const nextPage = (lastPage: MoviePage) =>
   lastPage.hasMore ? lastPage.page + 1 : undefined;
 
 export const useMoviesInfinite = (options: UseMoviesOptions = {}) => {
-  const { enabled = true } = options;
+  const { enabled = true, isComingSoon } = options;
 
   return useInfiniteQuery({
-    queryKey: queryKeys.movies.infinite(),
+    queryKey: queryKeys.movies.infinite({ isComingSoon }),
     queryFn: ({ pageParam }) =>
       runEffectForQuery(
         Effect.gen(function* () {
           const moviesService = yield* MoviesService;
-          return yield* moviesService.getMoviesPaginated(pageParam);
+          return yield* moviesService.getMoviesPaginated(
+            pageParam,
+            isComingSoon,
+          );
         }),
         MoviesServiceLayer,
       ),
@@ -109,10 +113,10 @@ export const useSearchMoviesInfinite = (
 };
 
 export const useMoviesByGenreInfinite = (options: UseMoviesByGenreOptions) => {
-  const { genreId, enabled = true } = options;
+  const { genreId, enabled = true, isComingSoon } = options;
 
   return useInfiniteQuery({
-    queryKey: queryKeys.movies.infinite({ genreId }),
+    queryKey: queryKeys.movies.infinite({ genreId, isComingSoon }),
     queryFn: ({ pageParam }) =>
       runEffectForQuery(
         Effect.gen(function* () {
@@ -120,6 +124,7 @@ export const useMoviesByGenreInfinite = (options: UseMoviesByGenreOptions) => {
           return yield* moviesService.getMoviesByGenrePaginated(
             genreId,
             pageParam,
+            isComingSoon,
           );
         }),
         MoviesServiceLayer,

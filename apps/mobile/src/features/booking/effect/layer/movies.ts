@@ -12,14 +12,22 @@ export const MoviesServiceLayer = Layer.effect(
     return {
       getMovieById: (id: string) => moviesServiceEffect.getMovieById(id),
 
-      getMoviesPaginated: (page?: number) =>
-        moviesServiceEffect.getMoviesPaginated(page),
+      getMoviesPaginated: (page?: number, isComingSoon?: boolean) =>
+        moviesServiceEffect.getMoviesPaginated(page, isComingSoon),
 
       searchMoviesPaginated: (query: string, page?: number) =>
         moviesServiceEffect.searchMoviesPaginated(query, page),
 
-      getMoviesByGenrePaginated: (genreId: string, page?: number) =>
-        moviesServiceEffect.getMoviesByGenrePaginated(genreId, page),
+      getMoviesByGenrePaginated: (
+        genreId: string,
+        page?: number,
+        isComingSoon?: boolean,
+      ) =>
+        moviesServiceEffect.getMoviesByGenrePaginated(
+          genreId,
+          page,
+          isComingSoon,
+        ),
 
       getGenres: () => moviesServiceEffect.getGenres(),
     } as const;

@@ -592,6 +592,7 @@ export interface components {
             releaseDate: string;
             rating?: number | null;
             isActive: boolean;
+            isComingSoon: boolean;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -1292,6 +1293,8 @@ export interface operations {
                 limit?: components["schemas"]["Object"];
                 genreId?: string;
                 title?: string;
+                /** @description Filter by release status: true for not-yet-released movies. */
+                isComingSoon?: boolean;
             };
             header?: never;
             path?: never;

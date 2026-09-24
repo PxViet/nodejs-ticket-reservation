@@ -1,6 +1,6 @@
 # Business Rules
 
-Thirty-four rules, each with the mechanism that enforces it. Tables and keys (Phase 3) and
+Forty rules, each with the mechanism that enforces it — BR-35…BR-40 are planned, not yet built. Tables and keys (Phase 3) and
 relationships and delete rules (Phase 4) cannot express a rule about the values inside a
 column, the legal states a row may move through, or a constraint spanning more than one
 table. Those are collected here.
@@ -92,3 +92,17 @@ BR-30 and BR-31 are the two gaps a foreign key cannot close — see
 
 BR-33 is the rule DDR-007's `whitelist: true` enforces structurally, and DDR-009 is why no
 route can create the first admin at all.
+
+## Wallet and payment rules — planned
+
+Added by ADR-017 and DDR-024 for MO-21. None is built yet; see
+[decisions-vs-code.md](../decisions-vs-code.md#not-yet-built).
+
+| ID    | Rule                                                                                                                                                                           | Mechanism                                                     | Source           |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- | ---------------- |
+| BR-35 | `wallets.balance` is a whole number of tokens and never below 0.                                                                                                               | CHECK                                                         | DDR-024          |
+| BR-36 | A top-up's price, currency and token count come only from its `token_packages` row. The request carries a package id, never an amount.                                         | DTO whitelist + Application — Wallets                         | ADR-017, DDR-007 |
+| BR-37 | A top-up is credited exactly once per PaymentIntent, whether the synchronous response or the webhook reports it first.                                                         | UNIQUE `stripe_payment_intent_id` + row-locked status guard   | ADR-017, DDR-024 |
+| BR-38 | A payment method may be charged only if it belongs to the caller's own Stripe Customer; the customer is resolved from the authenticated user, never from a client-supplied id. | Application guard — Wallets                                   | ADR-017, BR-34   |
+| BR-39 | Every user has exactly one wallet, created in the same transaction as the user.                                                                                                | UNIQUE `wallets.user_id` + the signup transaction             | DDR-024          |
+| BR-40 | `wallet_transactions.status` moves only `pending → succeeded` or `pending → failed`; `balance` changes only in the transaction that makes the `succeeded` move.                | Application guard — Wallets, under a `pessimistic_write` lock | ADR-008, DDR-024 |

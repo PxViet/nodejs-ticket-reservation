@@ -10,7 +10,7 @@ against it.
 | Page                                           | What it covers                                                    |
 | ---------------------------------------------- | ----------------------------------------------------------------- |
 | [mission-objectives.md](mission-objectives.md) | Mission statement, MO-01…MO-20, requirement sources, out of scope |
-| [business-rules.md](business-rules.md)         | BR-01…BR-34 with the mechanism that enforces each                 |
+| [business-rules.md](business-rules.md)         | BR-01…BR-40 with the mechanism that enforces each                 |
 | [views.md](views.md)                           | The six views and who may query them                              |
 
 ## Tables
@@ -31,6 +31,14 @@ Owner names are the module names from the Technical Design.
 | `reservations`   | reservation | Reservations | A confirmed reservation covering one or more seats for a showtime.        |
 | `tickets`        | reservation | Reservations | A ticket issued for one seat of a reservation, identified by a reference. |
 
+### Planned — not yet migrated (ADR-017, DDR-024)
+
+| Table                 | Schema | Owner   | Description                                                                     |
+| --------------------- | ------ | ------- | ------------------------------------------------------------------------------- |
+| `wallets`             | wallet | Wallets | A user's token balance and, once they add a card, their Stripe Customer id.     |
+| `token_packages`      | wallet | Wallets | A purchasable bundle of tokens at a fixed USD price.                            |
+| `wallet_transactions` | wallet | Wallets | One ledger entry per balance movement — today only card top-ups through Stripe. |
+
 ## Fields
 
 | Table            | Fields                                                                                                                                     |
@@ -46,6 +54,17 @@ Owner names are the module names from the Technical Design.
 | `seat_holds`     | id, showtime_id, seat_id, user_id, reservation_id, status, held_until, created_at                                                          |
 | `reservations`   | id, reservation_number, user_id, showtime_id, status, created_at, updated_at                                                               |
 | `tickets`        | id, reservation_id, seat_id, ticket_number, price, status, created_at                                                                      |
+
+Planned tables (DDR-024):
+
+| Table                 | Fields                                                                                                                                                         |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `wallets`             | id, user_id, balance, stripe_customer_id, created_at, updated_at                                                                                               |
+| `token_packages`      | id, code, name, tokens, price_cents, currency, is_active, sort_order, created_at, updated_at                                                                   |
+| `wallet_transactions` | id, wallet_id, type, status, tokens, amount_cents, currency, token_package_id, stripe_payment_intent_id, failure_code, failure_message, created_at, updated_at |
+
+`wallets.balance` is the one stored summary in the design. DDR-024 explains why it does not
+drift: only the transaction that settles a ledger row may write it.
 
 Three values a first pass would have stored are deliberately absent — `showtimes.available_seats`,
 `halls.total_seats`, `reservations.total_seats` / `total_amount`. All are computed on read
@@ -72,6 +91,17 @@ be null (Optional) or must be set (Mandatory).
 | SHOWTIMES reserved for RESERVATIONS | 1 : 0..N    | Mandatory     | `reservations.showtime_id`  | RESTRICT  |
 | RESERVATIONS confirms SEAT_HOLDS    | 0..1 : 0..N | Optional      | `seat_holds.reservation_id` | RESTRICT  |
 | RESERVATIONS yields TICKETS         | 1 : 0..N    | Mandatory     | `tickets.reservation_id`    | RESTRICT  |
+
+Planned with the wallet tables (DDR-024). Every foreign key is indexed (ADR-013):
+
+| Relationship                                    | Cardinality | Participation | Foreign key                            | On delete |
+| ----------------------------------------------- | ----------- | ------------- | -------------------------------------- | --------- |
+| USERS owns WALLETS                              | 1 : 1       | Mandatory     | `wallets.user_id` (unique)             | RESTRICT  |
+| WALLETS records WALLET_TRANSACTIONS             | 1 : 0..N    | Mandatory     | `wallet_transactions.wallet_id`        | RESTRICT  |
+| TOKEN_PACKAGES purchased as WALLET_TRANSACTIONS | 0..1 : 0..N | Optional      | `wallet_transactions.token_package_id` | RESTRICT  |
+
+`token_package_id` is Optional because only `top_up` rows come from a package; the `payment`
+and `refund` types DDR-024 reserves will not.
 
 `seat_holds.reservation_id` starts NULL — a hold exists before it is confirmed — and is set
 only at the moment DDR-002's transaction writes the reservation. That is why it reads
