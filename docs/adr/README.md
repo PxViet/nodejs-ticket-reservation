@@ -33,6 +33,7 @@ lasts ten minutes. **No decision appears in both documents.**
 | [ADR-014](0014-docker-compose-for-local-and-grading.md) | Docker Compose for Local Development and Grading            | DDR-009                            |
 | [ADR-015](0015-pnpm-workspace-monorepo.md)              | pnpm Workspace Monorepo for the API and the Mobile Client   | DDR-017                            |
 | [ADR-016](0016-independent-per-app-ci-pipelines.md)     | Independent Per-App CI Pipelines in One Repository          | —                                  |
+| [ADR-017](0017-stripe-as-payment-provider.md)           | Stripe as the Payment Provider for Token Top-Ups            | DDR-024                            |
 
 ## Numbering policy
 

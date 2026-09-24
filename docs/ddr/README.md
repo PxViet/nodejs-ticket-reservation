@@ -27,7 +27,7 @@ documents.**
 | [DDR-007](0007-dto-validation-strategy.md)                        | DTO validation strategy                                     | ADR-006                            |
 | [DDR-008](0008-configuration-and-logging.md)                      | Configuration and logging conventions                       | ADR-005                            |
 | [DDR-009](0009-seed-data-admin-and-catalogue.md)                  | Seed data for the initial admin and demo catalogue          | ADR-006, ADR-014                   |
-| [DDR-010](0010-revenue-recognition-without-payment.md)            | Revenue recognition without a payment step                  | ADR-011                            |
+| [DDR-010](0010-revenue-recognition-without-payment.md)            | Revenue recognition without a payment step (superseded)     | ADR-011                            |
 | [DDR-011](0011-one-indexed-pagination-convention.md)              | One-indexed pagination convention (supersedes DDR-005)      | ADR-012                            |
 | [DDR-012](0012-users-module-endpoint-design.md)                   | Users module endpoint and permission design                 | ADR-006, ADR-012                   |
 | [DDR-013](0013-password-change-endpoint.md)                       | Password change endpoint                                    | ADR-005                            |
@@ -40,6 +40,8 @@ documents.**
 | [DDR-020](0020-admin-movie-management-ui.md)                      | Admin movie management UI                                   | ADR-006, ADR-010, DDR-014, DDR-018 |
 | [DDR-021](0021-admin-reporting-ui.md)                             | Admin reporting UI                                          | ADR-006, ADR-011, DDR-010          |
 | [DDR-022](0022-seat-hold-creation-expiry-recheck.md)              | Seat-hold creation re-checks heldUntil before inserting     | ADR-007, ADR-009, DDR-001, DDR-002 |
+| [DDR-023](0023-computed-is-coming-soon.md)                        | Computed `isComingSoon` instead of a stored flag            | ADR-012, DDR-014                   |
+| [DDR-024](0024-token-wallet-and-ledger.md)                        | Token wallet and ledger (supersedes DDR-010)                | ADR-008, ADR-017                   |
 
 ## Open divergences from the code
 

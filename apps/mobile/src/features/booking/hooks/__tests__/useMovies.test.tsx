@@ -64,7 +64,10 @@ describe('useMoviesInfinite', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(moviesServiceEffect.getMoviesPaginated).toHaveBeenCalledWith(1);
+    expect(moviesServiceEffect.getMoviesPaginated).toHaveBeenCalledWith(
+      1,
+      undefined,
+    );
     expect(result.current.data?.pages[0]?.data).toHaveLength(2);
     expect(result.current.hasNextPage).toBe(false);
   });
@@ -87,6 +90,7 @@ describe('useMoviesInfinite', () => {
     expect(moviesServiceEffect.getMoviesPaginated).toHaveBeenNthCalledWith(
       2,
       2,
+      undefined,
     );
     expect(result.current.hasNextPage).toBe(false);
   });
@@ -97,6 +101,23 @@ describe('useMoviesInfinite', () => {
     });
 
     expect(moviesServiceEffect.getMoviesPaginated).not.toHaveBeenCalled();
+  });
+
+  it('passes isComingSoon through to the service', async () => {
+    (moviesServiceEffect.getMoviesPaginated as jest.Mock).mockReturnValue(
+      Effect.succeed(page(['1'], 1, false)),
+    );
+
+    const { result } = renderHook(
+      () => useMoviesInfinite({ isComingSoon: true }),
+      { wrapper: createWrapper() },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(moviesServiceEffect.getMoviesPaginated).toHaveBeenCalledWith(
+      1,
+      true,
+    );
   });
 });
 
@@ -119,6 +140,7 @@ describe('useMoviesByGenreInfinite', () => {
     expect(moviesServiceEffect.getMoviesByGenrePaginated).toHaveBeenCalledWith(
       'g1',
       1,
+      undefined,
     );
   });
 
@@ -148,7 +170,10 @@ describe('useSearchMoviesInfinite', () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(moviesServiceEffect.getMoviesPaginated).toHaveBeenCalledWith(1);
+    expect(moviesServiceEffect.getMoviesPaginated).toHaveBeenCalledWith(
+      1,
+      undefined,
+    );
     expect(result.current.movies).toHaveLength(2);
   });
 

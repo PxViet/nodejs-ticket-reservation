@@ -127,8 +127,10 @@ WHERE t.status = 'valid'
 GROUP BY st.show_date, m.id, m.title;
 ```
 
-Per DDR-010 this is the whole revenue mechanism — no payment table, ledger or stored
-transaction log exists in this design. Revenue for any period or movie is `SUM(tickets.price)`
+Per DDR-010 this is the whole revenue mechanism. DDR-024 has since superseded DDR-010 and
+planned a `wallet_transactions` ledger for token top-ups, but it keeps this query as-is: a
+top-up is customer money held as tokens, not ticket revenue, and tokens cannot yet be spent
+on a reservation. Revenue for any period or movie is `SUM(tickets.price)`
 for tickets still valid on a reservation that was never cancelled; a caller filters by
 `show_date` to get "a given period". Because there is exactly one price per showtime (BR-07)
 and it is copied onto `tickets.price` at issue time, this figure never needs a join to a

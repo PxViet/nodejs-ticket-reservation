@@ -6,7 +6,7 @@ Pagination (all list endpoints): query `page` (default 1), `limit` (default 20, 
 `{ statusCode, errorCode, message, timestamp }`.
 
 Status: **Implemented** = Health, Auth, Users, Genres, Movies, Halls, Showtimes, Seat Holds,
-Reservations, Reports.
+Reservations, Reports. **Planned** = Token Packages, Wallet, Stripe webhook (ADR-017, DDR-024).
 
 ---
 
@@ -407,6 +407,102 @@ All reservations across all customers.
 
 ---
 
+## Token Packages — Planned
+
+### `GET /token-packages`
+
+Active token packages, in display order.
+
+- Auth: Bearer
+- Request: query `page?, limit?`
+- Success: `200 OK` — paginated `{ id, code, name, tokens, priceCents, currency }[]`
+- Errors: `401 UNAUTHENTICATED`
+
+---
+
+## Wallet — Planned
+
+Every user has a wallet from signup (BR-39). All routes act on the caller's own wallet; none
+takes a user or wallet id.
+
+### `GET /wallet`
+
+The caller's wallet.
+
+- Auth: Bearer
+- Request: —
+- Success: `200 OK` — `{ id, balance, hasPaymentMethod }`
+- Errors: `401 UNAUTHENTICATED`
+
+### `GET /wallet/transactions`
+
+The caller's ledger, newest first.
+
+- Auth: Bearer
+- Request: query `page?, limit?, type? (top_up|payment|refund), status? (pending|succeeded|failed)`
+- Success: `200 OK` — paginated `{ id, type, status, tokens, amountCents, currency, tokenPackage?, failureMessage?, createdAt }[]`
+- Errors: `401 UNAUTHENTICATED`
+
+### `POST /wallet/payment-methods/setup-intent`
+
+Start adding a card. Creates the caller's Stripe Customer on first use, then a SetupIntent
+for Stripe's PaymentSheet in setup mode.
+
+- Auth: Bearer
+- Request: —
+- Success: `201 Created` — `{ setupIntentClientSecret, ephemeralKeySecret, customerId, publishableKey }`
+- Errors: `401 UNAUTHENTICATED`, `502 PAYMENT_PROVIDER_UNAVAILABLE`
+
+### `GET /wallet/payment-methods`
+
+The caller's saved cards, for the bill-review step.
+
+- Auth: Bearer
+- Request: query `page?, limit?`
+- Success: `200 OK` — paginated `{ id, brand, last4, expMonth, expYear }[]`
+- Errors: `401 UNAUTHENTICATED`, `502 PAYMENT_PROVIDER_UNAVAILABLE`
+
+### `POST /wallet/top-ups`
+
+Buy a token package with a saved card. The request holds until Stripe answers.
+
+- Auth: Bearer
+- Request: `{ tokenPackageId, paymentMethodId }` — no amount (BR-36)
+- Success:
+  - `201 Created` — `{ status: "succeeded", transaction, balance }`
+  - `202 Accepted` — `{ status: "requires_action", transactionId, clientSecret }` — the client
+    completes 3-D Secure with Stripe's SDK, then polls `GET /wallet/top-ups/:id`
+  - `202 Accepted` — `{ status: "pending", transactionId }` — Stripe is still processing
+- Errors: `401 UNAUTHENTICATED`, `404 TOKEN_PACKAGE_NOT_FOUND`, `404 PAYMENT_METHOD_NOT_FOUND`
+  (unknown or not the caller's, BR-38), `402 PAYMENT_FAILED` (declined — `message` is Stripe's
+  decline reason, safe to show the customer), `502 PAYMENT_PROVIDER_UNAVAILABLE`
+
+### `GET /wallet/top-ups/:id`
+
+One of the caller's top-ups.
+
+- Auth: Bearer, owner
+- Request: —
+- Success: `200 OK` — `{ id, status, tokens, amountCents, currency, failureMessage?, balance }`
+- Errors: `401 UNAUTHENTICATED`, `404 TOP_UP_NOT_FOUND`
+
+---
+
+## Payments — Planned
+
+### `POST /payments/stripe/webhook`
+
+Stripe's event callback. It settles any top-up the synchronous path did not (BR-37).
+
+- Auth: none — trusted only through the `Stripe-Signature` header, checked against
+  `STRIPE_WEBHOOK_SECRET` over the raw body. Not throttled.
+- Request: a Stripe event; `payment_intent.succeeded` and `payment_intent.payment_failed` are
+  handled, and any other event is acknowledged and ignored
+- Success: `200 OK`
+- Errors: `400 STRIPE_WEBHOOK_SIGNATURE_INVALID`
+
+---
+
 ## HTTP Status Codes
 
 | Code | Meaning               | Used for                                                                                                                                     |
@@ -416,11 +512,13 @@ All reservations across all customers.
 | 204  | No Content            | Successful DELETE, or POST/PATCH with nothing to return                                                                                      |
 | 400  | Bad Request           | Validation failure, unknown field, missing/invalid data                                                                                      |
 | 401  | Unauthorized          | Missing/invalid access token, or wrong credentials                                                                                           |
+| 402  | Payment Required      | Planned — card payment declined by Stripe (`PAYMENT_FAILED`)                                                                                 |
 | 403  | Forbidden             | Wrong role, not the resource owner, or admin-self-action blocked                                                                             |
 | 404  | Not Found             | No resource with the given id                                                                                                                |
 | 409  | Conflict              | Duplicate/unique-constraint clash, or a business-rule conflict (seat taken, hold expired, overlapping showtime, reservation not cancellable) |
 | 429  | Too Many Requests     | Rate limit exceeded                                                                                                                          |
 | 500  | Internal Server Error | Unhandled server error                                                                                                                       |
+| 502  | Bad Gateway           | Planned — Stripe unreachable or erroring (`PAYMENT_PROVIDER_UNAVAILABLE`)                                                                    |
 | 503  | Service Unavailable   | Health check failed                                                                                                                          |
 
 ## Error Codes
@@ -444,6 +542,12 @@ All reservations across all customers.
 | SEAT_HOLD_EXPIRED                  | 409    | Hold's TTL passed before confirmation                    |
 | SEAT_HOLD_NOT_OWNED                | 403    | Hold belongs to a different user                         |
 | RESERVATION_NOT_CANCELLABLE        | 409    | Showtime already started, or reservation not confirmed   |
+| TOKEN_PACKAGE_NOT_FOUND            | 404    | Planned — package unknown or inactive                    |
+| PAYMENT_METHOD_NOT_FOUND           | 404    | Planned — card unknown or not the caller's (BR-38)       |
+| PAYMENT_FAILED                     | 402    | Planned — Stripe declined the payment                    |
+| PAYMENT_PROVIDER_UNAVAILABLE       | 502    | Planned — Stripe unreachable or erroring                 |
+| TOP_UP_NOT_FOUND                   | 404    | Planned — top-up unknown or not the caller's             |
+| STRIPE_WEBHOOK_SIGNATURE_INVALID   | 400    | Planned — webhook signature missing or wrong             |
 | BAD_REQUEST                        | 400    | Generic validation failure                               |
 | FORBIDDEN                          | 403    | Generic role/ownership rejection                         |
 | NOT_FOUND                          | 404    | Generic missing resource                                 |
