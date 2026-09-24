@@ -6,7 +6,7 @@ Pagination (all list endpoints): query `page` (default 1), `limit` (default 20, 
 `{ statusCode, errorCode, message, timestamp }`.
 
 Status: **Implemented** = Health, Auth, Users, Genres, Movies, Halls, Showtimes, Seat Holds,
-Reservations, Reports. **Planned** = Token Packages, Wallet, Stripe webhook (ADR-017, DDR-024).
+Reservations, Reports, Token Packages, Wallet, Stripe webhook (ADR-017, DDR-024).
 
 ---
 
@@ -407,7 +407,7 @@ All reservations across all customers.
 
 ---
 
-## Token Packages — Planned
+## Token Packages
 
 ### `GET /token-packages`
 
@@ -420,7 +420,7 @@ Active token packages, in display order.
 
 ---
 
-## Wallet — Planned
+## Wallet
 
 Every user has a wallet from signup (BR-39). All routes act on the caller's own wallet; none
 takes a user or wallet id.
@@ -469,7 +469,7 @@ Buy a token package with a saved card. The request holds until Stripe answers.
 - Auth: Bearer
 - Request: `{ tokenPackageId, paymentMethodId }` — no amount (BR-36)
 - Success:
-  - `201 Created` — `{ status: "succeeded", transaction, balance }`
+  - `201 Created` — `{ status: "succeeded", transactionId, transaction, balance }`
   - `202 Accepted` — `{ status: "requires_action", transactionId, clientSecret }` — the client
     completes 3-D Secure with Stripe's SDK, then polls `GET /wallet/top-ups/:id`
   - `202 Accepted` — `{ status: "pending", transactionId }` — Stripe is still processing
@@ -479,7 +479,9 @@ Buy a token package with a saved card. The request holds until Stripe answers.
 
 ### `GET /wallet/top-ups/:id`
 
-One of the caller's top-ups.
+One of the caller's top-ups. A `pending` top-up is reconciled against its Stripe PaymentIntent
+on read, through the same idempotent settle functions, so a finished 3-D Secure challenge shows
+as `succeeded` even before the webhook arrives.
 
 - Auth: Bearer, owner
 - Request: —
@@ -488,11 +490,12 @@ One of the caller's top-ups.
 
 ---
 
-## Payments — Planned
+## Payments
 
 ### `POST /payments/stripe/webhook`
 
-Stripe's event callback. It settles any top-up the synchronous path did not (BR-37).
+Stripe's event callback. It settles any top-up the synchronous path did not (BR-37). Left out
+of the OpenAPI document and `@movea/api-contract` — Stripe calls it, not the mobile client.
 
 - Auth: none — trusted only through the `Stripe-Signature` header, checked against
   `STRIPE_WEBHOOK_SECRET` over the raw body. Not throttled.
@@ -512,13 +515,13 @@ Stripe's event callback. It settles any top-up the synchronous path did not (BR-
 | 204  | No Content            | Successful DELETE, or POST/PATCH with nothing to return                                                                                      |
 | 400  | Bad Request           | Validation failure, unknown field, missing/invalid data                                                                                      |
 | 401  | Unauthorized          | Missing/invalid access token, or wrong credentials                                                                                           |
-| 402  | Payment Required      | Planned — card payment declined by Stripe (`PAYMENT_FAILED`)                                                                                 |
+| 402  | Payment Required      | Card payment declined by Stripe (`PAYMENT_FAILED`)                                                                                           |
 | 403  | Forbidden             | Wrong role, not the resource owner, or admin-self-action blocked                                                                             |
 | 404  | Not Found             | No resource with the given id                                                                                                                |
 | 409  | Conflict              | Duplicate/unique-constraint clash, or a business-rule conflict (seat taken, hold expired, overlapping showtime, reservation not cancellable) |
 | 429  | Too Many Requests     | Rate limit exceeded                                                                                                                          |
 | 500  | Internal Server Error | Unhandled server error                                                                                                                       |
-| 502  | Bad Gateway           | Planned — Stripe unreachable or erroring (`PAYMENT_PROVIDER_UNAVAILABLE`)                                                                    |
+| 502  | Bad Gateway           | Stripe unreachable or erroring (`PAYMENT_PROVIDER_UNAVAILABLE`)                                                                              |
 | 503  | Service Unavailable   | Health check failed                                                                                                                          |
 
 ## Error Codes
@@ -542,12 +545,12 @@ Stripe's event callback. It settles any top-up the synchronous path did not (BR-
 | SEAT_HOLD_EXPIRED                  | 409    | Hold's TTL passed before confirmation                    |
 | SEAT_HOLD_NOT_OWNED                | 403    | Hold belongs to a different user                         |
 | RESERVATION_NOT_CANCELLABLE        | 409    | Showtime already started, or reservation not confirmed   |
-| TOKEN_PACKAGE_NOT_FOUND            | 404    | Planned — package unknown or inactive                    |
-| PAYMENT_METHOD_NOT_FOUND           | 404    | Planned — card unknown or not the caller's (BR-38)       |
-| PAYMENT_FAILED                     | 402    | Planned — Stripe declined the payment                    |
-| PAYMENT_PROVIDER_UNAVAILABLE       | 502    | Planned — Stripe unreachable or erroring                 |
-| TOP_UP_NOT_FOUND                   | 404    | Planned — top-up unknown or not the caller's             |
-| STRIPE_WEBHOOK_SIGNATURE_INVALID   | 400    | Planned — webhook signature missing or wrong             |
+| TOKEN_PACKAGE_NOT_FOUND            | 404    | Package unknown or inactive                              |
+| PAYMENT_METHOD_NOT_FOUND           | 404    | Card unknown or not the caller's (BR-38)                 |
+| PAYMENT_FAILED                     | 402    | Stripe declined the payment                              |
+| PAYMENT_PROVIDER_UNAVAILABLE       | 502    | Stripe unreachable or erroring                           |
+| TOP_UP_NOT_FOUND                   | 404    | Top-up unknown or not the caller's                       |
+| STRIPE_WEBHOOK_SIGNATURE_INVALID   | 400    | Webhook signature missing or wrong                       |
 | BAD_REQUEST                        | 400    | Generic validation failure                               |
 | FORBIDDEN                          | 403    | Generic role/ownership rejection                         |
 | NOT_FOUND                          | 404    | Generic missing resource                                 |

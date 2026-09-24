@@ -3,13 +3,13 @@
 Design record for the Movie Reservation System capstone. The source documents are Word
 files; these pages are the in-repo, greppable, linkable version of them.
 
-| Area                                         | What it holds                                                                                                                     |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| [adr/](adr/README.md)                        | 14 Architecture Decision Records — framework, database, locking strategy                                                          |
-| [ddr/](ddr/README.md)                        | 14 Design Decision Records — the values and conventions underneath the ADRs                                                       |
-| [database/](database/README.md)              | 11 tables, 14 relationships, 34 business rules, 6 views                                                                           |
-| [api/](api/README.md)                        | REST API reference — every endpoint's request/response shape, pagination, error codes, and versioning; 22 implemented, 16 planned |
-| [decisions-vs-code.md](decisions-vs-code.md) | What is implemented, what diverges, what is not built yet                                                                         |
+| Area                                         | What it holds                                                                                                                    |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| [adr/](adr/README.md)                        | 14 Architecture Decision Records — framework, database, locking strategy                                                         |
+| [ddr/](ddr/README.md)                        | 14 Design Decision Records — the values and conventions underneath the ADRs                                                      |
+| [database/](database/README.md)              | 11 tables, 14 relationships, 34 business rules, 6 views                                                                          |
+| [api/](api/README.md)                        | REST API reference — every endpoint's request/response shape, pagination, error codes, and versioning; 30 implemented, 8 planned |
+| [decisions-vs-code.md](decisions-vs-code.md) | What is implemented, what diverges, what is not built yet                                                                        |
 
 ## Where to start
 
