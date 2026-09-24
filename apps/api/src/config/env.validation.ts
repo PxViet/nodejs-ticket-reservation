@@ -42,4 +42,15 @@ export const envValidationSchema = Joi.object({
   JWT_PUBLIC_KEY_BASE64: Joi.string().required(),
   JWT_ACCESS_TOKEN_TTL_SECONDS: Joi.number().positive().default(900),
   JWT_REFRESH_TOKEN_TTL_DAYS: Joi.number().positive().default(7),
+
+  // ADR-017: Stripe token top-ups. Test-mode keys locally and in CI.
+  STRIPE_SECRET_KEY: Joi.string()
+    .pattern(/^(sk|rk)_(test|live)_/)
+    .required(),
+  STRIPE_PUBLISHABLE_KEY: Joi.string()
+    .pattern(/^pk_(test|live)_/)
+    .required(),
+  STRIPE_WEBHOOK_SECRET: Joi.string()
+    .pattern(/^whsec_/)
+    .required(),
 });
