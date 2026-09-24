@@ -1,0 +1,298 @@
+// Movie Reservation System -- ERD source for https://dbdiagram.io/d
+//
+// Generated from the TypeORM migrations in apps/api/src/database/migrations/
+// (authoritative: types, nullability, UNIQUE, CHECK, ON DELETE rules, index
+// names) and docs/database/README.md (grouping + relationship notes).
+// Paste the whole file into the dbdiagram.io editor pane.
+//
+//   1787211926318-InitSchema.ts  -- identity, catalog, venue, scheduling, reservation
+//   1790240623162-AddWallets.ts  -- wallet (ADR-017, DDR-024)
+//
+// CHECK constraints and partial indexes have no DBML equivalent -- they are
+// carried as column / table notes. Enum columns are Postgres enum types in the
+// database; they are shown here as varchar with the allowed values in the note.
+
+Project ticket_reservation {
+  database_type: 'PostgreSQL'
+  Note: 'Movie Reservation System database'
+}
+
+// ============================================================
+// Identity
+// ============================================================
+
+Table users {
+  id            uuid         [pk, default: `uuid_generate_v4()`]
+  email         varchar(255) [not null, unique, note: 'BR-12: unique account email']
+  password_hash varchar(255) [not null]
+  first_name    varchar(75)  [not null]
+  last_name     varchar(75)  [not null]
+  phone_number  varchar(20)
+  date_of_birth date
+  address       text
+  avatar_url    text
+  role          varchar(10)  [not null, default: 'user', note: "BR-01: enum users_role_enum ('user','admin')"]
+  is_active     boolean      [not null, default: true]
+  created_at    timestamptz  [not null, default: `NOW()`]
+  updated_at    timestamptz  [not null, default: `NOW()`]
+
+  Note: 'Customers and admins.'
+}
+
+Table refresh_tokens {
+  id         uuid         [pk, default: `uuid_generate_v4()`]
+  user_id    uuid         [not null, ref: > users.id, note: 'ON DELETE CASCADE']
+  token_hash varchar(255) [not null]
+  expires_at timestamptz  [not null]
+  revoked_at timestamptz
+  created_at timestamptz  [not null, default: `NOW()`]
+
+  indexes {
+    user_id
+  }
+
+  Note: 'ADR-005: hashed refresh tokens, revocable per session.'
+}
+
+// ============================================================
+// Catalog
+// ============================================================
+
+Table movies {
+  id               uuid           [pk, default: `uuid_generate_v4()`]
+  title            varchar(255)   [not null]
+  synopsis         text
+  poster_url       text
+  duration_minutes integer        [not null, note: 'BR-02: CHECK chk_movies_duration_positive (duration_minutes > 0)']
+  language         varchar(30)    [not null]
+  release_date     date           [not null]
+  rating           "numeric(3,1)" [note: 'BR-03: CHECK chk_movies_rating_range (rating IS NULL OR rating BETWEEN 0.0 AND 10.0)']
+  is_active        boolean        [not null, default: true]
+  created_at       timestamptz    [not null, default: `NOW()`]
+  updated_at       timestamptz    [not null, default: `NOW()`]
+}
+
+Table genres {
+  id   uuid        [pk, default: `uuid_generate_v4()`]
+  name varchar(50) [not null, unique, note: 'BR-13: unique genre name']
+}
+
+Table movie_genres {
+  movie_id uuid [not null, ref: > movies.id, note: 'ON DELETE CASCADE']
+  genre_id uuid [not null, ref: > genres.id, note: 'ON DELETE RESTRICT']
+
+  indexes {
+    (movie_id, genre_id) [pk]
+    genre_id
+  }
+
+  Note: 'Many-to-many link table between movies and genres.'
+}
+
+// ============================================================
+// Venue
+// ============================================================
+
+Table halls {
+  id         uuid        [pk, default: `uuid_generate_v4()`]
+  name       varchar(60) [not null, unique, note: 'BR-14: unique hall name']
+  hall_type  varchar(10) [not null, note: "BR-04: enum halls_hall_type_enum ('2D','3D','IMAX')"]
+  is_active  boolean     [not null, default: true]
+  created_at timestamptz [not null, default: `NOW()`]
+  updated_at timestamptz [not null, default: `NOW()`]
+}
+
+Table seats {
+  id          uuid       [pk, default: `uuid_generate_v4()`]
+  hall_id     uuid       [not null, ref: > halls.id, note: 'ON DELETE RESTRICT']
+  seat_row    varchar(2) [not null]
+  seat_column integer    [not null, note: 'BR-05: CHECK chk_seats_seat_column_positive (seat_column > 0)']
+  seat_label  varchar(6) [not null]
+  is_active   boolean    [not null, default: true]
+
+  indexes {
+    hall_id
+    (hall_id, seat_label) [unique, name: 'uq_seats_hall_label', note: 'BR-15']
+  }
+}
+
+// ============================================================
+// Scheduling
+// ============================================================
+
+Table showtimes {
+  id         uuid            [pk, default: `uuid_generate_v4()`]
+  movie_id   uuid            [not null, ref: > movies.id, note: 'ON DELETE RESTRICT']
+  hall_id    uuid            [not null, ref: > halls.id, note: 'ON DELETE RESTRICT']
+  show_date  date            [not null]
+  show_time  time            [not null]
+  end_time   time            [not null]
+  base_price "numeric(10,2)" [not null, note: 'BR-07: CHECK chk_showtimes_base_price_non_negative (base_price >= 0)']
+  status     varchar(10)     [not null, default: 'scheduled', note: "BR-06: enum showtimes_status_enum ('scheduled','active','completed','cancelled')"]
+  created_at timestamptz     [not null, default: `NOW()`]
+  updated_at timestamptz     [not null, default: `NOW()`]
+
+  indexes {
+    movie_id
+    hall_id
+    show_date
+    (hall_id, show_date, show_time) [unique, name: 'uq_showtimes_hall_date_time', note: 'BR-16: no double-booking a hall']
+  }
+}
+
+// ============================================================
+// Reservation
+// ============================================================
+
+Table reservations {
+  id                 uuid        [pk, default: `uuid_generate_v4()`]
+  reservation_number varchar(20) [not null, unique, note: 'DDR-004 / BR-18']
+  user_id            uuid        [not null, ref: > users.id, note: 'ON DELETE RESTRICT']
+  showtime_id        uuid        [not null, ref: > showtimes.id, note: 'ON DELETE RESTRICT']
+  status             varchar(10) [not null, default: 'confirmed', note: "BR-09: enum reservations_status_enum ('confirmed','cancelled','completed')"]
+  created_at         timestamptz [not null, default: `NOW()`]
+  updated_at         timestamptz [not null, default: `NOW()`]
+
+  indexes {
+    user_id
+    showtime_id
+    (user_id, status) [name: 'idx_reservations_user_status']
+  }
+}
+
+Table seat_holds {
+  id             uuid        [pk, default: `uuid_generate_v4()`]
+  showtime_id    uuid        [not null, ref: > showtimes.id, note: 'ON DELETE RESTRICT']
+  seat_id        uuid        [not null, ref: > seats.id, note: 'ON DELETE RESTRICT']
+  user_id        uuid        [not null, ref: > users.id, note: 'ON DELETE RESTRICT']
+  reservation_id uuid        [null, ref: > reservations.id, note: 'Nullable (Optional) -- set by the DDR-002 confirm transaction. ON DELETE RESTRICT']
+  status         varchar(10) [not null, default: 'held', note: "BR-08: enum seat_holds_status_enum ('held','confirmed','released','expired')"]
+  held_until     timestamptz [not null, default: `NOW() + interval '10 minutes'`]
+  created_at     timestamptz [not null, default: `NOW()`]
+
+  indexes {
+    showtime_id
+    seat_id
+    user_id
+    reservation_id
+    (showtime_id, status) [name: 'idx_seat_holds_showtime_status']
+  }
+
+  Note: '''BR-17 / ADR-007 / ADR-008: partial indexes (no DBML equivalent)
+CREATE UNIQUE INDEX uq_seat_hold_active
+  ON seat_holds (showtime_id, seat_id)
+  WHERE status IN ('held','confirmed');
+CREATE INDEX idx_seat_holds_held_until_held
+  ON seat_holds (held_until)
+  WHERE status = 'held';'''
+}
+
+Table tickets {
+  id             uuid            [pk, default: `uuid_generate_v4()`]
+  reservation_id uuid            [not null, ref: > reservations.id, note: 'ON DELETE RESTRICT']
+  seat_id        uuid            [not null, ref: > seats.id, note: 'ON DELETE RESTRICT']
+  ticket_number  varchar(20)     [not null, unique, note: 'DDR-004 / BR-19']
+  price          "numeric(10,2)" [not null, note: 'BR-11: CHECK chk_tickets_price_non_negative (price >= 0)']
+  status         varchar(10)     [not null, default: 'valid', note: "BR-10: enum tickets_status_enum ('valid','cancelled')"]
+  created_at     timestamptz     [not null, default: `NOW()`]
+
+  indexes {
+    reservation_id
+    seat_id
+    (reservation_id, seat_id) [unique, name: 'uq_tickets_reservation_seat', note: 'BR-20: one ticket per seat per reservation']
+  }
+}
+
+// ============================================================
+// Wallet (ADR-017, DDR-024)
+// ============================================================
+
+Table wallets {
+  id                 uuid        [pk, default: `uuid_generate_v4()`]
+  user_id            uuid        [not null, unique, note: 'BR-39: exactly one wallet per user, created in the signup transaction. ON DELETE RESTRICT']
+  balance            bigint      [not null, default: 0, note: 'BR-35: whole tokens. CHECK chk_wallets_balance_non_negative (balance >= 0). The one stored summary -- written only when a ledger row settles (DDR-024)']
+  stripe_customer_id varchar     [unique, note: 'Null until the user first adds a card. BR-38: resolved from the authenticated user, never the client']
+  created_at         timestamptz [not null, default: `NOW()`]
+  updated_at         timestamptz [not null, default: `NOW()`]
+
+  Note: "A user's token balance and Stripe Customer id."
+}
+
+Table token_packages {
+  id          uuid        [pk, default: `uuid_generate_v4()`]
+  code        varchar     [not null, unique]
+  name        varchar     [not null]
+  tokens      integer     [not null, note: 'CHECK chk_token_packages_tokens_positive (tokens > 0)']
+  price_cents integer     [not null, note: 'BR-36: the only source of a top-up price. CHECK chk_token_packages_price_positive (price_cents > 0)']
+  currency    varchar(3)  [not null, default: 'usd']
+  is_active   boolean     [not null, default: true]
+  sort_order  integer     [not null, default: 0]
+  created_at  timestamptz [not null, default: `NOW()`]
+  updated_at  timestamptz [not null, default: `NOW()`]
+
+  Note: 'A purchasable bundle of tokens at a fixed USD price. Seeded.'
+}
+
+Table wallet_transactions {
+  id                       uuid        [pk, default: `uuid_generate_v4()`]
+  wallet_id                uuid        [not null, note: 'ON DELETE RESTRICT']
+  type                     varchar     [not null, note: "enum wallet_transactions_type_enum ('top_up','payment','refund') -- only top_up is written today"]
+  status                   varchar     [not null, default: 'pending', note: "BR-40: enum wallet_transactions_status_enum ('pending','succeeded','failed'); pending -> succeeded | failed only"]
+  tokens                   integer     [not null, note: 'CHECK chk_wallet_transactions_tokens_positive (tokens > 0)']
+  amount_cents             integer     [note: 'CHECK chk_wallet_transactions_amount_positive (amount_cents IS NULL OR amount_cents > 0)']
+  currency                 varchar(3)
+  token_package_id         uuid        [null, note: 'Nullable (Optional) -- only top_up rows come from a package. ON DELETE RESTRICT']
+  stripe_payment_intent_id varchar     [unique, note: 'BR-37: a PaymentIntent is credited exactly once']
+  failure_code             varchar
+  failure_message          varchar
+  created_at               timestamptz [not null, default: `NOW()`]
+  updated_at               timestamptz [not null, default: `NOW()`]
+
+  indexes {
+    wallet_id
+    token_package_id
+  }
+
+  Note: 'One ledger entry per balance movement.'
+}
+
+// 1 : 1 -- wallets.user_id is UNIQUE
+Ref: wallets.user_id - users.id
+Ref: wallet_transactions.wallet_id > wallets.id
+Ref: wallet_transactions.token_package_id > token_packages.id
+
+// ============================================================
+// Layout groups (mirrors docs/database/README.md schemas)
+// ============================================================
+
+TableGroup identity {
+  users
+  refresh_tokens
+}
+
+TableGroup catalog {
+  movies
+  genres
+  movie_genres
+}
+
+TableGroup venue {
+  halls
+  seats
+}
+
+TableGroup scheduling {
+  showtimes
+}
+
+TableGroup reservation {
+  reservations
+  seat_holds
+  tickets
+}
+
+TableGroup wallet {
+  wallets
+  token_packages
+  wallet_transactions
+}
