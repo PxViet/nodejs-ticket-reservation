@@ -10,7 +10,12 @@ import type { AppConfig } from './config/app.config';
 import { buildOpenApiDocument } from './swagger';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  // rawBody: the Stripe webhook verifies its signature over the exact bytes
+  // Stripe sent (ADR-017); JSON parsing still runs for every other route.
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+    rawBody: true,
+  });
   const logger = app.get(Logger);
   app.useLogger(logger);
 

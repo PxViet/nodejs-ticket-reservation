@@ -10,6 +10,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { appConfig, type AppConfig } from './config/app.config';
 import { envValidationSchema } from './config/env.validation';
 import { jwtConfig } from './config/jwt.config';
+import { stripeConfig } from './config/stripe.config';
 import { throttleConfig, type ThrottleConfig } from './config/throttle.config';
 import { DatabaseModule } from './database/database.module';
 import { SeedModule } from './database/seed/seed.module';
@@ -20,13 +21,14 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { ReservationsModule } from './modules/reservations/reservations.module';
 import { ShowtimesModule } from './modules/showtimes/showtimes.module';
 import { UsersModule } from './modules/users/users.module';
+import { WalletsModule } from './modules/wallets/wallets.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
-      load: [appConfig, jwtConfig, throttleConfig],
+      load: [appConfig, jwtConfig, throttleConfig, stripeConfig],
       validationSchema: envValidationSchema,
       validationOptions: { abortEarly: false },
       envFilePath: ['.env.local', '.env'],
@@ -78,6 +80,7 @@ import { UsersModule } from './modules/users/users.module';
     ShowtimesModule,
     ReservationsModule,
     ReportsModule,
+    WalletsModule,
     SeedModule,
   ],
   providers: [
