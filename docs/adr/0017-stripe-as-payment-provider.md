@@ -1,6 +1,6 @@
 # ADR-017 — Stripe as the Payment Provider for Token Top-Ups
 
-Accepted · 23 Sep 2026 · Related: ADR-005, ADR-008, DDR-002, DDR-024
+Superseded by ADR-018 · 23 Sep 2026 · Related: ADR-005, ADR-008, DDR-002, DDR-024
 
 ## Context
 
