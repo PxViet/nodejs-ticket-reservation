@@ -12,7 +12,6 @@ import { AppException } from '../../common/exceptions/app.exception';
 import { ErrorCode } from '../../common/exceptions/error-codes';
 import { User } from '../users/entities/user.entity';
 import { UserRole } from '../users/enums/user-role.enum';
-import { WalletsService } from '../wallets/wallets.service';
 import {
   BCRYPT_SALT_ROUNDS,
   REFRESH_TOKEN_BYTES,
@@ -32,7 +31,6 @@ export class AuthService {
     private readonly refreshTokenRepo: Repository<RefreshToken>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-    private readonly walletsService: WalletsService,
   ) {
     this.jwt = this.configService.getOrThrow<JwtConfig>('jwt');
   }
@@ -58,26 +56,19 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
-
-    // BR-39: the user and their wallet are written together or not at all.
-    const user = await this.userRepo.manager.transaction(async (manager) => {
-      const created = await manager.save(
-        User,
-        manager.create(User, {
-          email,
-          passwordHash,
-          firstName,
-          lastName,
-          phoneNumber: phoneNumber ?? null,
-          dateOfBirth: dateOfBirth ?? null,
-          address: address ?? null,
-          role: UserRole.USER, // BR-33: never taken from the client
-          isActive: true,
-        }),
-      );
-      await this.walletsService.createForUser(manager, created.id);
-      return created;
-    });
+    const user = await this.userRepo.save(
+      this.userRepo.create({
+        email,
+        passwordHash,
+        firstName,
+        lastName,
+        phoneNumber: phoneNumber ?? null,
+        dateOfBirth: dateOfBirth ?? null,
+        address: address ?? null,
+        role: UserRole.USER, // BR-33: never taken from the client
+        isActive: true,
+      }),
+    );
 
     return this.generateTokenPair(user);
   }
