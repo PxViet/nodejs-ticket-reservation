@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { In } from 'typeorm';
+import { EntityManager, In } from 'typeorm';
 
 import { ErrorCode } from '../../common/exceptions/error-codes';
 import { Seat } from '../showtimes/entities/seat.entity';
@@ -120,13 +120,21 @@ describe('ReservationsService', () => {
     service = module.get(ReservationsService);
   });
 
-  describe('confirmReservation', () => {
-    const dto = { holdIds: ['hold-1'] };
+  describe('confirmHolds', () => {
+    const params = {
+      holdIds: ['hold-1'],
+      userId: 'user-1',
+      showtimeId: 'st1',
+      unitPrice: 12.5,
+    };
 
     it('locks the holds, writes the reservation and tickets, and confirms the holds', async () => {
       seatHoldQb.getMany.mockResolvedValue([hold()]);
 
-      const result = await service.confirmReservation(dto, 'user-1');
+      const result = await service.confirmHolds(
+        manager as unknown as EntityManager,
+        params,
+      );
 
       expect(seatHoldQb.setLock).toHaveBeenCalledWith('pessimistic_write');
       expect(seatHoldQb.andWhere).toHaveBeenCalledWith('h.userId = :userId', {
@@ -140,26 +148,37 @@ describe('ReservationsService', () => {
       expect(result.status).toBe(ReservationStatus.CONFIRMED);
       expect(result.showtimeId).toBe('st1');
       expect(result.totalSeats).toBe(1);
-      expect(result.totalAmount).toBe(10);
       expect(result.reservationNumber).toMatch(/^RSV-\d{8}-[0-9A-Z]{6}$/);
       expect(result.tickets[0].ticketNumber).toMatch(/^TKT-[0-9A-Z]{6}-01$/);
+    });
+
+    it('DDR-025: prices each ticket at what the payment charged, not the showtime', async () => {
+      seatHoldQb.getMany.mockResolvedValue([hold()]);
+
+      const result = await service.confirmHolds(
+        manager as unknown as EntityManager,
+        params,
+      );
+
+      expect(result.tickets[0].price).toBe(12.5);
+      expect(result.totalAmount).toBe(12.5);
     });
 
     it('throws SEAT_HOLD_NOT_OWNED when a hold id does not resolve for this user', async () => {
       seatHoldQb.getMany.mockResolvedValue([]);
 
       await expect(
-        service.confirmReservation(dto, 'user-1'),
+        service.confirmHolds(manager as unknown as EntityManager, params),
       ).rejects.toMatchObject({ errorCode: ErrorCode.SEAT_HOLD_NOT_OWNED });
     });
 
     it('throws SEAT_HOLD_EXPIRED for a hold that is no longer HELD', async () => {
       seatHoldQb.getMany.mockResolvedValue([
-        hold({ status: SeatHoldStatus.CONFIRMED }),
+        hold({ status: SeatHoldStatus.RELEASED }),
       ]);
 
       await expect(
-        service.confirmReservation(dto, 'user-1'),
+        service.confirmHolds(manager as unknown as EntityManager, params),
       ).rejects.toMatchObject({ errorCode: ErrorCode.SEAT_HOLD_EXPIRED });
     });
 
@@ -169,43 +188,22 @@ describe('ReservationsService', () => {
       ]);
 
       await expect(
-        service.confirmReservation(dto, 'user-1'),
+        service.confirmHolds(manager as unknown as EntityManager, params),
       ).rejects.toMatchObject({ errorCode: ErrorCode.SEAT_HOLD_EXPIRED });
     });
 
-    it('rejects holds spanning more than one showtime', async () => {
+    it('rejects holds for a showtime other than the one paid for', async () => {
       seatHoldQb.getMany.mockResolvedValue([
         hold({ id: 'hold-1', showtimeId: 'st1' }),
         hold({ id: 'hold-2', showtimeId: 'st2' }),
       ]);
 
       await expect(
-        service.confirmReservation({ holdIds: ['hold-1', 'hold-2'] }, 'user-1'),
+        service.confirmHolds(manager as unknown as EntityManager, {
+          ...params,
+          holdIds: ['hold-1', 'hold-2'],
+        }),
       ).rejects.toThrow(BadRequestException);
-    });
-
-    it('retries the whole attempt on a reference-number collision and succeeds', async () => {
-      seatHoldQb.getMany.mockResolvedValue([hold()]);
-      reservationsRepo.manager.transaction
-        .mockRejectedValueOnce({ code: '23505' })
-        .mockImplementationOnce((cb: (m: typeof manager) => unknown) =>
-          cb(manager),
-        );
-
-      const result = await service.confirmReservation(dto, 'user-1');
-
-      expect(reservationsRepo.manager.transaction).toHaveBeenCalledTimes(2);
-      expect(result.status).toBe(ReservationStatus.CONFIRMED);
-    });
-
-    it('gives up after exhausting retries on persistent collisions', async () => {
-      seatHoldQb.getMany.mockResolvedValue([hold()]);
-      reservationsRepo.manager.transaction.mockRejectedValue({ code: '23505' });
-
-      await expect(
-        service.confirmReservation(dto, 'user-1'),
-      ).rejects.toMatchObject({ code: '23505' });
-      expect(reservationsRepo.manager.transaction).toHaveBeenCalledTimes(3);
     });
   });
 

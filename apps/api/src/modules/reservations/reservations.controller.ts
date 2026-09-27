@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Get,
   HttpCode,
@@ -11,7 +10,6 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
-  ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -22,7 +20,6 @@ import type { PaginatedResponseDto } from '../../common/dto/paginated-response.d
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import {
-  ConfirmReservationDto,
   PaginatedReservationResponseDto,
   ReservationListQueryDto,
   ReservationResponseDto,
@@ -31,23 +28,12 @@ import {
 import { ReservationsService } from './reservations.service';
 
 @ApiTags('reservations')
+// Confirming a reservation is POST /reservations/checkout (ADR-018).
 @Controller('reservations')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 export class ReservationsController {
   constructor(private readonly reservationsService: ReservationsService) {}
-
-  @Post()
-  @ApiOperation({
-    summary: 'Confirm a reservation from one or more held seats',
-  })
-  @ApiCreatedResponse({ type: ReservationResponseDto })
-  confirm(
-    @Body() dto: ConfirmReservationDto,
-    @CurrentUser() user: AuthenticatedUser,
-  ): Promise<ReservationResponseDto> {
-    return this.reservationsService.confirmReservation(dto, user.id);
-  }
 
   // Registered before ':id' so 'me' isn't swallowed as an :id param.
   @Get('me')
