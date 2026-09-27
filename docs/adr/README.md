@@ -15,25 +15,26 @@ lasts ten minutes. **No decision appears in both documents.**
 
 ## Index
 
-| ID                                                      | Title                                                       | Detailed by                        |
-| ------------------------------------------------------- | ----------------------------------------------------------- | ---------------------------------- |
-| [ADR-001](0001-nestjs-modular-monolith.md)              | NestJS Modular Monolith                                     | —                                  |
-| [ADR-002](0002-postgresql-primary-datastore.md)         | PostgreSQL as Primary Datastore                             | —                                  |
-| [ADR-003](0003-typeorm-with-pessimistic-locking.md)     | TypeORM as ORM with Pessimistic Locking                     | DDR-002                            |
-| [ADR-004](0004-express-adapter.md)                      | Express Adapter (NestJS Default) for the HTTP Layer         | —                                  |
-| [ADR-005](0005-self-issued-jwt-with-refresh-tokens.md)  | Self-Issued JWT with Revocable Refresh Tokens               | DDR-008, DDR-013                   |
-| [ADR-006](0006-rbac-via-guards.md)                      | Role-Based Access Control via Guards                        | DDR-007, DDR-009, DDR-012          |
-| [ADR-007](0007-two-layer-seat-locking.md)               | Two-Layer Seat Locking — TTL Hold plus Partial Unique Index | DDR-001, DDR-002                   |
-| [ADR-008](0008-guarded-state-machines.md)               | Guarded State Machines for Seat Hold and Reservation        | —                                  |
-| [ADR-009](0009-in-process-scheduled-jobs.md)            | In-Process Scheduled Jobs for Seat-Hold Expiry              | DDR-001                            |
-| [ADR-010](0010-soft-delete-for-catalogue-entities.md)   | Soft Delete for Catalogue Entities                          | —                                  |
-| [ADR-011](0011-reporting-as-indexed-aggregate-sql.md)   | Reporting as Indexed Aggregate SQL                          | DDR-003, DDR-010                   |
-| [ADR-012](0012-rest-api-with-generated-openapi.md)      | REST API with Generated OpenAPI Documentation               | DDR-005, DDR-006, DDR-011, DDR-012 |
-| [ADR-013](0013-index-all-foreign-keys.md)               | Index All Foreign Keys                                      | —                                  |
-| [ADR-014](0014-docker-compose-for-local-and-grading.md) | Docker Compose for Local Development and Grading            | DDR-009                            |
-| [ADR-015](0015-pnpm-workspace-monorepo.md)              | pnpm Workspace Monorepo for the API and the Mobile Client   | DDR-017                            |
-| [ADR-016](0016-independent-per-app-ci-pipelines.md)     | Independent Per-App CI Pipelines in One Repository          | —                                  |
-| [ADR-017](0017-stripe-as-payment-provider.md)           | Stripe as the Payment Provider for Token Top-Ups            | DDR-024                            |
+| ID                                                      | Title                                                         | Detailed by                        |
+| ------------------------------------------------------- | ------------------------------------------------------------- | ---------------------------------- |
+| [ADR-001](0001-nestjs-modular-monolith.md)              | NestJS Modular Monolith                                       | —                                  |
+| [ADR-002](0002-postgresql-primary-datastore.md)         | PostgreSQL as Primary Datastore                               | —                                  |
+| [ADR-003](0003-typeorm-with-pessimistic-locking.md)     | TypeORM as ORM with Pessimistic Locking                       | DDR-002                            |
+| [ADR-004](0004-express-adapter.md)                      | Express Adapter (NestJS Default) for the HTTP Layer           | —                                  |
+| [ADR-005](0005-self-issued-jwt-with-refresh-tokens.md)  | Self-Issued JWT with Revocable Refresh Tokens                 | DDR-008, DDR-013                   |
+| [ADR-006](0006-rbac-via-guards.md)                      | Role-Based Access Control via Guards                          | DDR-007, DDR-009, DDR-012          |
+| [ADR-007](0007-two-layer-seat-locking.md)               | Two-Layer Seat Locking — TTL Hold plus Partial Unique Index   | DDR-001, DDR-002                   |
+| [ADR-008](0008-guarded-state-machines.md)               | Guarded State Machines for Seat Hold and Reservation          | —                                  |
+| [ADR-009](0009-in-process-scheduled-jobs.md)            | In-Process Scheduled Jobs for Seat-Hold Expiry                | DDR-001                            |
+| [ADR-010](0010-soft-delete-for-catalogue-entities.md)   | Soft Delete for Catalogue Entities                            | —                                  |
+| [ADR-011](0011-reporting-as-indexed-aggregate-sql.md)   | Reporting as Indexed Aggregate SQL                            | DDR-003, DDR-010                   |
+| [ADR-012](0012-rest-api-with-generated-openapi.md)      | REST API with Generated OpenAPI Documentation                 | DDR-005, DDR-006, DDR-011, DDR-012 |
+| [ADR-013](0013-index-all-foreign-keys.md)               | Index All Foreign Keys                                        | —                                  |
+| [ADR-014](0014-docker-compose-for-local-and-grading.md) | Docker Compose for Local Development and Grading              | DDR-009                            |
+| [ADR-015](0015-pnpm-workspace-monorepo.md)              | pnpm Workspace Monorepo for the API and the Mobile Client     | DDR-017                            |
+| [ADR-016](0016-independent-per-app-ci-pipelines.md)     | Independent Per-App CI Pipelines in One Repository            | —                                  |
+| [ADR-017](0017-stripe-as-payment-provider.md)           | Stripe as the Payment Provider for Token Top-Ups (superseded) | DDR-024                            |
+| [ADR-018](0018-card-payment-at-checkout.md)             | Card Payment at Checkout (supersedes ADR-017)                 | DDR-025                            |
 
 ## Numbering policy
 

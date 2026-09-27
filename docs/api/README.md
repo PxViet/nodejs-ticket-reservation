@@ -338,14 +338,38 @@ Voluntarily release a held seat.
 
 ## Reservations — Implemented
 
-### `POST /reservations`
+### `POST /reservations/checkout`
 
-Confirm a reservation from one or more holds.
+Pay for one or more of the caller's holds with a saved card, and confirm them into a
+reservation (ADR-018). The server prices the charge as `base_price × holds` (BR-36), charges
+the card, and only then runs DDR-002's confirmation. There is no way to confirm a reservation
+without paying — `POST /reservations` was removed.
 
 - Auth: Bearer
-- Request: `{ holdIds[] }`
-- Success: `201 Created` — `{ id, reservationNumber, userId, showtimeId, status, tickets[], totalSeats, totalAmount, createdAt }`
-- Errors: `401 UNAUTHENTICATED`, `403 SEAT_HOLD_NOT_OWNED`, `409 SEAT_HOLD_EXPIRED`, `400 BAD_REQUEST`
+- Request: `{ holdIds[], paymentMethodId }` — no amount
+- Success:
+  - `201 Created` — `{ status: "succeeded", paymentId, reservation }`
+  - `202 Accepted` — `{ status: "requires_action", paymentId, clientSecret }` — the client
+    completes 3-D Secure with Stripe's SDK, then polls `GET /reservations/checkout/:paymentId`
+  - `202 Accepted` — `{ status: "processing", paymentId }` — Stripe is still processing
+- Errors: `401 UNAUTHENTICATED`, `403 SEAT_HOLD_NOT_OWNED`, `409 SEAT_HOLD_EXPIRED`,
+  `400 BAD_REQUEST` (holds span showtimes), `404 PAYMENT_METHOD_NOT_FOUND` (unknown or not the
+  caller's, BR-38), `409 PAYMENT_IN_PROGRESS` (another pending payment covers these seats),
+  `422 PAYMENT_AMOUNT_TOO_SMALL`, `402 PAYMENT_FAILED` (declined — `message` is Stripe's decline
+  reason, safe to show the customer), `409 PAYMENT_REFUNDED` (charged, but the holds lapsed
+  first, so it was refunded), `502 PAYMENT_PROVIDER_UNAVAILABLE` (retrying the same request
+  resumes the same payment)
+
+### `GET /reservations/checkout/:paymentId`
+
+One of the caller's checkout payments. A `pending` payment is reconciled against its Stripe
+PaymentIntent on read, through the same idempotent settle as the webhook, so a finished 3-D
+Secure challenge shows as `succeeded` — with its `reservationId` — before the webhook arrives.
+
+- Auth: Bearer, owner
+- Request: —
+- Success: `200 OK` — a payment (see `GET /payments`)
+- Errors: `401 UNAUTHENTICATED`, `404 PAYMENT_NOT_FOUND`
 
 ### `GET /reservations/me`
 
@@ -407,43 +431,11 @@ All reservations across all customers.
 
 ---
 
-## Token Packages
+## Payment Methods
 
-### `GET /token-packages`
+All routes act on the caller's own Stripe Customer; none takes a user or customer id.
 
-Active token packages, in display order.
-
-- Auth: Bearer
-- Request: query `page?, limit?`
-- Success: `200 OK` — paginated `{ id, code, name, tokens, priceCents, currency }[]`
-- Errors: `401 UNAUTHENTICATED`
-
----
-
-## Wallet
-
-Every user has a wallet from signup (BR-39). All routes act on the caller's own wallet; none
-takes a user or wallet id.
-
-### `GET /wallet`
-
-The caller's wallet.
-
-- Auth: Bearer
-- Request: —
-- Success: `200 OK` — `{ id, balance, hasPaymentMethod }`
-- Errors: `401 UNAUTHENTICATED`
-
-### `GET /wallet/transactions`
-
-The caller's ledger, newest first.
-
-- Auth: Bearer
-- Request: query `page?, limit?, type? (top_up|payment|refund), status? (pending|succeeded|failed)`
-- Success: `200 OK` — paginated `{ id, type, status, tokens, amountCents, currency, tokenPackage?, failureMessage?, createdAt }[]`
-- Errors: `401 UNAUTHENTICATED`
-
-### `POST /wallet/payment-methods/setup-intent`
+### `POST /payment-methods/setup-intent`
 
 Start adding a card. Creates the caller's Stripe Customer on first use, then a SetupIntent
 for Stripe's PaymentSheet in setup mode.
@@ -453,54 +445,39 @@ for Stripe's PaymentSheet in setup mode.
 - Success: `201 Created` — `{ setupIntentClientSecret, ephemeralKeySecret, customerId, publishableKey }`
 - Errors: `401 UNAUTHENTICATED`, `502 PAYMENT_PROVIDER_UNAVAILABLE`
 
-### `GET /wallet/payment-methods`
+### `GET /payment-methods`
 
-The caller's saved cards, for the bill-review step.
+The caller's saved cards, for choosing one at checkout.
 
 - Auth: Bearer
 - Request: query `page?, limit?`
 - Success: `200 OK` — paginated `{ id, brand, last4, expMonth, expYear }[]`
 - Errors: `401 UNAUTHENTICATED`, `502 PAYMENT_PROVIDER_UNAVAILABLE`
 
-### `POST /wallet/top-ups`
-
-Buy a token package with a saved card. The request holds until Stripe answers.
-
-- Auth: Bearer
-- Request: `{ tokenPackageId, paymentMethodId }` — no amount (BR-36)
-- Success:
-  - `201 Created` — `{ status: "succeeded", transactionId, transaction, balance }`
-  - `202 Accepted` — `{ status: "requires_action", transactionId, clientSecret }` — the client
-    completes 3-D Secure with Stripe's SDK, then polls `GET /wallet/top-ups/:id`
-  - `202 Accepted` — `{ status: "pending", transactionId }` — Stripe is still processing
-- Errors: `401 UNAUTHENTICATED`, `404 TOKEN_PACKAGE_NOT_FOUND`, `404 PAYMENT_METHOD_NOT_FOUND`
-  (unknown or not the caller's, BR-38), `402 PAYMENT_FAILED` (declined — `message` is Stripe's
-  decline reason, safe to show the customer), `502 PAYMENT_PROVIDER_UNAVAILABLE`
-
-### `GET /wallet/top-ups/:id`
-
-One of the caller's top-ups. A `pending` top-up is reconciled against its Stripe PaymentIntent
-on read, through the same idempotent settle functions, so a finished 3-D Secure challenge shows
-as `succeeded` even before the webhook arrives.
-
-- Auth: Bearer, owner
-- Request: —
-- Success: `200 OK` — `{ id, status, tokens, amountCents, currency, failureMessage?, balance }`
-- Errors: `401 UNAUTHENTICATED`, `404 TOP_UP_NOT_FOUND`
-
 ---
 
 ## Payments
 
+### `GET /payments`
+
+The caller's checkout payments, newest first — every attempt, including declined and
+refunded ones (DDR-025).
+
+- Auth: Bearer
+- Request: query `page?, limit?, status? (pending|succeeded|failed|refunded)`
+- Success: `200 OK` — paginated `{ id, status, amountCents, currency, cardBrand?, cardLast4?, showtimeId, seatCount, reservationId?, reservationNumber?, failureMessage?, createdAt }[]`
+- Errors: `401 UNAUTHENTICATED`
+
 ### `POST /payments/stripe/webhook`
 
-Stripe's event callback. It settles any top-up the synchronous path did not (BR-37). Left out
-of the OpenAPI document and `@movea/api-contract` — Stripe calls it, not the mobile client.
+Stripe's event callback. It settles any checkout the synchronous path and the client's poll
+did not (BR-37). Left out of the OpenAPI document and `@movea/api-contract` — Stripe calls it,
+not the mobile client.
 
 - Auth: none — trusted only through the `Stripe-Signature` header, checked against
   `STRIPE_WEBHOOK_SECRET` over the raw body. Not throttled.
-- Request: a Stripe event; `payment_intent.succeeded` and `payment_intent.payment_failed` are
-  handled, and any other event is acknowledged and ignored
+- Request: a Stripe event; `payment_intent.succeeded`, `payment_intent.payment_failed` and
+  `payment_intent.canceled` are handled, and any other event is acknowledged and ignored
 - Success: `200 OK`
 - Errors: `400 STRIPE_WEBHOOK_SIGNATURE_INVALID`
 
@@ -545,11 +522,13 @@ of the OpenAPI document and `@movea/api-contract` — Stripe calls it, not the m
 | SEAT_HOLD_EXPIRED                  | 409    | Hold's TTL passed before confirmation                    |
 | SEAT_HOLD_NOT_OWNED                | 403    | Hold belongs to a different user                         |
 | RESERVATION_NOT_CANCELLABLE        | 409    | Showtime already started, or reservation not confirmed   |
-| TOKEN_PACKAGE_NOT_FOUND            | 404    | Package unknown or inactive                              |
 | PAYMENT_METHOD_NOT_FOUND           | 404    | Card unknown or not the caller's (BR-38)                 |
 | PAYMENT_FAILED                     | 402    | Stripe declined the payment                              |
 | PAYMENT_PROVIDER_UNAVAILABLE       | 502    | Stripe unreachable or erroring                           |
-| TOP_UP_NOT_FOUND                   | 404    | Top-up unknown or not the caller's                       |
+| PAYMENT_NOT_FOUND                  | 404    | Payment unknown or not the caller's                      |
+| PAYMENT_IN_PROGRESS                | 409    | A pending payment already covers these seats             |
+| PAYMENT_REFUNDED                   | 409    | Charged, but the holds lapsed first — refunded           |
+| PAYMENT_AMOUNT_TOO_SMALL           | 422    | Total below Stripe's USD minimum of $0.50                |
 | STRIPE_WEBHOOK_SIGNATURE_INVALID   | 400    | Webhook signature missing or wrong                       |
 | BAD_REQUEST                        | 400    | Generic validation failure                               |
 | FORBIDDEN                          | 403    | Generic role/ownership rejection                         |

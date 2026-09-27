@@ -93,16 +93,18 @@ BR-30 and BR-31 are the two gaps a foreign key cannot close — see
 BR-33 is the rule DDR-007's `whitelist: true` enforces structurally, and DDR-009 is why no
 route can create the first admin at all.
 
-## Wallet and payment rules
+## Payment rules
 
-Added by ADR-017 and DDR-024 for MO-21, enforced by `apps/api/src/modules/wallets/` and the
-`AddWallets` migration.
+Rewritten by ADR-018 and DDR-025 for MO-21, which superseded ADR-017's token wallet. Enforced
+by `apps/api/src/modules/payments/`, `apps/api/src/modules/reservations/checkout.service.ts`
+and the `ReplaceWalletsWithPayments` migration. The IDs are reused because nothing outside
+this table cited the wallet wording.
 
-| ID    | Rule                                                                                                                                                                           | Mechanism                                                     | Source           |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- | ---------------- |
-| BR-35 | `wallets.balance` is a whole number of tokens and never below 0.                                                                                                               | CHECK                                                         | DDR-024          |
-| BR-36 | A top-up's price, currency and token count come only from its `token_packages` row. The request carries a package id, never an amount.                                         | DTO whitelist + Application — Wallets                         | ADR-017, DDR-007 |
-| BR-37 | A top-up is credited exactly once per PaymentIntent, whether the synchronous response or the webhook reports it first.                                                         | UNIQUE `stripe_payment_intent_id` + row-locked status guard   | ADR-017, DDR-024 |
-| BR-38 | A payment method may be charged only if it belongs to the caller's own Stripe Customer; the customer is resolved from the authenticated user, never from a client-supplied id. | Application guard — Wallets                                   | ADR-017, BR-34   |
-| BR-39 | Every user has exactly one wallet, created in the same transaction as the user.                                                                                                | UNIQUE `wallets.user_id` + the signup transaction             | DDR-024          |
-| BR-40 | `wallet_transactions.status` moves only `pending → succeeded` or `pending → failed`; `balance` changes only in the transaction that makes the `succeeded` move.                | Application guard — Wallets, under a `pessimistic_write` lock | ADR-008, DDR-024 |
+| ID    | Rule                                                                                                                                                                                  | Mechanism                                                                              | Source           |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ---------------- |
+| BR-35 | A payment is a positive amount of US cents.                                                                                                                                           | CHECK `amount_cents > 0`, `currency` default `usd`                                     | DDR-025          |
+| BR-36 | A checkout's amount is priced by the server from `showtimes.base_price` × the number of held seats. The request carries hold ids and a card id, never an amount.                      | DTO whitelist + Application — CheckoutService                                          | ADR-018, DDR-007 |
+| BR-37 | A payment is settled exactly once per PaymentIntent, whichever of the synchronous response, the client's poll or the webhook reports it first; a reservation has at most one payment. | UNIQUE `stripe_payment_intent_id`, UNIQUE `reservation_id` + row-locked status guard   | ADR-018, DDR-025 |
+| BR-38 | A payment method may be charged only if it belongs to the caller's own Stripe Customer; the customer is resolved from the authenticated user, never from a client-supplied id.        | Application guard — Payments                                                           | ADR-018, BR-34   |
+| BR-39 | A user has at most one Stripe Customer, created the first time they add a card.                                                                                                       | UNIQUE `payment_customers.user_id` + `ON CONFLICT DO NOTHING`                          | DDR-025          |
+| BR-40 | `payments.status` moves only `pending → succeeded`, `pending → failed` or `pending → refunded`. A reservation is written only by the transaction that marks its payment `succeeded`.  | CHECK succeeded ⇒ `reservation_id`; application guard under a `pessimistic_write` lock | ADR-008, DDR-025 |

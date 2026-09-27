@@ -41,7 +41,8 @@ documents.**
 | [DDR-021](0021-admin-reporting-ui.md)                             | Admin reporting UI                                          | ADR-006, ADR-011, DDR-010          |
 | [DDR-022](0022-seat-hold-creation-expiry-recheck.md)              | Seat-hold creation re-checks heldUntil before inserting     | ADR-007, ADR-009, DDR-001, DDR-002 |
 | [DDR-023](0023-computed-is-coming-soon.md)                        | Computed `isComingSoon` instead of a stored flag            | ADR-012, DDR-014                   |
-| [DDR-024](0024-token-wallet-and-ledger.md)                        | Token wallet and ledger (supersedes DDR-010)                | ADR-008, ADR-017                   |
+| [DDR-024](0024-token-wallet-and-ledger.md)                        | Token wallet and ledger (superseded)                        | ADR-008, ADR-017                   |
+| [DDR-025](0025-checkout-payments-and-settlement.md)               | Checkout payments and settlement (supersedes DDR-024)       | ADR-008, ADR-018, DDR-002          |
 
 ## Open divergences from the code
 

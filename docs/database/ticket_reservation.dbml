@@ -6,7 +6,8 @@
 // Paste the whole file into the dbdiagram.io editor pane.
 //
 //   1787211926318-InitSchema.ts  -- identity, catalog, venue, scheduling, reservation
-//   1790240623162-AddWallets.ts  -- wallet (ADR-017, DDR-024)
+//   1790240623162-AddWallets.ts  -- wallet (ADR-017, DDR-024), dropped by:
+//   1790421571287-ReplaceWalletsWithPayments.ts -- payment (ADR-018, DDR-025)
 //
 // CHECK constraints and partial indexes have no DBML equivalent -- they are
 // carried as column / table notes. Enum columns are Postgres enum types in the
@@ -204,62 +205,51 @@ Table tickets {
 }
 
 // ============================================================
-// Wallet (ADR-017, DDR-024)
+// Payment (ADR-018, DDR-025)
 // ============================================================
 
-Table wallets {
+Table payment_customers {
   id                 uuid        [pk, default: `uuid_generate_v4()`]
-  user_id            uuid        [not null, unique, note: 'BR-39: exactly one wallet per user, created in the signup transaction. ON DELETE RESTRICT']
-  balance            bigint      [not null, default: 0, note: 'BR-35: whole tokens. CHECK chk_wallets_balance_non_negative (balance >= 0). The one stored summary -- written only when a ledger row settles (DDR-024)']
-  stripe_customer_id varchar     [unique, note: 'Null until the user first adds a card. BR-38: resolved from the authenticated user, never the client']
+  user_id            uuid        [not null, unique, note: 'BR-39: at most one Stripe Customer per user, created on first add-card. ON DELETE RESTRICT']
+  stripe_customer_id varchar     [not null, unique, note: 'BR-38: resolved from the authenticated user, never the client']
   created_at         timestamptz [not null, default: `NOW()`]
-  updated_at         timestamptz [not null, default: `NOW()`]
 
-  Note: "A user's token balance and Stripe Customer id."
+  Note: "A user's Stripe Customer id."
 }
 
-Table token_packages {
-  id          uuid        [pk, default: `uuid_generate_v4()`]
-  code        varchar     [not null, unique]
-  name        varchar     [not null]
-  tokens      integer     [not null, note: 'CHECK chk_token_packages_tokens_positive (tokens > 0)']
-  price_cents integer     [not null, note: 'BR-36: the only source of a top-up price. CHECK chk_token_packages_price_positive (price_cents > 0)']
-  currency    varchar(3)  [not null, default: 'usd']
-  is_active   boolean     [not null, default: true]
-  sort_order  integer     [not null, default: 0]
-  created_at  timestamptz [not null, default: `NOW()`]
-  updated_at  timestamptz [not null, default: `NOW()`]
-
-  Note: 'A purchasable bundle of tokens at a fixed USD price. Seeded.'
-}
-
-Table wallet_transactions {
-  id                       uuid        [pk, default: `uuid_generate_v4()`]
-  wallet_id                uuid        [not null, note: 'ON DELETE RESTRICT']
-  type                     varchar     [not null, note: "enum wallet_transactions_type_enum ('top_up','payment','refund') -- only top_up is written today"]
-  status                   varchar     [not null, default: 'pending', note: "BR-40: enum wallet_transactions_status_enum ('pending','succeeded','failed'); pending -> succeeded | failed only"]
-  tokens                   integer     [not null, note: 'CHECK chk_wallet_transactions_tokens_positive (tokens > 0)']
-  amount_cents             integer     [note: 'CHECK chk_wallet_transactions_amount_positive (amount_cents IS NULL OR amount_cents > 0)']
-  currency                 varchar(3)
-  token_package_id         uuid        [null, note: 'Nullable (Optional) -- only top_up rows come from a package. ON DELETE RESTRICT']
-  stripe_payment_intent_id varchar     [unique, note: 'BR-37: a PaymentIntent is credited exactly once']
+Table payments {
+  id                       uuid        [pk, default: `uuid_generate_v4()`, note: "Also Stripe's idempotency key (payment-<id>) and PaymentIntent metadata"]
+  user_id                  uuid        [not null, note: 'BR-34: always the authenticated user. ON DELETE RESTRICT']
+  showtime_id              uuid        [not null, note: 'ON DELETE RESTRICT']
+  reservation_id           uuid        [null, unique, note: 'Nullable (Optional) -- set by the transaction that marks the payment succeeded. One payment per reservation. ON DELETE RESTRICT']
+  hold_ids                 "uuid[]"    [not null, note: 'The holds being paid for, before any reservation exists (DDR-025)']
+  status                   varchar     [not null, default: 'pending', note: "BR-40: enum payments_status_enum ('pending','succeeded','failed','refunded'); pending -> terminal only. CHECK chk_payments_succeeded_has_reservation (status <> 'succeeded' OR reservation_id IS NOT NULL)"]
+  amount_cents             integer     [not null, note: 'BR-35/BR-36: priced by the server from showtimes.base_price. CHECK chk_payments_amount_positive (amount_cents > 0)']
+  currency                 varchar(3)  [not null, default: 'usd']
+  payment_method_id        varchar     [not null]
+  card_brand               varchar     [note: 'Copied at checkout so history never calls Stripe']
+  card_last4               varchar
+  stripe_payment_intent_id varchar     [unique, note: 'BR-37: a PaymentIntent is settled exactly once']
+  stripe_refund_id         varchar     [unique]
   failure_code             varchar
   failure_message          varchar
   created_at               timestamptz [not null, default: `NOW()`]
   updated_at               timestamptz [not null, default: `NOW()`]
 
   indexes {
-    wallet_id
-    token_package_id
+    (user_id, created_at) [name: 'idx_payments_user_created', note: 'ADR-013: history access path; covers the user_id FK']
+    showtime_id
   }
 
-  Note: 'One ledger entry per balance movement.'
+  Note: 'One card payment per checkout attempt.'
 }
 
-// 1 : 1 -- wallets.user_id is UNIQUE
-Ref: wallets.user_id - users.id
-Ref: wallet_transactions.wallet_id > wallets.id
-Ref: wallet_transactions.token_package_id > token_packages.id
+// 1 : 0..1 -- payment_customers.user_id is UNIQUE
+Ref: payment_customers.user_id - users.id
+Ref: payments.user_id > users.id
+Ref: payments.showtime_id > showtimes.id
+// 0..1 : 0..1 -- payments.reservation_id is UNIQUE
+Ref: payments.reservation_id - reservations.id
 
 // ============================================================
 // Layout groups (mirrors docs/database/README.md schemas)
@@ -291,8 +281,7 @@ TableGroup reservation {
   tickets
 }
 
-TableGroup wallet {
-  wallets
-  token_packages
-  wallet_transactions
+TableGroup payment {
+  payment_customers
+  payments
 }
