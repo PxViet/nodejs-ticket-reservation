@@ -9,7 +9,6 @@ import { AppException } from '../../common/exceptions/app.exception';
 import { ErrorCode } from '../../common/exceptions/error-codes';
 import { User } from '../users/entities/user.entity';
 import { UserRole } from '../users/enums/user-role.enum';
-import { WalletsService } from '../wallets/wallets.service';
 import { AuthService } from './auth.service';
 import { RefreshToken } from './entities/refresh-token.entity';
 
@@ -26,21 +25,10 @@ function mockRepo<T extends object>(): MockRepo<T> {
   };
 }
 
-function mockManager() {
-  return {
-    create: jest.fn((_entity: unknown, data: unknown) => data),
-    save: jest.fn((_entity: unknown, data: Partial<User>) =>
-      Promise.resolve({ id: 'new-id', ...data }),
-    ),
-  };
-}
-
 describe('AuthService', () => {
   let service: AuthService;
   let userRepo: MockRepo<User>;
   let refreshTokenRepo: MockRepo<RefreshToken>;
-  let manager: ReturnType<typeof mockManager>;
-  let walletsService: { createForUser: jest.Mock };
 
   const jwtConfig = {
     privateKey: 'private',
@@ -52,11 +40,6 @@ describe('AuthService', () => {
   beforeEach(async () => {
     userRepo = mockRepo<User>();
     refreshTokenRepo = mockRepo<RefreshToken>();
-    manager = mockManager();
-    walletsService = { createForUser: jest.fn() };
-    (userRepo as MockRepo<User> & { manager: unknown }).manager = {
-      transaction: jest.fn((cb: (m: typeof manager) => unknown) => cb(manager)),
-    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -70,7 +53,6 @@ describe('AuthService', () => {
           provide: JwtService,
           useValue: { signAsync: jest.fn().mockResolvedValue('access-token') },
         },
-        { provide: WalletsService, useValue: walletsService },
         {
           provide: ConfigService,
           useValue: { getOrThrow: jest.fn().mockReturnValue(jwtConfig) },
@@ -99,6 +81,10 @@ describe('AuthService', () => {
 
     it('always creates the user with role=user, regardless of input', async () => {
       userRepo.findOne!.mockResolvedValue(null);
+      userRepo.save!.mockImplementation(
+        (entity: Partial<User>) =>
+          Promise.resolve({ id: 'new-id', ...entity }) as Promise<User>,
+      );
       refreshTokenRepo.save!.mockResolvedValue({});
 
       await service.register({
@@ -111,40 +97,9 @@ describe('AuthService', () => {
         role: UserRole.ADMIN,
       });
 
-      const savedUser = manager.save.mock.calls[0][1];
+      const savedUser = (userRepo.save as jest.Mock).mock
+        .calls[0][0] as Partial<User>;
       expect(savedUser.role).toBe(UserRole.USER);
-    });
-
-    it('BR-39: creates the wallet in the same transaction as the user', async () => {
-      userRepo.findOne!.mockResolvedValue(null);
-      refreshTokenRepo.save!.mockResolvedValue({});
-
-      await service.register({
-        email: 'new@example.com',
-        password: 'password123',
-        firstName: 'A',
-        lastName: 'B',
-      });
-
-      expect(walletsService.createForUser).toHaveBeenCalledWith(
-        manager,
-        'new-id',
-      );
-    });
-
-    it('BR-39: fails the signup when the wallet cannot be created', async () => {
-      userRepo.findOne!.mockResolvedValue(null);
-      walletsService.createForUser.mockRejectedValue(new Error('db down'));
-
-      await expect(
-        service.register({
-          email: 'new@example.com',
-          password: 'password123',
-          firstName: 'A',
-          lastName: 'B',
-        }),
-      ).rejects.toThrow('db down');
-      expect(refreshTokenRepo.save).not.toHaveBeenCalled();
     });
   });
 

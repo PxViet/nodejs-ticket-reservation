@@ -15,43 +15,42 @@ export interface CreatePaymentIntentParams {
   currency: string;
   customerId: string;
   paymentMethodId: string;
-  walletId: string;
-  /** The pending ledger row — also the idempotency key (ADR-017). */
-  transactionId: string;
+  /** The pending payment row — also the idempotency key (ADR-018). */
+  paymentId: string;
 }
 
-// ADR-017: the only file that talks to Stripe. It holds Stripe ids only —
+// ADR-018: the only file that talks to Stripe. It holds Stripe ids only —
 // no card data ever passes through here. Every call is made outside a
-// database transaction (DDR-002's rule, rule 3 of ADR-017).
+// database transaction (DDR-002's rule, rule 3 of ADR-018).
 @Injectable()
 export class StripeService {
   private readonly logger = new Logger(StripeService.name);
-  private readonly client: Stripe;
+  private readonly stripe: Stripe;
   private readonly config: StripeConfig;
 
   constructor(configService: ConfigService) {
     this.config = configService.getOrThrow<StripeConfig>('stripe');
-    this.client = new Stripe(this.config.secretKey, { maxNetworkRetries: 2 });
+    this.stripe = new Stripe(this.config.secretKey, { maxNetworkRetries: 2 });
   }
 
   get publishableKey(): string {
     return this.config.publishableKey;
   }
 
-  // Keyed on the wallet, so two concurrent first add-card requests get the
-  // same Customer back instead of creating two.
-  createCustomer(walletId: string, email: string): Promise<Stripe.Customer> {
+  // Keyed on the user, so two concurrent first add-card requests get the
+  // same Customer back instead of creating two (DDR-025).
+  createCustomer(userId: string, email: string): Promise<Stripe.Customer> {
     return this.call(() =>
-      this.client.customers.create(
-        { email, metadata: { walletId } },
-        { idempotencyKey: `customer-${walletId}` },
+      this.stripe.customers.create(
+        { email, metadata: { userId } },
+        { idempotencyKey: `customer-${userId}` },
       ),
     );
   }
 
   createSetupIntent(customerId: string): Promise<Stripe.SetupIntent> {
     return this.call(() =>
-      this.client.setupIntents.create({
+      this.stripe.setupIntents.create({
         customer: customerId,
         payment_method_types: ['card'],
       }),
@@ -62,7 +61,7 @@ export class StripeService {
   // cards on the device without holding our secret key.
   createEphemeralKey(customerId: string): Promise<Stripe.EphemeralKey> {
     return this.call(() =>
-      this.client.ephemeralKeys.create(
+      this.stripe.ephemeralKeys.create(
         { customer: customerId },
         { apiVersion: Stripe.API_VERSION },
       ),
@@ -71,22 +70,12 @@ export class StripeService {
 
   async listCards(customerId: string): Promise<Stripe.PaymentMethod[]> {
     const { data } = await this.call(() =>
-      this.client.customers.listPaymentMethods(customerId, {
+      this.stripe.customers.listPaymentMethods(customerId, {
         type: 'card',
         limit: MAX_LIST_LIMIT,
       }),
     );
     return data;
-  }
-
-  async hasCard(customerId: string): Promise<boolean> {
-    const { data } = await this.call(() =>
-      this.client.customers.listPaymentMethods(customerId, {
-        type: 'card',
-        limit: 1,
-      }),
-    );
-    return data.length > 0;
   }
 
   // Null for an id Stripe does not know, so the caller can answer
@@ -96,7 +85,7 @@ export class StripeService {
   ): Promise<Stripe.PaymentMethod | null> {
     return this.call(async () => {
       try {
-        return await this.client.paymentMethods.retrieve(paymentMethodId);
+        return await this.stripe.paymentMethods.retrieve(paymentMethodId);
       } catch (error) {
         if (isResourceMissing(error)) {
           return null;
@@ -111,11 +100,10 @@ export class StripeService {
     currency,
     customerId,
     paymentMethodId,
-    walletId,
-    transactionId,
+    paymentId,
   }: CreatePaymentIntentParams): Promise<Stripe.PaymentIntent> {
     return this.call(() =>
-      this.client.paymentIntents.create(
+      this.stripe.paymentIntents.create(
         {
           amount: amountCents,
           currency,
@@ -123,9 +111,24 @@ export class StripeService {
           payment_method: paymentMethodId,
           payment_method_types: ['card'],
           confirm: true,
-          metadata: { walletId, walletTransactionId: transactionId },
+          metadata: { paymentId },
         },
-        { idempotencyKey: `top-up-${transactionId}` },
+        { idempotencyKey: `payment-${paymentId}` },
+      ),
+    );
+  }
+
+  // DDR-025: a charge whose holds lapsed before the reservation could be
+  // written is returned in full. Keyed on the payment, so a retried refund
+  // after a timeout never refunds twice.
+  createRefund(
+    paymentIntentId: string,
+    paymentId: string,
+  ): Promise<Stripe.Refund> {
+    return this.call(() =>
+      this.stripe.refunds.create(
+        { payment_intent: paymentIntentId, metadata: { paymentId } },
+        { idempotencyKey: `refund-${paymentId}` },
       ),
     );
   }
@@ -134,11 +137,11 @@ export class StripeService {
     paymentIntentId: string,
   ): Promise<Stripe.PaymentIntent> {
     return this.call(() =>
-      this.client.paymentIntents.retrieve(paymentIntentId),
+      this.stripe.paymentIntents.retrieve(paymentIntentId),
     );
   }
 
-  // ADR-017: the webhook route is trusted only through this check.
+  // ADR-018: the webhook route is trusted only through this check.
   constructWebhookEvent(
     rawBody: Buffer | undefined,
     signature: string | undefined,
@@ -148,7 +151,7 @@ export class StripeService {
     }
 
     try {
-      return this.client.webhooks.constructEvent(
+      return this.stripe.webhooks.constructEvent(
         rawBody,
         signature,
         this.config.webhookSecret,

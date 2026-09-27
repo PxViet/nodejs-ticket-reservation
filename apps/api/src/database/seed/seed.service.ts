@@ -15,12 +15,9 @@ import { ShowtimeStatus } from '../../modules/showtimes/enums/showtime-status.en
 import { Showtime } from '../../modules/showtimes/entities/showtime.entity';
 import { UserRole } from '../../modules/users/enums/user-role.enum';
 import { User } from '../../modules/users/entities/user.entity';
-import { TokenPackage } from '../../modules/wallets/entities/token-package.entity';
-import { Wallet } from '../../modules/wallets/entities/wallet.entity';
 import { GENRE_NAMES } from './data/genres.data';
 import { HALL_FIXTURES } from './data/halls.data';
 import { MOVIE_FIXTURES } from './data/movies.data';
-import { TOKEN_PACKAGE_FIXTURES } from './data/token-packages.data';
 import { addDays, formatDate } from './date.util';
 
 const SHOWTIME_SLOTS = ['10:00:00', '14:30:00', '19:00:00'];
@@ -45,8 +42,6 @@ export class SeedService implements OnApplicationBootstrap {
     @InjectRepository(Seat) private readonly seatRepo: Repository<Seat>,
     @InjectRepository(Showtime)
     private readonly showtimeRepo: Repository<Showtime>,
-    @InjectRepository(TokenPackage)
-    private readonly tokenPackageRepo: Repository<TokenPackage>,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
@@ -55,7 +50,6 @@ export class SeedService implements OnApplicationBootstrap {
     const movies = await this.seedMovies(genresByName);
     const halls = await this.seedHalls();
     await this.seedShowtimes(movies, halls);
-    await this.seedTokenPackages();
     this.logger.log('Seed complete.');
   }
 
@@ -67,22 +61,16 @@ export class SeedService implements OnApplicationBootstrap {
     if (existing) return;
 
     const passwordHash = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
-
-    // BR-39: the admin gets a wallet in the same transaction, like any signup.
-    await this.userRepo.manager.transaction(async (manager) => {
-      const admin = await manager.save(
-        User,
-        manager.create(User, {
-          email,
-          passwordHash,
-          firstName: 'System',
-          lastName: 'Admin',
-          role: UserRole.ADMIN,
-          isActive: true,
-        }),
-      );
-      await manager.save(Wallet, manager.create(Wallet, { userId: admin.id }));
-    });
+    await this.userRepo.save(
+      this.userRepo.create({
+        email,
+        passwordHash,
+        firstName: 'System',
+        lastName: 'Admin',
+        role: UserRole.ADMIN,
+        isActive: true,
+      }),
+    );
   }
 
   private async seedGenres(): Promise<Map<string, Genre>> {
@@ -173,23 +161,6 @@ export class SeedService implements OnApplicationBootstrap {
       halls.push(hall);
     }
     return halls;
-  }
-
-  private async seedTokenPackages(): Promise<void> {
-    for (const fixture of TOKEN_PACKAGE_FIXTURES) {
-      const existing = await this.tokenPackageRepo.findOne({
-        where: { code: fixture.code },
-      });
-      if (existing) continue;
-
-      await this.tokenPackageRepo.save(
-        this.tokenPackageRepo.create({
-          ...fixture,
-          currency: 'usd',
-          isActive: true,
-        }),
-      );
-    }
   }
 
   private async seedShowtimes(movies: Movie[], halls: Hall[]): Promise<void> {

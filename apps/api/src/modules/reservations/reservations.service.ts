@@ -6,10 +6,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { EntityManager, In, Repository } from 'typeorm';
 
 import type { PaginatedResponseDto } from '../../common/dto/paginated-response.dto';
-import { UNIQUE_VIOLATION } from '../../common/constant';
 import { AppException } from '../../common/exceptions/app.exception';
 import { ErrorCode } from '../../common/exceptions/error-codes';
 import { dateTimeToInstant } from '../../common/utils/time.util';
@@ -18,7 +17,6 @@ import { Seat } from '../showtimes/entities/seat.entity';
 import { Showtime } from '../showtimes/entities/showtime.entity';
 import { UserRole } from '../users/enums/user-role.enum';
 import type {
-  ConfirmReservationDto,
   ReservationListQueryDto,
   ReservationResponseDto,
   ReservationSummaryResponseDto,
@@ -36,9 +34,15 @@ import {
   reservationSuffix,
 } from './utils/reference-number.util';
 
-const MAX_REFERENCE_ATTEMPTS = 3;
-
 type TicketWithLabel = Ticket & { seatLabel: string };
+
+export interface ConfirmHoldsParams {
+  holdIds: string[];
+  userId: string;
+  showtimeId: string;
+  /** What each ticket was actually charged — the payment's amount per seat (DDR-025). */
+  unitPrice: number;
+}
 
 @Injectable()
 export class ReservationsService {
@@ -47,114 +51,103 @@ export class ReservationsService {
     private readonly reservations: Repository<Reservation>,
   ) {}
 
-  // DDR-002: lock the holds, re-validate them, then write — one transaction,
-  // fixed order. This transaction only ever updates existing seat_holds rows
-  // (never inserts), so a 23505 here can only be a reservation_number or
-  // ticket_number collision (DDR-004) — retrying the whole attempt regenerates
-  // both, which also covers the case where two different reservation_numbers
-  // (differing only by date) yield the same 6-char suffix and so the same
-  // ticket_number.
-  async confirmReservation(
-    dto: ConfirmReservationDto,
-    userId: string,
+  // DDR-002: lock the holds, re-validate them, then write — fixed order, on
+  // the caller's transaction. Since ADR-018 the only caller is
+  // CheckoutService.finalize, which has already locked the payment row and
+  // commits the reservation together with the payment it settles (DDR-025).
+  // This only ever updates existing seat_holds rows (never inserts), so a
+  // 23505 here can only be a reservation_number or ticket_number collision
+  // (DDR-004) — the caller retries the whole transaction with
+  // withUniViolentRetry, which regenerates both.
+  async confirmHolds(
+    manager: EntityManager,
+    { holdIds, userId, showtimeId, unitPrice }: ConfirmHoldsParams,
   ): Promise<ReservationResponseDto> {
-    return this.withUniViolentRetry(() =>
-      this.reservations.manager.transaction(async (manager) => {
-        const { holdIds } = dto;
-        const holds = await manager
-          .getRepository(SeatHold)
-          .createQueryBuilder('h')
-          .setLock('pessimistic_write')
-          .where('h.id IN (:...ids)', { ids: holdIds })
-          .andWhere('h.userId = :userId', { userId })
-          .getMany();
+    const holds = await manager
+      .getRepository(SeatHold)
+      .createQueryBuilder('h')
+      .setLock('pessimistic_write')
+      .where('h.id IN (:...ids)', { ids: holdIds })
+      .andWhere('h.userId = :userId', { userId })
+      .getMany();
 
-        if (holds.length !== holdIds.length) {
-          throw new AppException(
-            ErrorCode.SEAT_HOLD_NOT_OWNED,
-            'One or more holds do not belong to you',
-            HttpStatus.FORBIDDEN,
-          );
-        }
+    if (holds.length !== holdIds.length) {
+      throw new AppException(
+        ErrorCode.SEAT_HOLD_NOT_OWNED,
+        'One or more holds do not belong to you',
+        HttpStatus.FORBIDDEN,
+      );
+    }
 
-        if (
-          holds.some(
-            (hold) =>
-              hold.status !== SeatHoldStatus.HELD ||
-              hold.heldUntil < new Date(),
-          )
-        ) {
-          throw new AppException(
-            ErrorCode.SEAT_HOLD_EXPIRED,
-            'One or more holds are no longer held',
-            HttpStatus.CONFLICT,
-          );
-        }
+    if (
+      holds.some(
+        (hold) =>
+          hold.status !== SeatHoldStatus.HELD || hold.heldUntil < new Date(),
+      )
+    ) {
+      throw new AppException(
+        ErrorCode.SEAT_HOLD_EXPIRED,
+        'One or more holds are no longer held',
+        HttpStatus.CONFLICT,
+      );
+    }
 
-        // Select first showtimeId to confirm that all showtimes are same
-        const { showtimeId } = holds[0];
+    // Every hold must be for the showtime the payment was priced against.
+    if (holds.some((hold) => hold.showtimeId !== showtimeId)) {
+      throw new BadRequestException(
+        'All holds in a reservation must belong to the same showtime',
+      );
+    }
 
-        if (holds.some((hold) => hold.showtimeId !== showtimeId)) {
-          throw new BadRequestException(
-            'All holds in a reservation must belong to the same showtime',
-          );
-        }
+    const seats = await manager.getRepository(Seat).find({
+      where: { id: In(holds.map((hold) => hold.seatId)) },
+    });
 
-        const showtime = await manager.findOneOrFail(Showtime, {
-          where: { id: showtimeId },
-        });
+    const seatLabelsById = new Map(
+      seats.map((seat) => [seat.id, seat.seatLabel]),
+    );
 
-        const seats = await manager.getRepository(Seat).find({
-          where: { id: In(holds.map((hold) => hold.seatId)) },
-        });
+    const reservationNumber = generateReservationNumber();
 
-        const seatLabelsById = new Map(
-          seats.map((seat) => [seat.id, seat.seatLabel]),
-        );
+    const suffix = reservationSuffix(reservationNumber);
 
-        const reservationNumber = generateReservationNumber();
-
-        const suffix = reservationSuffix(reservationNumber);
-
-        const reservation = await manager.save(
-          Reservation,
-          manager.create(Reservation, {
-            reservationNumber,
-            userId,
-            showtimeId,
-            status: ReservationStatus.CONFIRMED,
-          }),
-        );
-
-        // BR-31: reservation and its tickets land in the same transaction —
-        // holdIds is validated non-empty by the DTO, so never zero tickets.
-        const tickets = await manager.save(
-          Ticket,
-          holds.map((hold, index) =>
-            manager.create(Ticket, {
-              reservationId: reservation.id,
-              seatId: hold.seatId,
-              ticketNumber: generateTicketNumber(suffix, index + 1),
-              price: showtime.basePrice,
-              status: TicketStatus.VALID,
-            }),
-          ),
-        );
-
-        await manager.update(
-          SeatHold,
-          { id: In(holdIds) },
-          { status: SeatHoldStatus.CONFIRMED, reservationId: reservation.id },
-        );
-
-        const ticketsWithLabel: TicketWithLabel[] = tickets.map((ticket) => ({
-          ...ticket,
-          seatLabel: seatLabelsById.get(ticket.seatId)!,
-        }));
-
-        return this.toResponse(reservation, ticketsWithLabel);
+    const reservation = await manager.save(
+      Reservation,
+      manager.create(Reservation, {
+        reservationNumber,
+        userId,
+        showtimeId,
+        status: ReservationStatus.CONFIRMED,
       }),
     );
+
+    // BR-31: reservation and its tickets land in the same transaction —
+    // holdIds is validated non-empty by the DTO, so never zero tickets.
+    const tickets = await manager.save(
+      Ticket,
+      holds.map((hold, index) =>
+        manager.create(Ticket, {
+          reservationId: reservation.id,
+          seatId: hold.seatId,
+          ticketNumber: generateTicketNumber(suffix, index + 1),
+          price: unitPrice,
+          status: TicketStatus.VALID,
+        }),
+      ),
+    );
+
+    await manager.update(
+      SeatHold,
+      { id: In(holdIds) },
+      { status: SeatHoldStatus.CONFIRMED, reservationId: reservation.id },
+    );
+
+    const ticketsWithLabel: TicketWithLabel[] = tickets.map((ticket) => ({
+      ...ticket,
+      seatLabel: seatLabelsById.get(ticket.seatId)!,
+    }));
+
+    return this.toResponse(reservation, ticketsWithLabel);
   }
 
   async findMine(
@@ -258,23 +251,6 @@ export class ReservationsService {
         ticketsWithLabel,
       );
     });
-  }
-
-  private async withUniViolentRetry<T>(
-    attempt: () => Promise<T>,
-    attemptsLeft = MAX_REFERENCE_ATTEMPTS,
-  ): Promise<T> {
-    try {
-      return await attempt();
-    } catch (error) {
-      if (
-        (error as { code?: string }).code === UNIQUE_VIOLATION &&
-        attemptsLeft > 1
-      ) {
-        return this.withUniViolentRetry(attempt, attemptsLeft - 1);
-      }
-      throw error;
-    }
   }
 
   private async findWithTickets(

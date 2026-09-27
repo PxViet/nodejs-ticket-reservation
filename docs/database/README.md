@@ -31,13 +31,14 @@ Owner names are the module names from the Technical Design.
 | `reservations`   | reservation | Reservations | A confirmed reservation covering one or more seats for a showtime.        |
 | `tickets`        | reservation | Reservations | A ticket issued for one seat of a reservation, identified by a reference. |
 
-### Wallet tables (ADR-017, DDR-024) — `1790240623162-AddWallets.ts`
+### Payment tables (ADR-018, DDR-025) — `1790421571287-ReplaceWalletsWithPayments.ts`
 
-| Table                 | Schema | Owner   | Description                                                                     |
-| --------------------- | ------ | ------- | ------------------------------------------------------------------------------- |
-| `wallets`             | wallet | Wallets | A user's token balance and, once they add a card, their Stripe Customer id.     |
-| `token_packages`      | wallet | Wallets | A purchasable bundle of tokens at a fixed USD price.                            |
-| `wallet_transactions` | wallet | Wallets | One ledger entry per balance movement — today only card top-ups through Stripe. |
+That migration replaced ADR-017's `wallets`, `token_packages` and `wallet_transactions`.
+
+| Table               | Schema  | Owner    | Description                                                                         |
+| ------------------- | ------- | -------- | ----------------------------------------------------------------------------------- |
+| `payment_customers` | payment | Payments | A user's Stripe Customer id, created the first time they add a card.                |
+| `payments`          | payment | Payments | One card payment per checkout attempt, and the reservation it paid for once it did. |
 
 ## Fields
 
@@ -55,16 +56,15 @@ Owner names are the module names from the Technical Design.
 | `reservations`   | id, reservation_number, user_id, showtime_id, status, created_at, updated_at                                                               |
 | `tickets`        | id, reservation_id, seat_id, ticket_number, price, status, created_at                                                                      |
 
-Wallet tables (DDR-024):
+Payment tables (DDR-025):
 
-| Table                 | Fields                                                                                                                                                         |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `wallets`             | id, user_id, balance, stripe_customer_id, created_at, updated_at                                                                                               |
-| `token_packages`      | id, code, name, tokens, price_cents, currency, is_active, sort_order, created_at, updated_at                                                                   |
-| `wallet_transactions` | id, wallet_id, type, status, tokens, amount_cents, currency, token_package_id, stripe_payment_intent_id, failure_code, failure_message, created_at, updated_at |
+| Table               | Fields                                                                                                                                                                                                                           |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `payment_customers` | id, user_id, stripe_customer_id, created_at                                                                                                                                                                                      |
+| `payments`          | id, user_id, showtime_id, reservation_id, hold_ids, status, amount_cents, currency, payment_method_id, card_brand, card_last4, stripe_payment_intent_id, stripe_refund_id, failure_code, failure_message, created_at, updated_at |
 
-`wallets.balance` is the one stored summary in the design. DDR-024 explains why it does not
-drift: only the transaction that settles a ledger row may write it.
+`payments.hold_ids` ties a payment to its seats before any reservation exists; it is an array,
+not a foreign key, because the holds it names are never deleted (DDR-025).
 
 Three values a first pass would have stored are deliberately absent — `showtimes.available_seats`,
 `halls.total_seats`, `reservations.total_seats` / `total_amount`. All are computed on read
@@ -92,16 +92,18 @@ be null (Optional) or must be set (Mandatory).
 | RESERVATIONS confirms SEAT_HOLDS    | 0..1 : 0..N | Optional      | `seat_holds.reservation_id` | RESTRICT  |
 | RESERVATIONS yields TICKETS         | 1 : 0..N    | Mandatory     | `tickets.reservation_id`    | RESTRICT  |
 
-The wallet tables (DDR-024). Every foreign key is indexed (ADR-013):
+The payment tables (DDR-025). Every foreign key is indexed (ADR-013):
 
-| Relationship                                    | Cardinality | Participation | Foreign key                            | On delete |
-| ----------------------------------------------- | ----------- | ------------- | -------------------------------------- | --------- |
-| USERS owns WALLETS                              | 1 : 1       | Mandatory     | `wallets.user_id` (unique)             | RESTRICT  |
-| WALLETS records WALLET_TRANSACTIONS             | 1 : 0..N    | Mandatory     | `wallet_transactions.wallet_id`        | RESTRICT  |
-| TOKEN_PACKAGES purchased as WALLET_TRANSACTIONS | 0..1 : 0..N | Optional      | `wallet_transactions.token_package_id` | RESTRICT  |
+| Relationship                   | Cardinality | Participation | Foreign key                                      | On delete |
+| ------------------------------ | ----------- | ------------- | ------------------------------------------------ | --------- |
+| USERS has PAYMENT_CUSTOMERS    | 1 : 0..1    | Mandatory     | `payment_customers.user_id` (unique)             | RESTRICT  |
+| USERS makes PAYMENTS           | 1 : 0..N    | Mandatory     | `payments.user_id` (`idx_payments_user_created`) | RESTRICT  |
+| SHOWTIMES paid for by PAYMENTS | 1 : 0..N    | Mandatory     | `payments.showtime_id`                           | RESTRICT  |
+| RESERVATIONS paid by PAYMENTS  | 0..1 : 0..1 | Optional      | `payments.reservation_id` (unique)               | RESTRICT  |
 
-`token_package_id` is Optional because only `top_up` rows come from a package; the `payment`
-and `refund` types DDR-024 reserves will not.
+`payments.reservation_id` is Optional for the same reason as `seat_holds.reservation_id`: a
+payment exists before the reservation it pays for, and a failed or refunded one never gets
+one. A `CHECK` makes it mandatory once the payment has `succeeded`.
 
 `seat_holds.reservation_id` starts NULL — a hold exists before it is confirmed — and is set
 only at the moment DDR-002's transaction writes the reservation. That is why it reads

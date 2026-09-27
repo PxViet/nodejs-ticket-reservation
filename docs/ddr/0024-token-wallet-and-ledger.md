@@ -1,6 +1,6 @@
 # DDR-024 — Token wallet and ledger
 
-Accepted · 23 Sep 2026 · Implements ADR-017, ADR-008 · Supersedes DDR-010
+Superseded by DDR-025 · 23 Sep 2026 · Implements ADR-017, ADR-008 · Supersedes DDR-010
 
 ## Context
 

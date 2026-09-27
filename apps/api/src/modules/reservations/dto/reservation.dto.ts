@@ -1,26 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  ArrayNotEmpty,
-  ArrayUnique,
-  IsArray,
-  IsEnum,
-  IsOptional,
-  IsUUID,
-} from 'class-validator';
+import { IsEnum, IsOptional } from 'class-validator';
 
 import { PaginationMetaDto } from '../../../common/dto/paginated-response.dto';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 import { ReservationStatus } from '../enums/reservation-status.enum';
 import { TicketStatus } from '../enums/ticket-status.enum';
-
-export class ConfirmReservationDto {
-  @ApiProperty({ type: [String] })
-  @IsArray()
-  @ArrayNotEmpty()
-  @ArrayUnique()
-  @IsUUID('4', { each: true })
-  holdIds!: string[];
-}
 
 export class ReservationListQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ enum: ReservationStatus })
