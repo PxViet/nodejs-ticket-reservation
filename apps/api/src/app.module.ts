@@ -17,11 +17,11 @@ import { SeedModule } from './database/seed/seed.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
 import { MoviesModule } from './modules/movies/movies.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { ReservationsModule } from './modules/reservations/reservations.module';
 import { ShowtimesModule } from './modules/showtimes/showtimes.module';
 import { UsersModule } from './modules/users/users.module';
-import { WalletsModule } from './modules/wallets/wallets.module';
 
 @Module({
   imports: [
@@ -80,7 +80,7 @@ import { WalletsModule } from './modules/wallets/wallets.module';
     ShowtimesModule,
     ReservationsModule,
     ReportsModule,
-    WalletsModule,
+    PaymentsModule,
     SeedModule,
   ],
   providers: [

@@ -8,7 +8,6 @@ import { Hall } from '../../modules/showtimes/entities/hall.entity';
 import { Seat } from '../../modules/showtimes/entities/seat.entity';
 import { Showtime } from '../../modules/showtimes/entities/showtime.entity';
 import { User } from '../../modules/users/entities/user.entity';
-import { TokenPackage } from '../../modules/wallets/entities/token-package.entity';
 import { SeedService } from './seed.service';
 
 // Bootstrap infrastructure, not a domain module — it necessarily reaches into
@@ -26,7 +25,6 @@ import { SeedService } from './seed.service';
       Hall,
       Seat,
       Showtime,
-      TokenPackage,
     ]),
   ],
   providers: [SeedService],
