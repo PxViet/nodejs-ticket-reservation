@@ -43,7 +43,7 @@ export const envValidationSchema = Joi.object({
   JWT_ACCESS_TOKEN_TTL_SECONDS: Joi.number().positive().default(900),
   JWT_REFRESH_TOKEN_TTL_DAYS: Joi.number().positive().default(7),
 
-  // ADR-017: Stripe token top-ups. Test-mode keys locally and in CI.
+  // ADR-018: Stripe card payments at checkout. Test-mode keys locally and in CI.
   STRIPE_SECRET_KEY: Joi.string()
     .pattern(/^(sk|rk)_(test|live)_/)
     .required(),

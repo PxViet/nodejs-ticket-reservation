@@ -11,7 +11,7 @@ import { buildOpenApiDocument } from './swagger';
 
 async function bootstrap(): Promise<void> {
   // rawBody: the Stripe webhook verifies its signature over the exact bytes
-  // Stripe sent (ADR-017); JSON parsing still runs for every other route.
+  // Stripe sent (ADR-018); JSON parsing still runs for every other route.
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
     rawBody: true,

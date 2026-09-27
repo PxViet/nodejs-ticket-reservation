@@ -9,7 +9,7 @@ export interface StripeConfig {
   webhookSecret: string;
 }
 
-// ADR-017: the three variables the Stripe integration needs.
+// ADR-017, ADR-018: the three variables the Stripe integration needs.
 export const stripeConfig = registerAs('stripe', (): StripeConfig => ({
   secretKey: process.env.STRIPE_SECRET_KEY ?? '',
   publishableKey: process.env.STRIPE_PUBLISHABLE_KEY ?? '',
