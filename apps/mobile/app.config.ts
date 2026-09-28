@@ -106,6 +106,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     'expo-video',
+    // ADR-018: PaymentSheet and 3-D Secure run in Stripe's native SDK, so
+    // checkout needs a dev build — Expo Go cannot load it.
+    ['@stripe/stripe-react-native', { enableGooglePay: false }],
     [
       'expo-camera',
       {
