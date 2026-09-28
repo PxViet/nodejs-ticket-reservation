@@ -15,7 +15,7 @@ jest.mock('react-native-safe-area-context', () => {
 jest.mock('@/utils/formats', () => ({
   formatDate: (date: string) => date,
   formatTime: (time: string) => time,
-  formatIDR: (value: number) => `IDR ${value}`,
+  formatUSD: (value: number) => `$${value}`,
 }));
 
 jest.mock('@/constants', () => ({
@@ -172,7 +172,7 @@ describe('AdminReportsScreen', () => {
       const { getByText } = render(<AdminReportsScreen />);
 
       expect(getByText('Movie A')).toBeTruthy();
-      expect(getByText('IDR 500000')).toBeTruthy();
+      expect(getByText('$500000')).toBeTruthy();
     });
   });
 

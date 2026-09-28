@@ -9,10 +9,6 @@ import { withUniwind } from 'uniwind';
 
 // Constants
 import { BLUR_HASH, IMAGE_SIZE_MAP, Size } from '@/constants';
-import { WALLET_TRANSACTION_TYPE } from '@/constants/status';
-
-// Types
-import { WalletTransactionType } from '@/features/wallet/schemas/wallet';
 
 // Components
 import { Rating } from '../Rating';
@@ -21,7 +17,7 @@ import { Typo } from '../Typo';
 // Utils
 import { cn } from '@/utils/cn';
 import {
-  formatIDR,
+  formatUSD,
   formatMovieDuration,
   formatShowtimeDate,
 } from '@/utils/formats';
@@ -39,17 +35,10 @@ interface HorizontalCardProps extends Omit<TouchableOpacityProps, 'children'> {
   price?: string;
   imageSize?: Size;
   className?: string;
-  transactionType?: WalletTransactionType;
   justifyContent?: 'center' | 'end';
 }
 
 const StyledImage = withUniwind(Image);
-
-const WalletTransactionColor: Record<string, string> = {
-  [WALLET_TRANSACTION_TYPE.TOP_UP]: 'text-text-success',
-  [WALLET_TRANSACTION_TYPE.PAYMENT]: 'text-text-error',
-  [WALLET_TRANSACTION_TYPE.REFUND]: 'text-text-primary',
-};
 
 export const HorizontalCard = memo(
   ({
@@ -64,7 +53,6 @@ export const HorizontalCard = memo(
     showDate,
     price,
     imageSize = Size.SMALL,
-    transactionType,
     className = '',
     justifyContent = 'end',
     onPress,
@@ -141,13 +129,10 @@ export const HorizontalCard = memo(
                 <Typo
                   size="sm"
                   weight="regular"
-                  className={cn(
-                    'text-white',
-                    transactionType && WalletTransactionColor[transactionType],
-                  )}
+                  className="text-white"
                   testID="horizontal-card-price"
                 >
-                  {formatIDR(price)}
+                  {formatUSD(price)}
                 </Typo>
               )}
 

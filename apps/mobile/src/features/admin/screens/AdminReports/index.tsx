@@ -27,7 +27,7 @@ import {
 } from '@/features/admin/hooks/useAdminReports';
 
 // Utils
-import { formatDate, formatIDR, formatTime } from '@/utils/formats';
+import { formatDate, formatUSD, formatTime } from '@/utils/formats';
 
 const StyledSafeAreaView = withUniwind(SafeAreaView);
 
@@ -49,7 +49,7 @@ const RevenueRow = ({ item }: { item: RevenueReportRow }) => (
     <DetailRow label="Tickets sold" value={String(item.ticketsSold)} />
     <DetailRow
       label="Revenue"
-      value={formatIDR(item.revenue)}
+      value={formatUSD(item.revenue)}
       valueClassName="text-text-success"
     />
   </View>
@@ -81,7 +81,7 @@ const ReservationRow = ({ item }: { item: AdminReservationRow }) => (
       value={`${formatDate(item.showDate)} · ${formatTime(item.showTime)}`}
     />
     <DetailRow label="Seats" value={String(item.totalSeats)} />
-    <DetailRow label="Total" value={formatIDR(item.totalAmount)} />
+    <DetailRow label="Total" value={formatUSD(item.totalAmount)} />
     <DetailRow label="Status" value={item.status} />
   </View>
 );

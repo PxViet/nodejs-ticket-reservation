@@ -5,13 +5,15 @@ import {
   calculateDiscount,
   calculateTotalPrice,
   clampedRatingToStars,
+  formatCardBrand,
+  formatCardExpiry,
   formatCardNumber,
-  formatCurrency,
   formatDate,
-  formatIDR,
+  formatMinorUnits,
   formatMovieDuration,
   formatShowtimeDate,
   formatTime,
+  formatUSD,
   generateBookingNumber,
   generateTicketNumber,
   getTimeRemaining,
@@ -50,81 +52,32 @@ describe('formatCardNumber', () => {
   });
 });
 
-describe('formatCurrency', () => {
-  it('should format amount as IDR currency', () => {
-    const result = formatCurrency(150000);
-    expect(result).toContain('Rp');
-    expect(result).toContain('150');
+describe('formatUSD', () => {
+  it('formats a dollar price with two decimals', () => {
+    expect(formatUSD(8.5)).toBe('$8.50');
+    expect(formatUSD(14)).toBe('$14.00');
   });
 
-  it('should add space between currency and amount', () => {
-    const result = formatCurrency(150000);
-    expect(result).toMatch(/Rp\s+\d/);
+  it('groups thousands with commas', () => {
+    expect(formatUSD(1250)).toBe('$1,250.00');
+    expect(formatUSD(1234567.891)).toBe('$1,234,567.89');
   });
 
-  it('should handle zero amount', () => {
-    const result = formatCurrency(0);
-    expect(result).toContain('0');
+  it('keeps a multi-seat total exact — 3 × $8.50', () => {
+    expect(formatUSD(8.5 * 3)).toBe('$25.50');
+    // Float noise must not leak into the cents.
+    expect(formatUSD(0.1 + 0.2)).toBe('$0.30');
   });
 
-  it('should handle large amounts', () => {
-    const result = formatCurrency(1000000);
-    expect(result).toContain('1.000.000');
-  });
-});
-
-describe('formatIDR', () => {
-  it('should format number with currency prefix', () => {
-    expect(formatIDR(150000)).toBe('IDR 150.000');
+  it('accepts a numeric string, as a report row may send one', () => {
+    expect(formatUSD('42.5')).toBe('$42.50');
   });
 
-  it('should format number without currency prefix', () => {
-    expect(formatIDR(150000, { showCurrency: false })).toBe('150.000');
-  });
-
-  it('should handle string input', () => {
-    expect(formatIDR('150000')).toBe('IDR 150.000');
-  });
-
-  it('should handle string with dots and commas without rounding', () => {
-    expect(formatIDR('150.000,50')).toBe('IDR 150.000,5');
-  });
-
-  it('should handle decimals', () => {
-    expect(formatIDR(150000.5, { decimals: 2 })).toBe('IDR 150.000,50');
-  });
-
-  it('should return IDR 0 for invalid input', () => {
-    expect(formatIDR('invalid')).toBe('IDR 0');
-  });
-
-  it('should return 0 without currency for invalid input when showCurrency is false', () => {
-    expect(formatIDR('invalid', { showCurrency: false })).toBe('0');
-  });
-
-  it('should handle zero', () => {
-    expect(formatIDR(0)).toBe('IDR 0');
-  });
-
-  it('keeps a non-integer amount exact, no rounding (basePrice 8.5 x seats)', () => {
-    // Regression: Hermes' partial Intl returned "" here, so the total showed
-    // as "IDR " with no number; and the value must not be rounded to whole units.
-    expect(formatIDR(8.5)).toBe('IDR 8,5');
-    expect(formatIDR(8.5 * 3)).toBe('IDR 25,5');
-    expect(formatIDR(42.5, { showCurrency: false })).toBe('42,5');
-    expect(formatIDR(14 * 4)).toBe('IDR 56');
-  });
-
-  it('always renders a digit after the currency for finite input', () => {
-    for (const n of [0, 1, 8.5, 17, 25.5, 1234567, 999999.99]) {
-      expect(formatIDR(n)).toMatch(/^IDR \d/);
-    }
-  });
-
-  it('treats undefined / NaN / Infinity as IDR 0', () => {
-    expect(formatIDR(undefined as unknown as number)).toBe('IDR 0');
-    expect(formatIDR(NaN)).toBe('IDR 0');
-    expect(formatIDR(Infinity)).toBe('IDR 0');
+  it('treats undefined / NaN / Infinity as $0.00', () => {
+    expect(formatUSD(undefined as unknown as number)).toBe('$0.00');
+    expect(formatUSD(NaN)).toBe('$0.00');
+    expect(formatUSD(Infinity)).toBe('$0.00');
+    expect(formatUSD('invalid')).toBe('$0.00');
   });
 });
 
@@ -506,5 +459,40 @@ describe('groupSeatsByRow', () => {
     expect(result.A?.[0]?.number).toBe(1);
     expect(result.A?.[1]?.number).toBe(2);
     expect(result.A?.[2]?.number).toBe(3);
+  });
+});
+
+describe('formatMinorUnits', () => {
+  it('formats cents with a known symbol', () => {
+    expect(formatMinorUnits(499)).toBe('$4.99');
+    expect(formatMinorUnits(123456, 'USD')).toBe('$1,234.56');
+    expect(formatMinorUnits(500, 'eur')).toBe('€5.00');
+  });
+
+  it('keeps the sign of a negative amount', () => {
+    expect(formatMinorUnits(-250)).toBe('-$2.50');
+  });
+
+  it('suffixes the code of a currency without a symbol', () => {
+    expect(formatMinorUnits(1000, 'sgd')).toBe('10.00 SGD');
+  });
+});
+
+describe('formatCardBrand', () => {
+  it('names the brands Stripe abbreviates', () => {
+    expect(formatCardBrand('amex')).toBe('American Express');
+    expect(formatCardBrand('mastercard')).toBe('Mastercard');
+  });
+
+  it('capitalises any other brand', () => {
+    expect(formatCardBrand('visa')).toBe('Visa');
+    expect(formatCardBrand('discover')).toBe('Discover');
+  });
+});
+
+describe('formatCardExpiry', () => {
+  it('pads the month and keeps the last two year digits', () => {
+    expect(formatCardExpiry(4, 2031)).toBe('04/31');
+    expect(formatCardExpiry(12, 2030)).toBe('12/30');
   });
 });

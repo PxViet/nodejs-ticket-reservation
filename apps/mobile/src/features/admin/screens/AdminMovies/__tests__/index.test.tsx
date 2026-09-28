@@ -40,7 +40,7 @@ jest.mock('@/utils/cn', () => ({
 }));
 
 jest.mock('@/utils/formats', () => ({
-  formatIDR: (value: string | number) => `IDR ${value}`,
+  formatUSD: (value: string | number) => `$${value}`,
   formatMovieDuration: (minutes: number) =>
     `${Math.floor(minutes / 60)}h ${minutes % 60}m`,
   formatShowtimeDate: () => '',

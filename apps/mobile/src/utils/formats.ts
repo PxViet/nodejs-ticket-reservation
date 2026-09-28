@@ -14,63 +14,61 @@ export const formatCardNumber = (number?: string) => {
   return match ? match.join(' ') : number;
 };
 
-export const formatCurrency = (amount: number, currency = 'IDR'): string => {
-  const formatted = new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-
-  // Add space between currency symbol and amount (e.g., "Rp 150.000" instead of "Rp150.000")
-  return formatted.replace(/([A-Za-z]+)(\d)/, '$1 $2');
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  usd: '$',
+  eur: '€',
+  gbp: '£',
 };
 
 /**
- * Format number to IDR currency format with dot separator
- * @param amount - The amount to format
- * @param options - Formatting options
- * @returns Formatted currency string (e.g., "IDR 200.000")
+ * An amount in the currency's smallest unit, as the API and Stripe send it:
+ * `(499, 'usd')` → `"$4.99"`. Formatted by hand rather than via
+ * `Intl.NumberFormat`: Hermes only partially implements it, and a
+ * non-integer amount with `maximumFractionDigits` set comes back as an empty
+ * string on device.
  */
-export function formatIDR(
-  value: number | string,
-  options?: {
-    showCurrency?: boolean;
-    decimals?: number;
-  },
-): string {
-  const { showCurrency = true, decimals } = options || {};
-
-  const amount =
-    typeof value === 'string'
-      ? Number(value.replace(/\./g, '').replace(',', '.'))
-      : value;
-
-  if (!Number.isFinite(amount)) {
-    return showCurrency ? 'IDR 0' : '0';
-  }
-
-  // Format by hand rather than via `Number#toLocaleString(locale, …)`: Hermes
-  // only partially implements `Intl.NumberFormat`, and a non-integer amount with
-  // `maximumFractionDigits` set comes back as an empty string on device — the
-  // total then renders as "IDR " alone.
-  //
-  // With an explicit `decimals` the amount is fixed to that precision (padded).
-  // Without one the exact value is kept — never rounded — so a price like
-  // basePrice 8.5 × 3 seats shows as "IDR 25,5", not "IDR 26".
-  const absStr =
-    decimals === undefined
-      ? String(parseFloat(Math.abs(amount).toFixed(10))) // strip float noise only
-      : Math.abs(amount).toFixed(decimals);
-  const [intPart = '0', fracPart] = absStr.split('.');
-  const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+export const formatMinorUnits = (amount: number, currency = 'usd'): string => {
+  const code = currency.toLowerCase();
+  const value = (Math.abs(amount) / 100).toFixed(2);
+  const [intPart = '0', fracPart = '00'] = value.split('.');
+  const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   const sign = amount < 0 ? '-' : '';
-  const formattedNumber = fracPart
-    ? `${sign}${grouped},${fracPart}`
-    : `${sign}${grouped}`;
+  const symbol = CURRENCY_SYMBOLS[code];
 
-  return showCurrency ? `IDR ${formattedNumber}` : formattedNumber;
-}
+  return symbol
+    ? `${sign}${symbol}${grouped}.${fracPart}`
+    : `${sign}${grouped}.${fracPart} ${code.toUpperCase()}`;
+};
+
+/**
+ * A dollar amount as the API sends prices (`showtimes.base_price`,
+ * `tickets.price`, report totals): `8.5` → `"$8.50"`, `1250` →
+ * `"$1,250.00"`. Everything in the app is priced in US dollars (ADR-018).
+ */
+export const formatUSD = (value: number | string): string => {
+  const amount = typeof value === 'string' ? Number(value) : value;
+  return formatMinorUnits(
+    Number.isFinite(amount) ? Math.round(amount * 100) : 0,
+    'usd',
+  );
+};
+
+/** `'visa'` → `'Visa'`, `'amex'` → `'American Express'`. */
+export const formatCardBrand = (brand: string): string => {
+  const names: Record<string, string> = {
+    amex: 'American Express',
+    diners: 'Diners Club',
+    jcb: 'JCB',
+    mastercard: 'Mastercard',
+    unionpay: 'UnionPay',
+  };
+
+  return names[brand] ?? brand.charAt(0).toUpperCase() + brand.slice(1);
+};
+
+/** `(4, 2031)` → `'04/31'`. */
+export const formatCardExpiry = (month: number, year: number): string =>
+  `${String(month).padStart(2, '0')}/${String(year).slice(-2)}`;
 
 export const formatDate = (date: string | Date): string => {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
