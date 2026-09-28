@@ -67,14 +67,13 @@ export const queryKeys = {
     list: () => [...queryKeys.halls.all, 'list'] as const,
   },
 
-  // Wallet
-  wallet: {
-    all: ['wallet'] as const,
-    detail: (userId?: string) => [...queryKeys.wallet.all, userId] as const,
-    transactions: (userId?: string) =>
-      [...queryKeys.wallet.all, 'transactions', userId] as const,
-    transactionsInfinite: (userId?: string) =>
-      [...queryKeys.wallet.all, 'transactions', 'infinite', userId] as const,
+  // Payments (ADR-018)
+  payments: {
+    all: ['payments'] as const,
+    history: (userId?: string) =>
+      [...queryKeys.payments.all, 'history', userId] as const,
+    paymentMethods: (userId?: string) =>
+      [...queryKeys.payments.all, 'payment-methods', userId] as const,
   },
 
   // Bookings

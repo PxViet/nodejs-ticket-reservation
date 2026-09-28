@@ -68,16 +68,23 @@ export const TOAST_DURATION = 3000;
 
 export const TEXT_MAX_LENGTH = 150;
 
-// The API has no wallet/payment module yet, so checkout skips the balance
-// check. Flip this back on once wallet lands.
-export const IS_WALLET_ENABLED =
-  process.env.EXPO_PUBLIC_IS_WALLET_ENABLED === 'true';
+// ADR-018: a publishable key is safe to ship in the client; it must be the
+// pair of the API's STRIPE_SECRET_KEY or SetupIntents will not confirm.
+export const STRIPE_PUBLISHABLE_KEY =
+  process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '';
 
-export const TOP_UP_MIN_AMOUNT = 10000;
-export const TOP_UP_MAX_AMOUNT = 10000000;
-export const TOP_UP_AMOUNTS = [
-  50000, 100000, 150000, 200000, 250000, 500000, 750000, 1000000,
-];
+// Where Stripe returns after a bank's 3-D Secure page. `scheme` in app.config.ts.
+export const STRIPE_URL_SCHEME = 'movieticketbooking';
+export const STRIPE_RETURN_URL = `${STRIPE_URL_SCHEME}://stripe-redirect`;
+
+// The name PaymentSheet shows the customer when they add a card.
+export const STRIPE_MERCHANT_DISPLAY_NAME = 'Movea';
+
+// A checkout the synchronous response left unsettled (3-D Secure, or Stripe
+// still processing) is polled until the webhook settles it (ADR-018 rule 4),
+// then handed back as still processing.
+export const CHECKOUT_POLL_INTERVAL_MS = 1500;
+export const CHECKOUT_POLL_ATTEMPTS = 8;
 
 export const ROWS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'] as const;
 export const COLUMN_COUNT = 10;
@@ -101,9 +108,9 @@ export const SETTING_ITEMS = [
     TEST_ID: 'edit',
   },
   {
-    TITLE: 'My Wallet',
+    TITLE: 'Payment History',
     ICON: MyWalletIcon,
-    TEST_ID: 'my_wallet',
+    TEST_ID: 'payment_history',
   },
   {
     TITLE: 'Change Language',

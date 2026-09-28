@@ -16,8 +16,6 @@ export const ERROR_MESSAGES = {
   UPLOAD_AVATAR_ERROR: 'Failed to upload avatar. Please try again later.',
   INVALID_TICKET: 'Invalid ticket',
   TICKET_ALREADY_USED: 'Ticket already used',
-  INSUFFICIENT_WALLET_BALANCE: 'Insufficient wallet',
-  WALLET_NOT_FOUND: 'Wallet not found',
   NO_RESULT_RETURNED: 'No result returned',
   NOT_FOUND: 'not found',
   BOOKING_NOT_FOUND: 'Booking not found',
@@ -58,9 +56,13 @@ export const ERROR_MESSAGES = {
   UPDATE_FAILED: 'Update failed',
   UPDATE_PROFILE_FAILED: 'Failed to update profile',
   CHECKOUT_FAILED: 'Failed to create your booking',
-  TOP_UP_FAILED: 'Failed to top up wallet. Please try again.',
-  TOP_UP_MIN_AMOUNT: 'Minimum top-up amount is IDR 10.000',
-  TOP_UP_MAX_AMOUNT: 'Maximum top-up amount is IDR 10.000.000',
+  CHECKOUT_DECLINED: 'Your payment was declined.',
+  CHECKOUT_REFUNDED:
+    'Your seats were released before the payment completed, so it was refunded. Please pick your seats again.',
+  PAYMENTS_LOAD_FAILED: 'Could not load your payments.',
+  PAYMENT_METHODS_LOAD_FAILED: 'Could not load your saved cards.',
+  ADD_CARD_FAILED: 'Could not save your card. Please try again.',
+  SELECT_CARD_REQUIRED: 'Choose a card to pay with.',
   UPDATE_PASSWORD_FAILED: 'Failed to update password. Please try again.',
   SOMETHING_WENT_WRONG: 'Something went wrong. Please try again later.',
   TICKET_VALIDATION_FAILED: 'Failed to validate ticket. Please try again.',
@@ -84,8 +86,9 @@ export const MESSAGES = {
   PROFILE_UPDATE_SUCCESS: 'Profile updated successfully',
   CHECKOUT_SUCCESS_TITLE: 'Happy Watching!',
   CHECKOUT_SUCCESS_DESCRIPTION: 'You have successfully bought the ticket.',
-  PURCHASE_SUCCESS_TITLE: 'Yummy!',
-  PURCHASE_SUCCESS_DESCRIPTION: 'You have successfully top up the wallet.',
+  CHECKOUT_PROCESSING:
+    'Your payment is processing. Your ticket will appear once it is confirmed.',
+  ADD_CARD_SUCCESS: 'Card saved',
   PASSWORD_UPDATE_SUCCESS: 'Your password has been changed successfully',
 };
 

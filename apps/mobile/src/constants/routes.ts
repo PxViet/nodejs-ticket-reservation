@@ -25,11 +25,8 @@ export const ROUTES = {
   // Tab routes
   HOME: '/(main)/(tabs)',
   MY_TICKET: '/(main)/(tabs)/my-ticket',
-  MY_WALLET: '/(main)/(tabs)/wallet',
-
-  // Purchase routes
-  PURCHASE_SUCCESS: '/(main)/purchase/purchase-success',
-  TOP_UP: '/(main)/purchase/top-up',
+  // The `wallet` tab slot shows payment history (DDR-019 keeps slot names).
+  PAYMENTS: '/(main)/(tabs)/wallet',
 
   WELCOME: '/(main)/welcome',
 

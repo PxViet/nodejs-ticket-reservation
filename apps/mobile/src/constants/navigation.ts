@@ -30,10 +30,6 @@ export const SCREENS = {
     CHECKOUT: 'booking/checkout',
     CHECKOUT_SUCCESS: 'booking/checkout-success',
 
-    // Purchase
-    PURCHASE_SUCCESS: 'purchase/purchase-success',
-    TOP_UP: 'purchase/top-up',
-
     // Modal screens
     SEARCH: 'search',
 
@@ -65,9 +61,11 @@ export const TABS = {
     NAME: 'index',
     TITLE: 'Movies',
   },
+  // The slot keeps its `wallet` route name (DDR-019); it now lists the
+  // customer's checkout payments (ADR-018).
   WALLET: {
     NAME: 'wallet',
-    TITLE: 'Wallet',
+    TITLE: 'Payments',
   },
   MY_TICKET: {
     NAME: 'my-ticket',
