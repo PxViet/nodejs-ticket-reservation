@@ -12,10 +12,6 @@ import {
 export class ReservationsService extends Context.Tag('ReservationsServiceTag')<
   ReservationsService,
   {
-    readonly confirmReservation: (
-      holdIds: string[],
-    ) => Effect.Effect<Reservation, ReservationError, never>;
-
     readonly getMinePaginated: (
       page?: number,
       status?: ReservationStatus,

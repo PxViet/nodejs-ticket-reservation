@@ -2,11 +2,11 @@
 import { Schema } from 'effect';
 
 /**
- * A confirmed reservation as `@movea/api` serves it — `POST /reservations`,
- * `GET /reservations/me`, `GET /reservations/:id` (BR-09/BR-10). Deliberately
- * separate from `./booking`: there is no wallet/payment step here and the
- * status vocabulary is the API's own (3-state reservation, 2-state ticket),
- * not the legacy 4-state Supabase `BookingStatusSchema`.
+ * A confirmed reservation as `@movea/api` serves it — nested in a succeeded
+ * `POST /reservations/checkout`, `GET /reservations/me`,
+ * `GET /reservations/:id` (BR-09/BR-10). Deliberately separate from
+ * `./booking`: the status vocabulary is the API's own (3-state reservation,
+ * 2-state ticket), not the legacy 4-state Supabase `BookingStatusSchema`.
  */
 export const ReservationStatusSchema = Schema.Literal(
   'confirmed',

@@ -6,7 +6,6 @@ import React from 'react';
 // Hooks
 import {
   useCancelReservation,
-  useConfirmReservation,
   useReservation,
   useReservationsInfinite,
 } from '../useReservations';
@@ -24,7 +23,6 @@ import { Reservation } from '../../schemas/reservation';
 
 jest.mock('@/features/booking/services/reservations', () => ({
   reservationsServiceEffect: {
-    confirmReservation: jest.fn(),
     getMinePaginated: jest.fn(),
     getById: jest.fn(),
     cancel: jest.fn(),
@@ -158,48 +156,6 @@ describe('useReservation', () => {
     renderHook(() => useReservation(''), { wrapper: createWrapper() });
 
     expect(reservationsServiceEffect.getById).not.toHaveBeenCalled();
-  });
-});
-
-describe('useConfirmReservation', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('confirms the given hold ids and resets the booking store', async () => {
-    (reservationsServiceEffect.confirmReservation as jest.Mock).mockReturnValue(
-      Effect.succeed(RESERVATION),
-    );
-
-    const { result } = renderHook(() => useConfirmReservation(), {
-      wrapper: createWrapper(),
-    });
-
-    result.current.mutate(['hold1']);
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-    expect(reservationsServiceEffect.confirmReservation).toHaveBeenCalledWith([
-      'hold1',
-    ]);
-    expect(mockResetBooking).toHaveBeenCalled();
-  });
-
-  it('exposes the errorCode when a hold has expired', async () => {
-    (reservationsServiceEffect.confirmReservation as jest.Mock).mockReturnValue(
-      Effect.fail(ReservationError.confirmFailed('expired', 'HOLD_EXPIRED')),
-    );
-
-    const { result } = renderHook(() => useConfirmReservation(), {
-      wrapper: createWrapper(),
-    });
-
-    result.current.mutate(['hold1']);
-
-    await waitFor(() => expect(result.current.isError).toBe(true));
-
-    expect(result.current.error?.errorCode).toBe('HOLD_EXPIRED');
-    expect(mockResetBooking).not.toHaveBeenCalled();
   });
 });
 
