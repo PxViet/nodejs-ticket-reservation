@@ -80,11 +80,13 @@ export type ActiveSeatHold = Schemas['ActiveSeatHoldResponseDto'];
 /** One page of `GET /seat-holds/me`. */
 export type PaginatedSeatHolds = Schemas['PaginatedSeatHoldResponseDto'];
 
-/** `POST /reservations` request body — the holds to confirm. */
-export type ConfirmReservationRequest = Schemas['ConfirmReservationDto'];
+/** `POST /reservations/checkout` request body — the holds and a saved card, never an amount (ADR-018). */
+export type CheckoutRequest = Schemas['CheckoutDto'];
+/** What `POST /reservations/checkout` returns. `requires_action` carries a 3-D Secure `clientSecret`. */
+export type CheckoutResponse = Schemas['CheckoutResponseDto'];
 /** One ticket on a confirmed reservation, as nested in `Reservation`. */
 export type ReservationTicket = Schemas['TicketResponseDto'];
-/** What `POST /reservations` and `GET /reservations/:id` return. */
+/** A confirmed reservation — `GET /reservations/:id`, and nested in a succeeded `CheckoutResponse`. */
 export type Reservation = Schemas['ReservationResponseDto'];
 /** One row of `GET /reservations/me` — a `Reservation` without its tickets. */
 export type ReservationSummary = Schemas['ReservationSummaryResponseDto'];
@@ -106,3 +108,15 @@ export type AdminReservationRow = Schemas['AdminReservationRowDto'];
 /** One page of `GET /reports/reservations`. */
 export type PaginatedReservationsReport =
   Schemas['PaginatedReservationsReportResponseDto'];
+
+/** What `POST /payment-methods/setup-intent` returns — everything Stripe's PaymentSheet needs (ADR-018). */
+export type SetupIntent = Schemas['SetupIntentResponseDto'];
+/** A saved card — Stripe ids and display fields only, never the card number. */
+export type PaymentMethod = Schemas['PaymentMethodResponseDto'];
+/** One page of `GET /payment-methods`. */
+export type PaginatedPaymentMethods =
+  Schemas['PaginatedPaymentMethodResponseDto'];
+/** One checkout payment — `GET /payments` and `GET /reservations/checkout/:paymentId` (DDR-025). */
+export type Payment = Schemas['PaymentResponseDto'];
+/** One page of `GET /payments`, newest first. */
+export type PaginatedPayments = Schemas['PaginatedPaymentResponseDto'];
