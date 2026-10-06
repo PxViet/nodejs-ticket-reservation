@@ -173,7 +173,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   primaryColor: '#0B0F2F',
   extra: {
     eas: {
-      projectId: '36d003fd-c40c-47c3-8f16-3eb497324288',
+      projectId: '8f1d88fa-7fb0-42dd-af07-9855b31a3f73',
     },
   },
   updates: {

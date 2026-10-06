@@ -1,5 +1,12 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
+import {
+  act,
+  fireEvent,
+  render,
+  waitFor,
+  within,
+} from '@testing-library/react-native';
+import { ScrollView } from 'react-native';
 
 import CheckoutScreen from '../index';
 
@@ -242,6 +249,26 @@ describe('CheckoutScreen', () => {
       expect(getByTestId('checkout-button').props.accessibilityState).toEqual(
         expect.objectContaining({ disabled: true }),
       );
+    });
+  });
+
+  describe('Layout', () => {
+    it('should scroll the order and cards together', () => {
+      const { UNSAFE_getByType } = renderCheckout();
+      const scrollView = within(UNSAFE_getByType(ScrollView));
+
+      expect(scrollView.getByTestId('horizontal-card')).toBeTruthy();
+      expect(scrollView.getByTestId('order-total')).toBeTruthy();
+      expect(scrollView.getByTestId('payment-method-pm_visa')).toBeTruthy();
+      expect(scrollView.getByTestId('add-card-button')).toBeTruthy();
+    });
+
+    it('should pin the Pay button outside the scroll area', () => {
+      const { UNSAFE_getByType, getByTestId } = renderCheckout();
+      const scrollView = within(UNSAFE_getByType(ScrollView));
+
+      expect(getByTestId('checkout-button')).toBeTruthy();
+      expect(scrollView.queryByTestId('checkout-button')).toBeNull();
     });
   });
 

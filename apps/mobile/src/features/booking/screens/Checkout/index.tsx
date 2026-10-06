@@ -1,11 +1,6 @@
 import { Href, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  ScrollView,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -17,6 +12,7 @@ import { Button } from '@/components/Button';
 import { DetailRow } from '@/components/DetailRow';
 import { Divider } from '@/components/Divider';
 import { HorizontalCard } from '@/components/HorizontalCard';
+import { StickyFooterScrollView } from '@/components/StickyFooterScrollView';
 import { Typo } from '@/components/Typo';
 import { PaymentMethodItem } from '@/features/payments/components/PaymentMethodItem';
 
@@ -52,7 +48,6 @@ import { isAddCardCanceled } from '@/features/payments/error/payments';
 import { AddIcon } from '@/icons/AddIcon';
 
 const StyledSafeAreaView = withUniwind(SafeAreaView);
-const StyledScrollView = withUniwind(ScrollView);
 
 // The holds these seats rested on are gone — the customer has to pick seats
 // again, so checkout sends them back rather than letting them retry.
@@ -352,10 +347,22 @@ const CheckoutScreen = () => {
       accessibilityLabel="Checkout screen"
       className="flex-1 bg-dark-blue"
     >
-      <StyledScrollView
-        className="flex-1 bg-dark-blue"
-        contentContainerClassName="px-6 grow justify-between pb-6"
-        showsVerticalScrollIndicator={false}
+      <StickyFooterScrollView
+        contentContainerClassName="px-6"
+        footerClassName="px-6 pt-3 pb-6"
+        footer={
+          <Button
+            title={totalPrice > 0 ? `Pay ${formatUSD(totalPrice)}` : 'Checkout'}
+            onPress={handleCheckout}
+            testID="checkout-button"
+            accessibilityLabel="Checkout button"
+            accessibilityHint="Tap to pay for your tickets"
+            size={Size.LARGE}
+            disabled={
+              isPaying || isAddingCard || !selectedCard || holdIds.length === 0
+            }
+          />
+        }
       >
         <View>
           {/* Movie Details Section */}
@@ -410,19 +417,7 @@ const CheckoutScreen = () => {
             </TouchableOpacity>
           </View>
         </View>
-
-        <Button
-          title={totalPrice > 0 ? `Pay ${formatUSD(totalPrice)}` : 'Checkout'}
-          onPress={handleCheckout}
-          testID="checkout-button"
-          accessibilityLabel="Checkout button"
-          accessibilityHint="Tap to pay for your tickets"
-          size={Size.LARGE}
-          disabled={
-            isPaying || isAddingCard || !selectedCard || holdIds.length === 0
-          }
-        />
-      </StyledScrollView>
+      </StickyFooterScrollView>
     </StyledSafeAreaView>
   );
 };
