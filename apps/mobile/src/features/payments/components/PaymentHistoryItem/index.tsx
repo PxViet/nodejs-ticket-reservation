@@ -110,13 +110,7 @@ export const PaymentHistoryItem = memo(
         className={cn('w-full flex-row rounded-xl pr-4 gap-4', className)}
         {...rest}
       >
-        {/* Left Section - Icon */}
-        <View className="relative rounded-lg overflow-hidden">
-          <MovieTopUpIcon />
-        </View>
-
-        {/* Right Section - Details */}
-        <View className="flex-1 gap-3 justify-center">
+        <View className="flex-1 justify-center border-b border-overlay-soft/20">
           <View className="flex-row items-center gap-2">
             <Typo
               size="base"
@@ -137,7 +131,7 @@ export const PaymentHistoryItem = memo(
             </View>
           </View>
 
-          <View className="gap-1">
+          <View className="gap-1 pb-1">
             {/* Amount and card */}
             <View className="flex-row items-center gap-2">
               <Typo
