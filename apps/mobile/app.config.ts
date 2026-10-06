@@ -19,7 +19,7 @@ const allowCleartextTraffic = !(
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  owner: 'viet.pham_agilityio',
+  owner: 'px_viet',
   name: 'Movea',
   slug: 'movea',
   version: '1.0.0',
