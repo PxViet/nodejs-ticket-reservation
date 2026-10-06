@@ -163,13 +163,20 @@ export class SeedService implements OnApplicationBootstrap {
     return halls;
   }
 
-  private async seedShowtimes(movies: Movie[], halls: Hall[]): Promise<void> {
+  private async seedShowtimes(
+    allMovies: Movie[],
+    halls: Hall[],
+  ): Promise<void> {
+    const today = new Date();
+    // Coming-soon titles (DDR-023) get no showtimes until they are released.
+    const movies = allMovies.filter(
+      ({ releaseDate }) => releaseDate <= formatDate(today),
+    );
     if (movies.length === 0 || halls.length === 0) return;
 
     const basePriceByHallName = new Map(
       HALL_FIXTURES.map(({ name, basePrice }) => [name, basePrice]),
     );
-    const today = new Date();
     let movieIndex = 0;
 
     for (
