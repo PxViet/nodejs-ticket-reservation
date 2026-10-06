@@ -19,7 +19,7 @@ const mockReleaseHold = jest.fn();
 let mockSelectedMovie: any = { id: 'movie1', title: 'Test Movie' };
 let mockSelectedShowtime: any = {
   id: 'showtime1',
-  basePrice: 50000,
+  basePrice: 50,
   hall: { id: 'hall1', name: 'Hall 1', hallType: 'IMAX' },
 };
 let mockSelectedSeats: any[] = [];
@@ -128,7 +128,7 @@ jest.mock('@/constants', () => ({
 
 jest.mock('@/utils/formats', () => ({
   calculateTotalPrice: (price: number, seats: number) => price * seats,
-  formatIDR: (amount: number) => `IDR ${amount.toLocaleString('id-ID')}`,
+  formatUSD: (amount: number) => `$${amount.toFixed(2)}`,
 }));
 
 describe('SeatsScreen', () => {
@@ -137,7 +137,7 @@ describe('SeatsScreen', () => {
     mockSelectedMovie = { id: 'movie1', title: 'Test Movie' };
     mockSelectedShowtime = {
       id: 'showtime1',
-      basePrice: 50000,
+      basePrice: 50,
       hall: { id: 'hall1', name: 'Hall 1', hallType: 'IMAX' },
     };
     mockSelectedSeats = [];
@@ -458,7 +458,7 @@ describe('SeatsScreen', () => {
       ];
       const { getByText } = render(<SeatsScreen />);
       expect(getByText(/2 Tickets/)).toBeTruthy();
-      expect(getByText(/IDR 100/)).toBeTruthy();
+      expect(getByText(/\$100\.00/)).toBeTruthy();
     });
   });
 });

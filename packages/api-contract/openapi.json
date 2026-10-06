@@ -560,340 +560,6 @@
         ]
       }
     },
-    "/token-packages": {
-      "get": {
-        "operationId": "TokenPackagesController_findAll",
-        "parameters": [
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "default": 1,
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Object"
-                }
-              ]
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "maximum": 100,
-              "default": 20,
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Object"
-                }
-              ]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaginatedTokenPackageResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "List active token packages, in display order",
-        "tags": [
-          "wallet"
-        ]
-      }
-    },
-    "/wallet": {
-      "get": {
-        "operationId": "WalletController_findMine",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WalletResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Get the authenticated user's wallet",
-        "tags": [
-          "wallet"
-        ]
-      }
-    },
-    "/wallet/transactions": {
-      "get": {
-        "operationId": "WalletController_findTransactions",
-        "parameters": [
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "default": 1,
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Object"
-                }
-              ]
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "maximum": 100,
-              "default": 20,
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Object"
-                }
-              ]
-            }
-          },
-          {
-            "name": "type",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "top_up",
-                "payment",
-                "refund"
-              ]
-            }
-          },
-          {
-            "name": "status",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "pending",
-                "succeeded",
-                "failed"
-              ]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaginatedWalletTransactionResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "List the wallet's ledger, newest first",
-        "tags": [
-          "wallet"
-        ]
-      }
-    },
-    "/wallet/payment-methods/setup-intent": {
-      "post": {
-        "operationId": "WalletController_createSetupIntent",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SetupIntentResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Start adding a card with Stripe's PaymentSheet (setup mode)",
-        "tags": [
-          "wallet"
-        ]
-      }
-    },
-    "/wallet/payment-methods": {
-      "get": {
-        "operationId": "WalletController_findPaymentMethods",
-        "parameters": [
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "default": 1,
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Object"
-                }
-              ]
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "maximum": 100,
-              "default": 20,
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Object"
-                }
-              ]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaginatedPaymentMethodResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "List the caller's saved cards",
-        "tags": [
-          "wallet"
-        ]
-      }
-    },
-    "/wallet/top-ups": {
-      "post": {
-        "operationId": "WalletController_topUp",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateTopUpDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TopUpResponseDto"
-                }
-              }
-            }
-          },
-          "202": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TopUpResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Buy a token package with a saved card",
-        "tags": [
-          "wallet"
-        ]
-      }
-    },
-    "/wallet/top-ups/{id}": {
-      "get": {
-        "operationId": "WalletController_findTopUp",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TopUpDetailResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Get one of the caller's top-ups",
-        "tags": [
-          "wallet"
-        ]
-      }
-    },
     "/genres": {
       "get": {
         "operationId": "GenresController_findAll",
@@ -1691,16 +1357,16 @@
         ]
       }
     },
-    "/reservations": {
+    "/reservations/checkout": {
       "post": {
-        "operationId": "ReservationsController_confirm",
+        "operationId": "CheckoutController_checkout",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ConfirmReservationDto"
+                "$ref": "#/components/schemas/CheckoutDto"
               }
             }
           }
@@ -1711,7 +1377,17 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ReservationResponseDto"
+                  "$ref": "#/components/schemas/CheckoutResponseDto"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutResponseDto"
                 }
               }
             }
@@ -1722,7 +1398,43 @@
             "bearer": []
           }
         ],
-        "summary": "Confirm a reservation from one or more held seats",
+        "summary": "Pay for held seats with a saved card and confirm the reservation",
+        "tags": [
+          "reservations"
+        ]
+      }
+    },
+    "/reservations/checkout/{paymentId}": {
+      "get": {
+        "operationId": "CheckoutController_findStatus",
+        "parameters": [
+          {
+            "name": "paymentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Poll a checkout payment, settling it from Stripe if pending",
         "tags": [
           "reservations"
         ]
@@ -1867,6 +1579,161 @@
         "summary": "Cancel a confirmed reservation (owner only)",
         "tags": [
           "reservations"
+        ]
+      }
+    },
+    "/payment-methods/setup-intent": {
+      "post": {
+        "operationId": "PaymentMethodsController_createSetupIntent",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupIntentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Start adding a card with Stripe's PaymentSheet (setup mode)",
+        "tags": [
+          "payment-methods"
+        ]
+      }
+    },
+    "/payment-methods": {
+      "get": {
+        "operationId": "PaymentMethodsController_findAll",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedPaymentMethodResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the caller's saved cards",
+        "tags": [
+          "payment-methods"
+        ]
+      }
+    },
+    "/payments": {
+      "get": {
+        "operationId": "PaymentsController_findMine",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "succeeded",
+                "failed",
+                "refunded"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedPaymentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List the caller's checkout payments, newest first",
+        "tags": [
+          "payments"
         ]
       }
     },
@@ -2508,314 +2375,6 @@
           }
         }
       },
-      "TokenPackageResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "code": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "tokens": {
-            "type": "number"
-          },
-          "priceCents": {
-            "type": "number",
-            "description": "Price in the smallest currency unit"
-          },
-          "currency": {
-            "type": "string",
-            "example": "usd"
-          }
-        },
-        "required": [
-          "id",
-          "code",
-          "name",
-          "tokens",
-          "priceCents",
-          "currency"
-        ]
-      },
-      "PaginatedTokenPackageResponseDto": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TokenPackageResponseDto"
-            }
-          },
-          "meta": {
-            "$ref": "#/components/schemas/PaginationMetaDto"
-          }
-        },
-        "required": [
-          "data",
-          "meta"
-        ]
-      },
-      "WalletResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "balance": {
-            "type": "number",
-            "description": "Whole tokens"
-          },
-          "hasPaymentMethod": {
-            "type": "boolean",
-            "description": "Whether a card is saved for top-ups"
-          }
-        },
-        "required": [
-          "id",
-          "balance",
-          "hasPaymentMethod"
-        ]
-      },
-      "WalletTransactionResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "top_up",
-              "payment",
-              "refund"
-            ]
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "pending",
-              "succeeded",
-              "failed"
-            ]
-          },
-          "tokens": {
-            "type": "number"
-          },
-          "amountCents": {
-            "type": "number",
-            "nullable": true
-          },
-          "currency": {
-            "type": "string",
-            "nullable": true
-          },
-          "tokenPackage": {
-            "$ref": "#/components/schemas/TokenPackageResponseDto"
-          },
-          "failureMessage": {
-            "type": "string",
-            "description": "Stripe's decline reason — safe to show the customer"
-          },
-          "createdAt": {
-            "format": "date-time",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "type",
-          "status",
-          "tokens",
-          "amountCents",
-          "currency",
-          "createdAt"
-        ]
-      },
-      "PaginatedWalletTransactionResponseDto": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/WalletTransactionResponseDto"
-            }
-          },
-          "meta": {
-            "$ref": "#/components/schemas/PaginationMetaDto"
-          }
-        },
-        "required": [
-          "data",
-          "meta"
-        ]
-      },
-      "SetupIntentResponseDto": {
-        "type": "object",
-        "properties": {
-          "setupIntentClientSecret": {
-            "type": "string"
-          },
-          "ephemeralKeySecret": {
-            "type": "string"
-          },
-          "customerId": {
-            "type": "string"
-          },
-          "publishableKey": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "setupIntentClientSecret",
-          "ephemeralKeySecret",
-          "customerId",
-          "publishableKey"
-        ]
-      },
-      "PaymentMethodResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "example": "pm_1Nx…"
-          },
-          "brand": {
-            "type": "string",
-            "example": "visa"
-          },
-          "last4": {
-            "type": "string",
-            "example": "4242"
-          },
-          "expMonth": {
-            "type": "number"
-          },
-          "expYear": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "id",
-          "brand",
-          "last4",
-          "expMonth",
-          "expYear"
-        ]
-      },
-      "PaginatedPaymentMethodResponseDto": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PaymentMethodResponseDto"
-            }
-          },
-          "meta": {
-            "$ref": "#/components/schemas/PaginationMetaDto"
-          }
-        },
-        "required": [
-          "data",
-          "meta"
-        ]
-      },
-      "CreateTopUpDto": {
-        "type": "object",
-        "properties": {
-          "tokenPackageId": {
-            "type": "string"
-          },
-          "paymentMethodId": {
-            "type": "string",
-            "example": "pm_1Nx…"
-          }
-        },
-        "required": [
-          "tokenPackageId",
-          "paymentMethodId"
-        ]
-      },
-      "TopUpResponseDto": {
-        "type": "object",
-        "properties": {
-          "status": {
-            "type": "string",
-            "enum": [
-              "succeeded",
-              "requires_action",
-              "pending"
-            ]
-          },
-          "transactionId": {
-            "type": "string"
-          },
-          "transaction": {
-            "description": "Present when status is succeeded",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/WalletTransactionResponseDto"
-              }
-            ]
-          },
-          "balance": {
-            "type": "number",
-            "description": "Present when status is succeeded"
-          },
-          "clientSecret": {
-            "type": "string",
-            "description": "Present when status is requires_action — pass to Stripe's SDK to complete 3-D Secure"
-          }
-        },
-        "required": [
-          "status",
-          "transactionId"
-        ]
-      },
-      "TopUpDetailResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "pending",
-              "succeeded",
-              "failed"
-            ]
-          },
-          "tokens": {
-            "type": "number"
-          },
-          "amountCents": {
-            "type": "number"
-          },
-          "currency": {
-            "type": "string"
-          },
-          "failureMessage": {
-            "type": "string"
-          },
-          "balance": {
-            "type": "number",
-            "description": "Wallet balance after this top-up, if settled"
-          }
-        },
-        "required": [
-          "id",
-          "status",
-          "tokens",
-          "amountCents",
-          "currency",
-          "balance"
-        ]
-      },
       "GenreResponseDto": {
         "type": "object",
         "properties": {
@@ -3440,7 +2999,7 @@
           "meta"
         ]
       },
-      "ConfirmReservationDto": {
+      "CheckoutDto": {
         "type": "object",
         "properties": {
           "holdIds": {
@@ -3448,10 +3007,15 @@
             "items": {
               "type": "string"
             }
+          },
+          "paymentMethodId": {
+            "type": "string",
+            "example": "pm_1Nx…"
           }
         },
         "required": [
-          "holdIds"
+          "holdIds",
+          "paymentMethodId"
         ]
       },
       "TicketResponseDto": {
@@ -3541,6 +3105,101 @@
           "createdAt"
         ]
       },
+      "CheckoutResponseDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "succeeded",
+              "requires_action",
+              "processing"
+            ]
+          },
+          "paymentId": {
+            "type": "string"
+          },
+          "clientSecret": {
+            "type": "string",
+            "description": "Only when requires_action — pass to handleNextAction for 3-D Secure"
+          },
+          "reservation": {
+            "description": "Only when succeeded",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ReservationResponseDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "paymentId"
+        ]
+      },
+      "PaymentResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "succeeded",
+              "failed",
+              "refunded"
+            ]
+          },
+          "amountCents": {
+            "type": "number",
+            "description": "Minor units, e.g. 1700 is $17.00"
+          },
+          "currency": {
+            "type": "string",
+            "example": "usd"
+          },
+          "cardBrand": {
+            "type": "string",
+            "example": "visa"
+          },
+          "cardLast4": {
+            "type": "string",
+            "example": "4242"
+          },
+          "showtimeId": {
+            "type": "string"
+          },
+          "seatCount": {
+            "type": "number"
+          },
+          "reservationId": {
+            "type": "string",
+            "description": "Set once the payment has succeeded"
+          },
+          "reservationNumber": {
+            "type": "string"
+          },
+          "failureMessage": {
+            "type": "string",
+            "description": "Why it failed or was refunded — safe to show the customer"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "amountCents",
+          "currency",
+          "showtimeId",
+          "seatCount",
+          "createdAt"
+        ]
+      },
       "ReservationSummaryResponseDto": {
         "type": "object",
         "properties": {
@@ -3589,6 +3248,95 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ReservationSummaryResponseDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "SetupIntentResponseDto": {
+        "type": "object",
+        "properties": {
+          "setupIntentClientSecret": {
+            "type": "string"
+          },
+          "ephemeralKeySecret": {
+            "type": "string"
+          },
+          "customerId": {
+            "type": "string"
+          },
+          "publishableKey": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "setupIntentClientSecret",
+          "ephemeralKeySecret",
+          "customerId",
+          "publishableKey"
+        ]
+      },
+      "PaymentMethodResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "pm_1Nx…"
+          },
+          "brand": {
+            "type": "string",
+            "example": "visa"
+          },
+          "last4": {
+            "type": "string",
+            "example": "4242"
+          },
+          "expMonth": {
+            "type": "number"
+          },
+          "expYear": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "brand",
+          "last4",
+          "expMonth",
+          "expYear"
+        ]
+      },
+      "PaginatedPaymentMethodResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentMethodResponseDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "PaginatedPaymentResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentResponseDto"
             }
           },
           "meta": {

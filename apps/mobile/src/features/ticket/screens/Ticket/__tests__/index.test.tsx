@@ -47,7 +47,7 @@ jest.mock('@/utils/cn', () => ({
 }));
 
 jest.mock('@/utils/formats', () => ({
-  formatIDR: (value: number) => `IDR ${value.toLocaleString()}`,
+  formatUSD: (value: number) => `$${value.toLocaleString()}`,
   formatDate: (date: string) => {
     if (!date) return '';
     return new Date(date).toLocaleDateString('en-US', {

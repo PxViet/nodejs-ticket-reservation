@@ -82,8 +82,8 @@ describe('HorizontalCard Component', () => {
     });
 
     it('should display price when provided', () => {
-      render(<HorizontalCard {...defaultProps} price="150.000" />);
-      expect(screen.getByText('IDR 150.000')).toBeTruthy();
+      render(<HorizontalCard {...defaultProps} price="150" />);
+      expect(screen.getByText('$150.00')).toBeTruthy();
     });
 
     it('should display cinema location when provided', () => {
@@ -99,12 +99,12 @@ describe('HorizontalCard Component', () => {
           {...defaultProps}
           showtime="16:40"
           showDate="2025-12-18"
-          price="150.000"
+          price="150"
           cinemaLocation="FX Sudirman XXI"
         />,
       );
       expect(screen.getByText('16:40, Thu Dec 18')).toBeTruthy();
-      expect(screen.getByText('IDR 150.000')).toBeTruthy();
+      expect(screen.getByText('$150.00')).toBeTruthy();
       expect(screen.getByText('FX Sudirman XXI')).toBeTruthy();
     });
 
@@ -178,8 +178,8 @@ describe('HorizontalCard Component', () => {
     });
 
     it('should handle only price without other booking info', () => {
-      render(<HorizontalCard {...defaultProps} price="150.000" />);
-      expect(screen.getByText('IDR 150.000')).toBeTruthy();
+      render(<HorizontalCard {...defaultProps} price="150" />);
+      expect(screen.getByText('$150.00')).toBeTruthy();
       expect(screen.queryByTestId('horizontal-card-showtime')).toBeNull();
       expect(screen.queryByTestId('horizontal-card-cinema')).toBeNull();
     });

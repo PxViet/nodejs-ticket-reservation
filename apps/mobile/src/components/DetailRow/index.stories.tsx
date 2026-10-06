@@ -45,8 +45,8 @@ export const Default: Story = {
 // With Custom Value Styling
 export const WithCustomValueStyle: Story = {
   args: {
-    label: 'Your Wallet',
-    value: 'IDR 200.000',
+    label: 'Total',
+    value: '$17.00',
     valueClassName: 'text-light-blue font-montserrat-semibold',
   },
 };

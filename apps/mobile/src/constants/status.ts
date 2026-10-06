@@ -10,9 +10,9 @@ import {
 } from '@/features/booking/schemas/cinema';
 import { MovieStatus, PromoCodeStatus } from '@/features/booking/schemas/movie';
 import {
-  WalletTransactionStatus,
-  WalletTransactionType,
-} from '@/features/wallet/schemas/wallet';
+  CheckoutStatus,
+  PaymentStatus as CheckoutPaymentStatus,
+} from '@/features/payments/schemas/payments';
 
 export const BOOKING_STATUS = {
   ACTIVE: 'active',
@@ -21,7 +21,9 @@ export const BOOKING_STATUS = {
   USED: 'used',
 } as const satisfies Record<string, BookingStatus>;
 
-export const PAYMENT_STATUS = {
+// The legacy Supabase booking's payment state — not the API's (see
+// CHECKOUT_PAYMENT_STATUS below).
+export const LEGACY_PAYMENT_STATUS = {
   PENDING: 'pending',
   PAID: 'paid',
   FAILED: 'failed',
@@ -57,14 +59,17 @@ export const PROMO_CODE_STATUS = {
   FIXED_AMOUNT: 'fixed_amount',
 } as const satisfies Record<string, PromoCodeStatus>;
 
-export const WALLET_TRANSACTION_TYPE = {
-  TOP_UP: 'top_up',
-  PAYMENT: 'payment',
-  REFUND: 'refund',
-} as const satisfies Record<string, WalletTransactionType>;
-
-export const WALLET_TRANSACTION_STATUS = {
+// DDR-025: a checkout payment's lifecycle, as `GET /payments` reports it.
+export const PAYMENT_STATUS = {
   PENDING: 'pending',
-  COMPLETED: 'completed',
+  SUCCEEDED: 'succeeded',
   FAILED: 'failed',
-} as const satisfies Record<string, WalletTransactionStatus>;
+  REFUNDED: 'refunded',
+} as const satisfies Record<string, CheckoutPaymentStatus>;
+
+// What `POST /reservations/checkout` answers — an API-response status only.
+export const CHECKOUT_STATUS = {
+  SUCCEEDED: 'succeeded',
+  REQUIRES_ACTION: 'requires_action',
+  PROCESSING: 'processing',
+} as const satisfies Record<string, CheckoutStatus>;

@@ -25,7 +25,6 @@ import type {
 
 // Stores
 import { useAuthStore } from '@/features/auth/store/auth';
-import { useBookingStore } from '@/features/booking/store/booking';
 
 // Types
 import { ReservationError } from '@/features/booking/error/reservation';
@@ -78,29 +77,6 @@ export const useReservation = (id: string) => {
       ),
     enabled: !!id,
     staleTime: API_CONFIG.BOOKING_STALE_TIME,
-  });
-};
-
-// No payment step to fail alongside the reservation — the API has no
-// wallet/payment module yet, so there's nothing to roll back beyond the
-// confirm call itself (see the reservation plan's "Wallet debit" decision).
-export const useConfirmReservation = () => {
-  const queryClient = useQueryClient();
-  const resetBooking = useBookingStore(state => state.reset);
-
-  return useMutation<Reservation, ReservationError, string[]>({
-    mutationFn: (holdIds: string[]) =>
-      runEffectForQuery(
-        Effect.gen(function* () {
-          const reservationsService = yield* ReservationsService;
-          return yield* reservationsService.confirmReservation(holdIds);
-        }),
-        ReservationsServiceLayer,
-      ),
-    onSuccess: () => {
-      resetBooking();
-      queryClient.invalidateQueries({ queryKey: queryKeys.tickets.all });
-    },
   });
 };
 

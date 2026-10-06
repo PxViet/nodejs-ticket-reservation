@@ -12,7 +12,7 @@ import { Size, UNACTIVE_MESSAGE } from '@/constants';
 
 // Utils
 import { capitalize } from '@/utils/convert';
-import { formatDate, formatIDR, formatTime } from '@/utils/formats';
+import { formatDate, formatUSD, formatTime } from '@/utils/formats';
 
 // Hooks
 import { useReservation } from '@/features/booking/hooks/useReservations';
@@ -53,7 +53,7 @@ const TicketDetailScreen = () => {
       movie,
       movieName: movie.title,
       seatLabels: reservation.tickets.map(ticket => ticket.seatLabel),
-      paid: formatIDR(reservation.totalAmount),
+      paid: formatUSD(reservation.totalAmount),
       showTime,
       showDate,
       // Cosmetic only — the API has no `qrCodeData` field and no scan/validate

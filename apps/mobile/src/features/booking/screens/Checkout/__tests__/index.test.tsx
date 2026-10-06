@@ -1,12 +1,18 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 
 import CheckoutScreen from '../index';
+
+// Error
+import { PaymentsError } from '@/features/payments/error/payments';
 
 // Mock dependencies
 const mockDismissAll = jest.fn();
 const mockReplace = jest.fn();
-const mockConfirmReservation = jest.fn();
+const mockBack = jest.fn();
+const mockCheckout = jest.fn();
+const mockAddCard = jest.fn();
+const mockRefetchCards = jest.fn();
 const mockShowLoading = jest.fn();
 const mockHideLoading = jest.fn();
 const mockToastSuccess = jest.fn();
@@ -14,32 +20,54 @@ const mockToastError = jest.fn();
 const mockScheduleTicketExpiration = jest.fn();
 const mockScheduleShowReminder = jest.fn();
 
-let mockIsPending = false;
-let mockWalletData = { id: 'wallet1', balance: 1000, userId: 'user1' };
+const VISA = {
+  id: 'pm_visa',
+  brand: 'visa',
+  last4: '4242',
+  expMonth: 4,
+  expYear: 2031,
+};
+const MASTERCARD = {
+  id: 'pm_mc',
+  brand: 'mastercard',
+  last4: '4444',
+  expMonth: 1,
+  expYear: 2030,
+};
+
+let mockIsPaying = false;
+let mockIsAddingCard = false;
+let mockCards: {
+  data?: (typeof VISA)[];
+  isLoading: boolean;
+  isError: boolean;
+};
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({
     dismissAll: mockDismissAll,
     replace: mockReplace,
+    back: mockBack,
   }),
 }));
 
-jest.mock('@/features/booking/hooks/useReservations', () => ({
-  useConfirmReservation: () => ({
-    mutate: mockConfirmReservation,
+jest.mock('@/features/payments/hooks/usePayments', () => ({
+  usePaymentMethods: () => ({ ...mockCards, refetch: mockRefetchCards }),
+  useAddCard: () => ({
+    mutateAsync: mockAddCard,
     get isPending() {
-      return mockIsPending;
+      return mockIsAddingCard;
+    },
+  }),
+  useCheckout: () => ({
+    mutate: mockCheckout,
+    get isPending() {
+      return mockIsPaying;
     },
   }),
 }));
 
-jest.mock('@/features/wallet/hooks/useWallet', () => ({
-  useWallet: () => ({
-    get data() {
-      return mockWalletData;
-    },
-  }),
-}));
+jest.mock('@/icons/AddIcon', () => ({ AddIcon: () => null }));
 
 jest.mock('@/hooks/useToast', () => ({
   useToastAlert: () => ({
@@ -55,39 +83,42 @@ jest.mock('@/hooks/usePushNotifications', () => ({
   }),
 }));
 
-const mockGetTotalAmount = jest.fn(() => 100);
+const mockGetTotalAmount = jest.fn(() => 17);
+
+const bookingState = (overrides: Record<string, unknown> = {}) => ({
+  selectedMovie: {
+    id: 'movie1',
+    title: 'Test Movie',
+    posterUrl: 'https://example.com/poster.jpg',
+    rating: 4.5,
+    genre: ['Action'],
+    durationMinutes: 120,
+  },
+  selectedShowtime: {
+    id: 'showtime1',
+    movieId: 'movie1',
+    hallId: 'hall1',
+    showDate: '2024-01-15',
+    showTime: '14:00',
+    endTime: '16:00',
+    basePrice: 8.5,
+    hall: {
+      id: 'hall1',
+      name: 'Hall 1',
+      hallType: 'IMAX',
+    },
+  },
+  selectedSeats: [
+    { seatId: 'seat-A1', seatLabel: 'A1', holdId: 'hold-1' },
+    { seatId: 'seat-A2', seatLabel: 'A2', holdId: 'hold-2' },
+  ],
+  holdIds: ['hold-1', 'hold-2'],
+  getTotalAmount: mockGetTotalAmount,
+  ...overrides,
+});
+
 const mockUseBookingStore = jest.fn((selector: any) =>
-  selector({
-    selectedMovie: {
-      id: 'movie1',
-      title: 'Test Movie',
-      posterUrl: 'https://example.com/poster.jpg',
-      rating: 4.5,
-      genre: ['Action'],
-      durationMinutes: 120,
-    },
-    selectedShowtime: {
-      id: 'showtime1',
-      movieId: 'movie1',
-      hallId: 'hall1',
-      showDate: '2024-01-15',
-      showTime: '14:00',
-      endTime: '16:00',
-      basePrice: 50,
-      hall: {
-        id: 'hall1',
-        name: 'Hall 1',
-        hallType: 'IMAX',
-      },
-    },
-    selectedSeats: [
-      { seatId: 'seat-A1', seatLabel: 'A1', holdId: 'hold-1' },
-      { seatId: 'seat-A2', seatLabel: 'A2', holdId: 'hold-2' },
-    ],
-    holdIds: ['hold-1', 'hold-2'],
-    reservationId: 'reservation123',
-    getTotalAmount: mockGetTotalAmount,
-  }),
+  selector(bookingState()),
 );
 
 jest.mock('@/features/booking/store/booking', () => ({
@@ -101,6 +132,18 @@ jest.mock('@/stores/loading', () => ({
       hideLoading: mockHideLoading,
     }),
 }));
+
+const RESERVATION = {
+  id: 'reservation1',
+  reservationNumber: 'RSV-1',
+  userId: 'user1',
+  showtimeId: 'showtime1',
+  status: 'confirmed',
+  totalSeats: 2,
+  totalAmount: 17,
+  createdAt: '2024-01-15T00:00:00.000Z',
+  tickets: [{ id: 'ticket1' }, { id: 'ticket2' }],
+};
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -118,35 +161,35 @@ const createWrapper = () => {
   return Wrapper;
 };
 
+const renderCheckout = () =>
+  render(<CheckoutScreen />, { wrapper: createWrapper() });
+
+// Press checkout and hand back the callbacks the screen passed to mutate.
+const pressCheckout = (getByTestId: (id: string) => any) => {
+  fireEvent.press(getByTestId('checkout-button'));
+  return mockCheckout.mock.calls[0][1] as {
+    onSuccess: (outcome: unknown) => Promise<void>;
+    onError: (error: PaymentsError) => void;
+  };
+};
+
 describe('CheckoutScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockGetTotalAmount.mockReturnValue(100);
-    mockIsPending = false;
-    mockWalletData = { id: 'wallet1', balance: 1000, userId: 'user1' };
+    mockGetTotalAmount.mockReturnValue(17);
+    mockIsPaying = false;
+    mockIsAddingCard = false;
+    mockCards = { data: [VISA, MASTERCARD], isLoading: false, isError: false };
+    mockUseBookingStore.mockImplementation((selector: any) =>
+      selector(bookingState()),
+    );
   });
 
   describe('Rendering', () => {
-    it('should render without crashing', () => {
-      const { getByTestId } = render(<CheckoutScreen />, {
-        wrapper: createWrapper(),
-      });
-      expect(getByTestId('checkout-button')).toBeTruthy();
-    });
+    it('should render the movie and every order row', () => {
+      const { getByTestId } = renderCheckout();
 
-    it('should render horizontal card', () => {
-      const { getByTestId } = render(<CheckoutScreen />, {
-        wrapper: createWrapper(),
-      });
       expect(getByTestId('horizontal-card')).toBeTruthy();
-    });
-
-    it('should render all order detail rows', () => {
-      const { getByTestId } = render(<CheckoutScreen />, {
-        wrapper: createWrapper(),
-      });
-
-      expect(getByTestId('order-id')).toBeTruthy();
       expect(getByTestId('order-hall')).toBeTruthy();
       expect(getByTestId('order-datetime')).toBeTruthy();
       expect(getByTestId('order-seats')).toBeTruthy();
@@ -154,137 +197,160 @@ describe('CheckoutScreen', () => {
       expect(getByTestId('order-total')).toBeTruthy();
     });
 
-    it('should hide the wallet balance while wallet is disabled', () => {
-      const { queryByTestId } = render(<CheckoutScreen />, {
-        wrapper: createWrapper(),
-      });
-      expect(queryByTestId('wallet-balance')).toBeNull();
+    it('should price the order in US dollars', () => {
+      const { getByText } = renderCheckout();
+
+      expect(getByText('$8.50 x 2')).toBeTruthy();
+      expect(getByText('$17.00')).toBeTruthy();
+      expect(getByText('Pay $17.00')).toBeTruthy();
     });
 
-    it('should render checkout button', () => {
-      const { getByTestId } = render(<CheckoutScreen />, {
-        wrapper: createWrapper(),
-      });
-      expect(getByTestId('checkout-button')).toBeTruthy();
+    it('should list the saved cards with the first one selected', () => {
+      const { getByTestId } = renderCheckout();
+
+      expect(
+        getByTestId('payment-method-pm_visa').props.accessibilityState,
+      ).toEqual({ selected: true });
+      expect(
+        getByTestId('payment-method-pm_mc').props.accessibilityState,
+      ).toEqual({ selected: false });
     });
 
-    it('should display reservation ID when available', () => {
-      const { getByTestId } = render(<CheckoutScreen />, {
-        wrapper: createWrapper(),
-      });
-      const orderId = getByTestId('order-id');
-      expect(orderId).toBeTruthy();
+    it('should show a loader while the cards load', () => {
+      mockCards = { data: undefined, isLoading: true, isError: false };
+
+      const { getByTestId } = renderCheckout();
+
+      expect(getByTestId('payment-methods-loading')).toBeTruthy();
     });
 
-    it('should display default order ID when reservation ID is not available', () => {
-      mockUseBookingStore.mockImplementationOnce((selector: any) =>
-        selector({
-          selectedMovie: {
-            id: 'movie1',
-            title: 'Test Movie',
-            posterUrl: 'https://example.com/poster.jpg',
-            rating: 4.5,
-            genre: ['Action'],
-            durationMinutes: 120,
-          },
-          selectedShowtime: {
-            id: 'showtime1',
-            movieId: 'movie1',
-            hallId: 'hall1',
-            showDate: '2024-01-15',
-            showTime: '14:00',
-            endTime: '16:00',
-            basePrice: 50,
-            hall: {
-              id: 'hall1',
-              name: 'Hall 1',
-              hallType: 'IMAX',
-            },
-          },
-          selectedSeats: [
-            { seatId: 'seat-A1', seatLabel: 'A1', holdId: 'hold-1' },
-          ],
-          holdIds: ['hold-1'],
-          reservationId: null,
-          getTotalAmount: mockGetTotalAmount,
-        }),
+    it('should offer a retry when the cards fail to load', () => {
+      mockCards = { data: undefined, isLoading: false, isError: true };
+
+      const { getByTestId } = renderCheckout();
+      fireEvent.press(getByTestId('payment-methods-retry'));
+
+      expect(mockRefetchCards).toHaveBeenCalled();
+    });
+
+    it('should ask for a card and block checkout when none is saved', () => {
+      mockCards = { data: [], isLoading: false, isError: false };
+
+      const { getByTestId } = renderCheckout();
+
+      expect(getByTestId('payment-methods-empty')).toBeTruthy();
+      expect(getByTestId('checkout-button').props.accessibilityState).toEqual(
+        expect.objectContaining({ disabled: true }),
+      );
+    });
+  });
+
+  describe('Choosing a card', () => {
+    it('should pay with the card the customer picks', () => {
+      const { getByTestId } = renderCheckout();
+
+      fireEvent.press(getByTestId('payment-method-pm_mc'));
+      pressCheckout(getByTestId);
+
+      expect(mockCheckout).toHaveBeenCalledWith(
+        { holdIds: ['hold-1', 'hold-2'], paymentMethodId: 'pm_mc' },
+        expect.any(Object),
+      );
+    });
+
+    it('should select a newly added card straight away', async () => {
+      mockCards = { data: [VISA], isLoading: false, isError: false };
+      mockAddCard.mockResolvedValue(undefined);
+      mockRefetchCards.mockResolvedValue({ data: [MASTERCARD, VISA] });
+
+      const { getByTestId, rerender } = renderCheckout();
+
+      await act(async () => {
+        fireEvent.press(getByTestId('add-card-button'));
+      });
+
+      expect(mockAddCard).toHaveBeenCalled();
+      expect(mockToastSuccess).toHaveBeenCalledWith('Card saved');
+
+      // The refetched list reaches the screen through the query.
+      mockCards = {
+        data: [MASTERCARD, VISA],
+        isLoading: false,
+        isError: false,
+      };
+      rerender(<CheckoutScreen />);
+
+      pressCheckout(getByTestId);
+      expect(mockCheckout).toHaveBeenCalledWith(
+        expect.objectContaining({ paymentMethodId: 'pm_mc' }),
+        expect.any(Object),
+      );
+    });
+
+    it('should stay quiet when the customer closes the card sheet', async () => {
+      mockAddCard.mockRejectedValue(PaymentsError.addCardCanceled());
+
+      const { getByTestId } = renderCheckout();
+
+      await act(async () => {
+        fireEvent.press(getByTestId('add-card-button'));
+      });
+
+      expect(mockToastError).not.toHaveBeenCalled();
+      expect(mockRefetchCards).not.toHaveBeenCalled();
+    });
+
+    it('should report a card that could not be saved', async () => {
+      mockAddCard.mockRejectedValue(
+        PaymentsError.addCardFailed('Your card was declined.'),
       );
 
-      const { getByTestId } = render(<CheckoutScreen />, {
-        wrapper: createWrapper(),
+      const { getByTestId } = renderCheckout();
+
+      await act(async () => {
+        fireEvent.press(getByTestId('add-card-button'));
       });
-      const orderId = getByTestId('order-id');
-      expect(orderId).toBeTruthy();
+
+      expect(mockToastError).toHaveBeenCalledWith('Your card was declined.');
     });
   });
 
   describe('Checkout Flow', () => {
-    it('should confirm the reservation with the held seat ids on checkout', () => {
-      const { getByTestId } = render(<CheckoutScreen />, {
-        wrapper: createWrapper(),
-      });
+    it('should pay for the held seats with the selected card', () => {
+      const { getByTestId } = renderCheckout();
 
-      const button = getByTestId('checkout-button');
-      fireEvent.press(button);
+      pressCheckout(getByTestId);
 
       expect(mockShowLoading).toHaveBeenCalledWith(
-        'Confirming your reservation...',
+        'Processing your payment...',
       );
-      expect(mockConfirmReservation).toHaveBeenCalledWith(
-        ['hold-1', 'hold-2'],
-        expect.any(Object),
+      expect(mockCheckout).toHaveBeenCalledWith(
+        { holdIds: ['hold-1', 'hold-2'], paymentMethodId: 'pm_visa' },
+        expect.objectContaining({ onSettled: mockHideLoading }),
       );
     });
 
-    it('should allow checkout without enough wallet balance', () => {
-      mockWalletData = { id: 'wallet1', balance: 0, userId: 'user1' };
+    it('should not pay while a payment is in flight', () => {
+      mockIsPaying = true;
 
-      const { getByTestId } = render(<CheckoutScreen />, {
-        wrapper: createWrapper(),
-      });
+      const { getByTestId } = renderCheckout();
 
-      fireEvent.press(getByTestId('checkout-button'));
-
-      expect(mockConfirmReservation).toHaveBeenCalledWith(
-        ['hold-1', 'hold-2'],
-        expect.any(Object),
+      expect(getByTestId('checkout-button').props.accessibilityState).toEqual(
+        expect.objectContaining({ disabled: true }),
       );
     });
   });
 
   describe('Success Flow', () => {
-    it('should schedule notifications on successful confirmation', async () => {
-      const mockReservation = {
-        id: 'reservation1',
-        reservationNumber: 'RSV-1',
-        userId: 'user1',
-        showtimeId: 'showtime1',
-        status: 'confirmed',
-        totalSeats: 2,
-        totalAmount: 100,
-        createdAt: '2024-01-15T00:00:00.000Z',
-        tickets: [{ id: 'ticket1' }, { id: 'ticket2' }],
-      };
+    it('should schedule notifications and show success once paid', async () => {
+      const { getByTestId } = renderCheckout();
+      const { onSuccess } = pressCheckout(getByTestId);
 
-      let onSuccessCallback: (reservation: any) => Promise<void>;
-      mockConfirmReservation.mockImplementation((holdIds, callbacks) => {
-        onSuccessCallback = callbacks.onSuccess;
+      await onSuccess({
+        status: 'succeeded',
+        paymentId: 'pay-1',
+        reservation: RESERVATION,
       });
-
-      const { getByTestId } = render(<CheckoutScreen />, {
-        wrapper: createWrapper(),
-      });
-
-      const button = getByTestId('checkout-button');
-      fireEvent.press(button);
-
-      await waitFor(() => {
-        expect(mockConfirmReservation).toHaveBeenCalled();
-      });
-
-      if (onSuccessCallback!) {
-        await onSuccessCallback(mockReservation);
-      }
 
       expect(mockScheduleTicketExpiration).toHaveBeenCalledTimes(2);
       expect(mockScheduleShowReminder).toHaveBeenCalledTimes(2);
@@ -292,241 +358,82 @@ describe('CheckoutScreen', () => {
         'Booking confirmed! You will receive reminders before the show.',
       );
       expect(mockDismissAll).toHaveBeenCalled();
-      expect(mockReplace).toHaveBeenCalled();
-    });
-
-    it('should handle missing showtime or movie gracefully in notifications', async () => {
-      mockUseBookingStore.mockImplementationOnce((selector: any) =>
-        selector({
-          selectedMovie: null,
-          selectedShowtime: null,
-          selectedSeats: [
-            { seatId: 'seat-A1', seatLabel: 'A1', holdId: 'hold-1' },
-          ],
-          holdIds: ['hold-1'],
-          reservationId: 'reservation123',
-          getTotalAmount: mockGetTotalAmount,
-        }),
+      expect(mockReplace).toHaveBeenCalledWith(
+        '/(main)/booking/checkout-success',
       );
-
-      const mockReservation = {
-        id: 'reservation1',
-        reservationNumber: 'RSV-1',
-        userId: 'user1',
-        showtimeId: 'showtime1',
-        status: 'confirmed',
-        totalSeats: 1,
-        totalAmount: 50,
-        createdAt: '2024-01-15T00:00:00.000Z',
-        tickets: [{ id: 'ticket1' }],
-      };
-
-      let onSuccessCallback: (reservation: any) => Promise<void>;
-      mockConfirmReservation.mockImplementation((holdIds, callbacks) => {
-        onSuccessCallback = callbacks.onSuccess;
-      });
-
-      const { getByTestId } = render(<CheckoutScreen />, {
-        wrapper: createWrapper(),
-      });
-
-      const button = getByTestId('checkout-button');
-      fireEvent.press(button);
-
-      await waitFor(() => {
-        expect(mockConfirmReservation).toHaveBeenCalled();
-      });
-
-      if (onSuccessCallback!) {
-        await onSuccessCallback(mockReservation);
-      }
-
-      // Should not schedule notifications when showtime/movie is missing
-      expect(mockScheduleTicketExpiration).not.toHaveBeenCalled();
-      expect(mockScheduleShowReminder).not.toHaveBeenCalled();
-      // But should still show success and navigate
-      expect(mockToastSuccess).toHaveBeenCalled();
-      expect(mockDismissAll).toHaveBeenCalled();
     });
 
-    it('should handle notification scheduling errors gracefully', async () => {
+    it('should still finish when notifications cannot be scheduled', async () => {
       mockScheduleTicketExpiration.mockRejectedValueOnce(
         new Error('Notification error'),
       );
 
-      const mockReservation = {
-        id: 'reservation1',
-        reservationNumber: 'RSV-1',
-        userId: 'user1',
-        showtimeId: 'showtime1',
-        status: 'confirmed',
-        totalSeats: 1,
-        totalAmount: 50,
-        createdAt: '2024-01-15T00:00:00.000Z',
-        tickets: [{ id: 'ticket1' }],
-      };
+      const { getByTestId } = renderCheckout();
+      const { onSuccess } = pressCheckout(getByTestId);
 
-      let onSuccessCallback: (reservation: any) => Promise<void>;
-      mockConfirmReservation.mockImplementation((holdIds, callbacks) => {
-        onSuccessCallback = callbacks.onSuccess;
+      await onSuccess({
+        status: 'succeeded',
+        paymentId: 'pay-1',
+        reservation: RESERVATION,
       });
 
-      const { getByTestId } = render(<CheckoutScreen />, {
-        wrapper: createWrapper(),
-      });
-
-      const button = getByTestId('checkout-button');
-      fireEvent.press(button);
-
-      await waitFor(() => {
-        expect(mockConfirmReservation).toHaveBeenCalled();
-      });
-
-      if (onSuccessCallback!) {
-        await onSuccessCallback(mockReservation);
-      }
-
-      // Should still complete checkout even if notifications fail
       expect(mockToastSuccess).toHaveBeenCalled();
-      expect(mockDismissAll).toHaveBeenCalled();
+      expect(mockReplace).toHaveBeenCalledWith(
+        '/(main)/booking/checkout-success',
+      );
     });
 
-    it('should handle a reservation with no tickets', async () => {
-      const mockReservation = {
-        id: 'reservation1',
-        reservationNumber: 'RSV-1',
-        userId: 'user1',
-        showtimeId: 'showtime1',
-        status: 'confirmed',
-        totalSeats: 0,
-        totalAmount: 0,
-        createdAt: '2024-01-15T00:00:00.000Z',
-        tickets: [],
-      };
+    it('should send the customer to their payments while Stripe is still processing', async () => {
+      const { getByTestId } = renderCheckout();
+      const { onSuccess } = pressCheckout(getByTestId);
 
-      let onSuccessCallback: (reservation: any) => Promise<void>;
-      mockConfirmReservation.mockImplementation((holdIds, callbacks) => {
-        onSuccessCallback = callbacks.onSuccess;
-      });
+      await onSuccess({ status: 'processing', paymentId: 'pay-1' });
 
-      const { getByTestId } = render(<CheckoutScreen />, {
-        wrapper: createWrapper(),
-      });
-
-      const button = getByTestId('checkout-button');
-      fireEvent.press(button);
-
-      await waitFor(() => {
-        expect(mockConfirmReservation).toHaveBeenCalled();
-      });
-
-      if (onSuccessCallback!) {
-        await onSuccessCallback(mockReservation);
-      }
-
-      // Should not schedule notifications for empty tickets
       expect(mockScheduleTicketExpiration).not.toHaveBeenCalled();
-      expect(mockScheduleShowReminder).not.toHaveBeenCalled();
-      // But should still show success
-      expect(mockToastSuccess).toHaveBeenCalled();
+      expect(mockToastSuccess).toHaveBeenCalledWith(
+        expect.stringContaining('processing'),
+      );
+      expect(mockReplace).toHaveBeenCalledWith('/(main)/(tabs)/wallet');
     });
   });
 
   describe('Error Flow', () => {
-    it('should handle a reservation confirmation error', async () => {
-      const mockError = new Error('Confirmation failed');
-      let onErrorCallback: (error: Error) => void;
-      mockConfirmReservation.mockImplementation((holdIds, callbacks) => {
-        onErrorCallback = callbacks.onError;
-      });
+    it('should show the decline and let the customer try another card', async () => {
+      const { getByTestId } = renderCheckout();
+      const { onError } = pressCheckout(getByTestId);
 
-      const { getByTestId } = render(<CheckoutScreen />, {
-        wrapper: createWrapper(),
-      });
+      onError(PaymentsError.checkoutFailed('Your card was declined.'));
 
-      const button = getByTestId('checkout-button');
-      fireEvent.press(button);
-
-      await waitFor(() => {
-        expect(mockConfirmReservation).toHaveBeenCalled();
-      });
-
-      if (onErrorCallback!) {
-        onErrorCallback(mockError);
-      }
-
-      expect(mockToastError).toHaveBeenCalledWith('Confirmation failed');
+      expect(mockToastError).toHaveBeenCalledWith('Your card was declined.');
+      expect(mockBack).not.toHaveBeenCalled();
     });
 
-    it('should use default error message when error message is missing', async () => {
-      const mockError = new Error('');
-      let onErrorCallback: (error: Error) => void;
-      mockConfirmReservation.mockImplementation((holdIds, callbacks) => {
-        onErrorCallback = callbacks.onError;
-      });
+    it.each(['SEAT_HOLD_EXPIRED', 'PAYMENT_REFUNDED'])(
+      'should send the customer back to pick seats on %s',
+      code => {
+        const { getByTestId } = renderCheckout();
+        const { onError } = pressCheckout(getByTestId);
 
-      const { getByTestId } = render(<CheckoutScreen />, {
-        wrapper: createWrapper(),
-      });
+        onError(PaymentsError.checkoutFailed('Seats released', code));
 
-      const button = getByTestId('checkout-button');
-      fireEvent.press(button);
+        expect(mockToastError).toHaveBeenCalledWith('Seats released');
+        expect(mockBack).toHaveBeenCalled();
+      },
+    );
 
-      await waitFor(() => {
-        expect(mockConfirmReservation).toHaveBeenCalled();
-      });
-
-      if (onErrorCallback!) {
-        onErrorCallback(mockError);
-      }
-
-      expect(mockToastError).toHaveBeenCalled();
-    });
-  });
-
-  describe('Edge Cases', () => {
-    it('should not confirm and should show an error when there are no held seats', () => {
-      mockUseBookingStore.mockImplementationOnce((selector: any) =>
-        selector({
-          selectedMovie: {
-            id: 'movie1',
-            title: 'Test Movie',
-            posterUrl: 'https://example.com/poster.jpg',
-            rating: 4.5,
-            genre: ['Action'],
-            durationMinutes: 120,
-          },
-          selectedShowtime: {
-            id: 'showtime1',
-            movieId: 'movie1',
-            hallId: 'hall1',
-            showDate: '2024-01-15',
-            showTime: '14:00',
-            endTime: '16:00',
-            basePrice: 50,
-            hall: {
-              id: 'hall1',
-              name: 'Hall 1',
-              hallType: 'IMAX',
-            },
-          },
-          selectedSeats: [],
-          holdIds: [],
-          reservationId: 'reservation123',
-          getTotalAmount: mockGetTotalAmount,
-        }),
+    it('should refuse to pay with no held seats', async () => {
+      mockUseBookingStore.mockImplementation((selector: any) =>
+        selector(bookingState({ holdIds: [] })),
       );
 
-      const { getByTestId } = render(<CheckoutScreen />, {
-        wrapper: createWrapper(),
-      });
+      const { getByTestId } = renderCheckout();
 
-      const button = getByTestId('checkout-button');
-      fireEvent.press(button);
-
-      expect(mockConfirmReservation).not.toHaveBeenCalled();
-      expect(mockShowLoading).not.toHaveBeenCalled();
-      expect(mockToastError).toHaveBeenCalled();
+      await waitFor(() =>
+        expect(getByTestId('checkout-button').props.accessibilityState).toEqual(
+          expect.objectContaining({ disabled: true }),
+        ),
+      );
+      expect(mockCheckout).not.toHaveBeenCalled();
     });
   });
 });

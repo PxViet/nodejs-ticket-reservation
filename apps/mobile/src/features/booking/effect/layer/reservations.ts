@@ -13,9 +13,6 @@ export const ReservationsServiceLayer = Layer.effect(
   ReservationsService,
   Effect.gen(function* () {
     return {
-      confirmReservation: (holdIds: string[]) =>
-        reservationsServiceEffect.confirmReservation(holdIds),
-
       getMinePaginated: (page?: number, status?: ReservationStatus) =>
         reservationsServiceEffect.getMinePaginated(page, status),
 

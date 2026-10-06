@@ -34,7 +34,7 @@ import { useBookingStore } from '@/features/booking/store/booking';
 import { useToastStore } from '@/stores/toast';
 
 // Utils
-import { calculateTotalPrice, formatIDR } from '@/utils/formats';
+import { calculateTotalPrice, formatUSD } from '@/utils/formats';
 
 // Types
 import { ShowtimeSeat } from '@/features/booking/schemas/showtime';
@@ -377,7 +377,7 @@ const SeatsScreen = () => {
             {selectedSeats.length !== 1 ? 's' : ''})
           </Typo>
           <Typo size="xl" weight="semibold">
-            {formatIDR(totalPrice)}
+            {formatUSD(totalPrice)}
           </Typo>
         </View>
         <Button

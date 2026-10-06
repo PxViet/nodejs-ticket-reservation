@@ -116,7 +116,7 @@ describe('MyProfileScreen', () => {
       const { getByTestId } = render(<MyProfileScreen />);
 
       expect(getByTestId('edit')).toBeTruthy();
-      expect(getByTestId('my_wallet')).toBeTruthy();
+      expect(getByTestId('payment_history')).toBeTruthy();
       expect(getByTestId('change_language')).toBeTruthy();
       expect(getByTestId('help_center')).toBeTruthy();
       expect(getByTestId('rate_app')).toBeTruthy();
@@ -128,7 +128,7 @@ describe('MyProfileScreen', () => {
       const { getByText } = render(<MyProfileScreen />);
 
       expect(getByText('Edit')).toBeTruthy();
-      expect(getByText('My Wallet')).toBeTruthy();
+      expect(getByText('Payment History')).toBeTruthy();
       expect(getByText('Change Language')).toBeTruthy();
       expect(getByText('Help Center')).toBeTruthy();
       expect(getByText('Rate Movea App')).toBeTruthy();
@@ -185,12 +185,12 @@ describe('MyProfileScreen', () => {
       expect(mockSignOut).toHaveBeenCalledTimes(1);
     });
 
-    it('should handle My Wallet press', () => {
+    it('should navigate to payment history on Payment History press', () => {
       const { getByTestId } = render(<MyProfileScreen />);
-      const myWalletItem = getByTestId('my_wallet');
 
-      // Should not throw when pressed (returns null)
-      expect(() => fireEvent.press(myWalletItem)).not.toThrow();
+      fireEvent.press(getByTestId('payment_history'));
+
+      expect(mockPush).toHaveBeenCalledWith('/(main)/(tabs)/wallet');
     });
 
     it('should handle Change Language press', () => {
@@ -248,7 +248,7 @@ describe('MyProfileScreen', () => {
       const { getByLabelText } = render(<MyProfileScreen />);
 
       expect(getByLabelText('Edit setting')).toBeTruthy();
-      expect(getByLabelText('My Wallet setting')).toBeTruthy();
+      expect(getByLabelText('Payment History setting')).toBeTruthy();
       expect(getByLabelText('Change Language setting')).toBeTruthy();
       expect(getByLabelText('Help Center setting')).toBeTruthy();
       expect(getByLabelText('Rate Movea App setting')).toBeTruthy();

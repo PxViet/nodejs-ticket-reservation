@@ -1,6 +1,11 @@
 import { Href, useRouter } from 'expo-router';
-import { useCallback, useMemo } from 'react';
-import { ScrollView, TouchableOpacity, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  ScrollView,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -13,41 +18,45 @@ import { DetailRow } from '@/components/DetailRow';
 import { Divider } from '@/components/Divider';
 import { HorizontalCard } from '@/components/HorizontalCard';
 import { Typo } from '@/components/Typo';
+import { PaymentMethodItem } from '@/features/payments/components/PaymentMethodItem';
 
 // Constants
-import {
-  ERROR_MESSAGES,
-  IS_WALLET_ENABLED,
-  PARAMS,
-  ROUTES,
-  Size,
-} from '@/constants';
+import { ERROR_MESSAGES, MESSAGES, ROUTES, Size } from '@/constants';
+import { CHECKOUT_STATUS } from '@/constants/status';
 
 // Hooks
-import { useConfirmReservation } from '@/features/booking/hooks/useReservations';
-import { useWallet } from '@/features/wallet/hooks/useWallet';
+import {
+  useAddCard,
+  useCheckout,
+  usePaymentMethods,
+} from '@/features/payments/hooks/usePayments';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useToastAlert } from '@/hooks/useToast';
 
 // Utils
-import { formatIDR, formatTime } from '@/utils/formats';
+import { formatTime, formatUSD } from '@/utils/formats';
 
 // Store
 import { useBookingStore } from '@/features/booking/store/booking';
 import { useLoadingStore } from '@/stores/loading';
-
-// Type
 import { useMovieStore } from '@/stores/movie';
 
-// Utils
+// Types
 import { Reservation } from '@/features/booking/schemas/reservation';
-import { cn } from '@/utils/cn';
+import type { PaymentMethod } from '@/features/payments/schemas/payments';
+
+// Error
+import { isAddCardCanceled } from '@/features/payments/error/payments';
 
 // Icons
-import { Wallet } from '@/icons/Wallet';
+import { AddIcon } from '@/icons/AddIcon';
 
 const StyledSafeAreaView = withUniwind(SafeAreaView);
 const StyledScrollView = withUniwind(ScrollView);
+
+// The holds these seats rested on are gone — the customer has to pick seats
+// again, so checkout sends them back rather than letting them retry.
+const SEATS_LOST_CODES = new Set(['SEAT_HOLD_EXPIRED', 'PAYMENT_REFUNDED']);
 
 const CheckoutScreen = () => {
   const router = useRouter();
@@ -70,7 +79,6 @@ const CheckoutScreen = () => {
     selectedShowtime,
     selectedSeats,
     holdIds,
-    reservationId,
     getTotalAmount,
   } = useBookingStore(
     useShallow(state => ({
@@ -78,31 +86,34 @@ const CheckoutScreen = () => {
       selectedShowtime: state.selectedShowtime,
       selectedSeats: state.selectedSeats,
       holdIds: state.holdIds,
-      reservationId: state.reservationId,
       getTotalAmount: state.getTotalAmount,
     })),
   );
 
-  const { data: wallet } = useWallet();
-  const { mutate: confirmReservation, isPending: isBooking } =
-    useConfirmReservation();
+  const {
+    data: paymentMethods = [],
+    isLoading: isLoadingCards,
+    isError: isCardsError,
+    refetch: refetchCards,
+  } = usePaymentMethods();
+  const { mutateAsync: addCard, isPending: isAddingCard } = useAddCard();
+  const { mutate: checkout, isPending: isPaying } = useCheckout();
 
-  // Calculate total price using booking store method (includes discount)
-  const totalPrice = getTotalAmount();
-
-  // Without a wallet there is nothing to pay from, so checkout is never gated.
-  const isEnoughBalance = useMemo(
-    () => !IS_WALLET_ENABLED || (wallet?.balance ?? 0) >= totalPrice,
-    [wallet, totalPrice],
+  // The customer's pick, falling back to their most recent card — or to the
+  // first card if the one they picked is no longer saved.
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const selectedCard = useMemo(
+    () =>
+      paymentMethods.find(card => card.id === selectedCardId) ??
+      paymentMethods[0],
+    [paymentMethods, selectedCardId],
   );
+
+  // Display only: the server prices the seats when it charges (BR-36).
+  const totalPrice = getTotalAmount();
 
   const orderRows = useMemo(
     () => [
-      {
-        label: 'ID Order',
-        value: reservationId || '209993282',
-        testID: 'order-id',
-      },
       {
         label: 'Hall',
         value: selectedShowtime?.hall?.name || '',
@@ -123,18 +134,16 @@ const CheckoutScreen = () => {
       },
       {
         label: 'Price',
-        value: `IDR ${selectedShowtime?.basePrice.toLocaleString(
-          'id-ID',
-        )} x ${selectedSeats.length}`,
+        value: `${formatUSD(selectedShowtime?.basePrice ?? 0)} x ${selectedSeats.length}`,
         testID: 'order-price',
       },
       {
         label: 'Total',
-        value: formatIDR(totalPrice),
+        value: formatUSD(totalPrice),
         testID: 'order-total',
       },
     ],
-    [reservationId, selectedShowtime, selectedSeats, totalPrice],
+    [selectedShowtime, selectedSeats, totalPrice],
   );
 
   /**
@@ -201,10 +210,32 @@ const CheckoutScreen = () => {
     ],
   );
 
-  const handleTopUp = useCallback(() => {
-    // Pass fromCheckout param to indicate user came from checkout flow
-    router.push(`${ROUTES.TOP_UP}?${PARAMS.FROM_CHECKOUT}=true` as Href);
-  }, [router]);
+  const handleSelectCard = useCallback((card: PaymentMethod) => {
+    setSelectedCardId(card.id);
+  }, []);
+
+  // PaymentSheet does not say which card it saved, so the new one is the id
+  // that was not in the list before — selected straight away.
+  const handleAddCard = useCallback(async () => {
+    const knownIds = new Set(paymentMethods.map(card => card.id));
+
+    try {
+      await addCard();
+    } catch (error) {
+      if (!isAddCardCanceled(error)) {
+        toast.error((error as Error).message || ERROR_MESSAGES.ADD_CARD_FAILED);
+      }
+      return;
+    }
+
+    toast.success(MESSAGES.ADD_CARD_SUCCESS);
+
+    const { data: refreshed = [] } = await refetchCards();
+    const added = refreshed.find(card => !knownIds.has(card.id));
+    if (added) {
+      setSelectedCardId(added.id);
+    }
+  }, [paymentMethods, addCard, refetchCards, toast]);
 
   const handleCheckout = useCallback(() => {
     if (holdIds.length === 0) {
@@ -212,39 +243,108 @@ const CheckoutScreen = () => {
       return;
     }
 
-    showLoading('Confirming your reservation...');
+    if (!selectedCard) {
+      toast.error(ERROR_MESSAGES.SELECT_CARD_REQUIRED);
+      return;
+    }
 
-    confirmReservation(holdIds, {
-      onSuccess: async reservation => {
-        // Schedule push notifications
-        await scheduleNotifications(reservation);
+    showLoading('Processing your payment...');
 
-        clearSelectedMovie();
+    checkout(
+      { holdIds, paymentMethodId: selectedCard.id },
+      {
+        onSuccess: async outcome => {
+          clearSelectedMovie();
 
-        // Show success message
-        toast.success(
-          'Booking confirmed! You will receive reminders before the show.',
-        );
+          if (outcome.status === CHECKOUT_STATUS.PROCESSING) {
+            // Stripe has not settled yet — the webhook will confirm the seats.
+            toast.success(MESSAGES.CHECKOUT_PROCESSING);
+            router.dismissAll();
+            router.replace(ROUTES.PAYMENTS as Href);
+            return;
+          }
 
-        // Navigate to success screen
-        router.dismissAll();
-        router.replace(ROUTES.CHECKOUT_SUCCESS as Href);
+          // Schedule push notifications
+          await scheduleNotifications(outcome.reservation);
+
+          // Show success message
+          toast.success(
+            'Booking confirmed! You will receive reminders before the show.',
+          );
+
+          // Navigate to success screen
+          router.dismissAll();
+          router.replace(ROUTES.CHECKOUT_SUCCESS as Href);
+        },
+        onError: error => {
+          toast.error(error.message || ERROR_MESSAGES.CHECKOUT_FAILED);
+
+          if (error.code && SEATS_LOST_CODES.has(error.code)) {
+            router.back();
+          }
+        },
+        onSettled: hideLoading,
       },
-      onError: (error: Error) => {
-        toast.error(error.message || ERROR_MESSAGES.CHECKOUT_FAILED);
-      },
-      onSettled: hideLoading,
-    });
+    );
   }, [
     holdIds,
+    selectedCard,
     router,
-    confirmReservation,
+    checkout,
     toast,
     showLoading,
     hideLoading,
     scheduleNotifications,
     clearSelectedMovie,
   ]);
+
+  const renderCards = () => {
+    if (isLoadingCards) {
+      return (
+        <View className="py-6 items-center" testID="payment-methods-loading">
+          <ActivityIndicator size="small" />
+        </View>
+      );
+    }
+
+    if (isCardsError) {
+      return (
+        <View className="gap-3 items-center" accessibilityRole="alert">
+          <Typo size="sm" className="text-text-error text-center">
+            {ERROR_MESSAGES.PAYMENT_METHODS_LOAD_FAILED}
+          </Typo>
+          <Button
+            size={Size.EXTRA_SMALL}
+            title="Retry"
+            onPress={refetchCards}
+            testID="payment-methods-retry"
+            accessibilityLabel="Retry loading saved cards"
+          />
+        </View>
+      );
+    }
+
+    if (paymentMethods.length === 0) {
+      return (
+        <Typo
+          size="sm"
+          className="text-gradient-medium"
+          testID="payment-methods-empty"
+        >
+          Add a card to pay for your tickets.
+        </Typo>
+      );
+    }
+
+    return paymentMethods.map(card => (
+      <PaymentMethodItem
+        key={card.id}
+        paymentMethod={card}
+        isSelected={card.id === selectedCard?.id}
+        onSelect={handleSelectCard}
+      />
+    ));
+  };
 
   return (
     <StyledSafeAreaView
@@ -254,7 +354,7 @@ const CheckoutScreen = () => {
     >
       <StyledScrollView
         className="flex-1 bg-dark-blue"
-        contentContainerClassName="px-6 flex-1 justify-between pb-6"
+        contentContainerClassName="px-6 grow justify-between pb-6"
         showsVerticalScrollIndicator={false}
       >
         <View>
@@ -285,54 +385,44 @@ const CheckoutScreen = () => {
 
           <Divider />
 
-          {/* Wallet Information */}
-          {IS_WALLET_ENABLED && (
-            <View className="my-6">
-              <DetailRow
-                label="Your Wallet"
-                value={formatIDR(wallet?.balance || 0)}
-                valueClassName={cn(
-                  'font-montserrat-semibold',
-                  isEnoughBalance ? 'text-primary' : 'text-text-error',
-                )}
-                testID="wallet-balance"
-              />
-            </View>
-          )}
+          {/* Payment Method Section — ADR-018 */}
+          <View className="my-8 gap-4" accessibilityRole="radiogroup">
+            <Typo size="lg" weight="medium" accessibilityRole="header">
+              Payment Method
+            </Typo>
+
+            {renderCards()}
+
+            <TouchableOpacity
+              onPress={handleAddCard}
+              disabled={isAddingCard || isPaying}
+              testID="add-card-button"
+              accessibilityRole="button"
+              accessibilityLabel="Add new card"
+              accessibilityHint="Opens Stripe to save a new card"
+              accessibilityState={{ disabled: isAddingCard || isPaying }}
+              className="flex-row items-center justify-center gap-2 p-4 rounded-lg border border-dashed border-overlay-soft"
+            >
+              {isAddingCard ? <ActivityIndicator size="small" /> : <AddIcon />}
+              <Typo size="sm" weight="medium">
+                Add new card
+              </Typo>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <Button
-          title="Checkout"
+          title={totalPrice > 0 ? `Pay ${formatUSD(totalPrice)}` : 'Checkout'}
           onPress={handleCheckout}
           testID="checkout-button"
           accessibilityLabel="Checkout button"
-          accessibilityHint="Tap to checkout your ticket"
+          accessibilityHint="Tap to pay for your tickets"
           size={Size.LARGE}
-          disabled={isBooking || !isEnoughBalance}
+          disabled={
+            isPaying || isAddingCard || !selectedCard || holdIds.length === 0
+          }
         />
       </StyledScrollView>
-      {!isEnoughBalance && (
-        <View className="absolute bottom-36 right-6">
-          <View className="items-center">
-            <TouchableOpacity
-              onPress={handleTopUp}
-              className="justify-center p-2.5 items-center rounded-full bg-linear-to-r from-gradient-blue-start to-gradient-blue-end"
-              accessibilityRole="button"
-              accessibilityLabel="Top up wallet"
-              accessibilityHint="Navigate to top up wallet screen"
-            >
-              <Wallet />
-            </TouchableOpacity>
-          </View>
-          <Typo
-            size="sm"
-            weight="semibold"
-            className="text-white whitespace-nowrap mt-1"
-          >
-            Top Up Now!
-          </Typo>
-        </View>
-      )}
     </StyledSafeAreaView>
   );
 };

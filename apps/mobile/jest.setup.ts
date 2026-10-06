@@ -84,3 +84,8 @@ jest.mock('expo-image-manipulator', () => ({
   },
   SaveFormat: { JPEG: 'jpeg' },
 }));
+
+// Stripe's native module is unavailable under Jest; the SDK ships a mock.
+jest.mock('@stripe/stripe-react-native', () =>
+  require('@stripe/stripe-react-native/jest/mock.js'),
+);

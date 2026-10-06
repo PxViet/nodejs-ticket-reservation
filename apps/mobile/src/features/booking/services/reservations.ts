@@ -7,7 +7,6 @@ import { codeOf, messageOf, toQuery } from '@/services/api/helpers';
 
 // Types
 import type {
-  ConfirmReservationRequest as ApiConfirmReservationRequest,
   PaginatedReservations,
   Reservation as ApiReservation,
   ReservationSummary as ApiReservationSummary,
@@ -70,19 +69,8 @@ export class ReservationsServiceEffect {
     return ReservationsServiceEffect.instance;
   }
 
-  // No payment step (the API has no wallet/payment module yet) — this simply
-  // turns held seats into confirmed tickets.
-  confirmReservation = (holdIds: string[]) =>
-    Effect.tryPromise({
-      try: async () =>
-        apiRequest<ApiReservation>('/reservations', {
-          method: 'POST',
-          body: { holdIds } satisfies ApiConfirmReservationRequest,
-          auth: true,
-        }) as Promise<Reservation>,
-      catch: (error: unknown) =>
-        ReservationError.confirmFailed(messageOf(error), codeOf(error)),
-    });
+  // Held seats become a reservation only by paying for them —
+  // `POST /reservations/checkout`, in `@/features/payments` (ADR-018).
 
   getMinePaginated = (page = 1, status?: ReservationStatus) =>
     Effect.tryPromise({

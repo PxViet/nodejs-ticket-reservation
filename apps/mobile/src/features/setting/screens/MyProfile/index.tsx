@@ -26,7 +26,7 @@ const StyledScrollView = withUniwind(ScrollView);
 
 enum SettingKey {
   Edit = 'edit',
-  MyWallet = 'my_wallet',
+  PaymentHistory = 'payment_history',
   ChangeLanguage = 'change_language',
   HelpCenter = 'help_center',
   RateApp = 'rate_app',
@@ -44,7 +44,7 @@ const MyProfileScreen = () => {
   const SETTING_ACTIONS: Record<SettingKey, () => void> = useMemo(
     () => ({
       [SettingKey.Edit]: () => router.push(ROUTES.PROFILE_EDIT),
-      [SettingKey.MyWallet]: () => null,
+      [SettingKey.PaymentHistory]: () => router.push(ROUTES.PAYMENTS),
       [SettingKey.ChangeLanguage]: () => null,
       [SettingKey.HelpCenter]: () => () => null,
       [SettingKey.RateApp]: () => {

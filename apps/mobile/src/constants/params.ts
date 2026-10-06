@@ -1,5 +1,3 @@
-const PARAMS = {
-  FROM_CHECKOUT: 'fromCheckout',
-} as const;
+const PARAMS = {} as const;
 
 export { PARAMS };

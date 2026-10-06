@@ -248,7 +248,7 @@ exports[`MyProfileScreen Snapshot should match snapshot 1`] = `
         </View>
         <View
           accessibilityHint="Tap to open setting"
-          accessibilityLabel="My Wallet setting"
+          accessibilityLabel="Payment History setting"
           accessibilityState={
             {
               "busy": undefined,
@@ -281,7 +281,7 @@ exports[`MyProfileScreen Snapshot should match snapshot 1`] = `
               "opacity": 1,
             }
           }
-          testID="my_wallet"
+          testID="payment_history"
         >
           <View
             className="flex-row justify-start items-center"
@@ -420,7 +420,7 @@ exports[`MyProfileScreen Snapshot should match snapshot 1`] = `
               className="text-white text-base font-montserrat-regular ml-3"
               maxFontSizeMultiplier={1.2}
             >
-              My Wallet
+              Payment History
             </Text>
           </View>
           <View

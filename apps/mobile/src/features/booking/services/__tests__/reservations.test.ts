@@ -99,41 +99,6 @@ describe('ReservationsService', () => {
     );
   });
 
-  describe('confirmReservation', () => {
-    it('posts the hold ids and returns the confirmed reservation', async () => {
-      mockApiRequest.mockResolvedValue(API_RESERVATION);
-
-      const reservation = await runEffectForQuery(
-        reservationsServiceEffect.confirmReservation(['hold1']),
-      );
-
-      expect(mockApiRequest).toHaveBeenCalledWith('/reservations', {
-        method: 'POST',
-        body: { holdIds: ['hold1'] },
-        auth: true,
-      });
-      expect(reservation).toMatchObject({
-        id: 'res1',
-        reservationNumber: 'RSV-001',
-      });
-    });
-
-    it('carries the API errorCode onto the tagged error', async () => {
-      mockApiRequest.mockRejectedValue(
-        new ApiError(409, 'HOLD_EXPIRED', 'hold expired'),
-      );
-
-      await expect(
-        runEffectForQuery(
-          reservationsServiceEffect.confirmReservation(['hold1']),
-        ),
-      ).rejects.toMatchObject({
-        message: 'hold expired',
-        errorCode: 'HOLD_EXPIRED',
-      });
-    });
-  });
-
   describe('getMinePaginated', () => {
     it('fetches a page and enriches each row with its showtime', async () => {
       mockApiRequest.mockImplementation(

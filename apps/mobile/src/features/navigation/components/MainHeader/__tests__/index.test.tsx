@@ -66,9 +66,9 @@ describe('MainHeader', () => {
 
   it('displays different title for different pathname', () => {
     const { getByText } = render(
-      <MainHeader {...headerProps} options={{ title: 'Wallet' }} />,
+      <MainHeader {...headerProps} options={{ title: 'Payments' }} />,
     );
-    expect(getByText('My Wallet')).toBeTruthy();
+    expect(getByText('Payment History')).toBeTruthy();
   });
 
   it('displays title for my-ticket pathname', () => {
