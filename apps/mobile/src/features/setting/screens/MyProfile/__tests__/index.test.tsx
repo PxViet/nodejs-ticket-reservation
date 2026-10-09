@@ -29,6 +29,7 @@ const mockAlert = jest.spyOn(Alert, 'alert');
 
 // Control loading state
 let mockIsLoading = false;
+let mockIsAdmin = false;
 
 jest.mock('expo-router', () => ({
   router: {
@@ -39,6 +40,7 @@ jest.mock('expo-router', () => ({
 jest.mock('@/features/auth/hooks/useAuth', () => ({
   useAuth: () => ({
     signOut: mockSignOut,
+    isAdmin: mockIsAdmin,
     user: {
       app_metadata: {
         provider: 'email',
@@ -91,6 +93,7 @@ describe('MyProfileScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockIsLoading = false;
+    mockIsAdmin = false;
     mockRegisterForPushNotifications.mockResolvedValue('mock-token');
   });
 
@@ -134,6 +137,18 @@ describe('MyProfileScreen', () => {
       expect(getByText('Rate Movea App')).toBeTruthy();
       expect(getByText('Change Password')).toBeTruthy();
       expect(getByText('Logout')).toBeTruthy();
+    });
+  });
+
+  describe('Admin role', () => {
+    it('should hide Payment History for an admin', () => {
+      mockIsAdmin = true;
+
+      const { queryByTestId, getByTestId } = render(<MyProfileScreen />);
+
+      expect(queryByTestId('payment_history')).toBeNull();
+      expect(getByTestId('edit')).toBeTruthy();
+      expect(getByTestId('logout')).toBeTruthy();
     });
   });
 

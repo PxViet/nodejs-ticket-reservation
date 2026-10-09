@@ -101,40 +101,41 @@ export const DAY_LABELS = [
 export const DAY_COUNT = 5;
 export const MAX_MINUTES = 23 * 60;
 
-export const SETTING_ITEMS = [
-  {
+// Keyed rather than listed so a role can drop an item by name (MyProfile).
+export const SETTING_ITEMS = {
+  EDIT: {
     TITLE: 'Edit',
     ICON: EditProfileIcon,
     TEST_ID: 'edit',
   },
-  {
+  PAYMENT_HISTORY: {
     TITLE: 'Payment History',
     ICON: MyWalletIcon,
     TEST_ID: 'payment_history',
   },
-  {
+  CHANGE_LANGUAGE: {
     TITLE: 'Change Language',
     ICON: ChangeLanguageIcon,
     TEST_ID: 'change_language',
   },
-  {
+  HELP_CENTER: {
     TITLE: 'Help Center',
     ICON: HelpCenterIcon,
     TEST_ID: 'help_center',
   },
-  {
+  RATE_APP: {
     TITLE: 'Rate Movea App',
     ICON: LikeIcon,
     TEST_ID: 'rate_app',
   },
-  {
+  CHANGE_PASSWORD: {
     TITLE: 'Change Password',
     ICON: LockIcon,
     TEST_ID: 'change_password',
   },
-  {
+  LOGOUT: {
     TITLE: 'Logout',
     ICON: LogoutIcon,
     TEST_ID: 'logout',
   },
-];
+};

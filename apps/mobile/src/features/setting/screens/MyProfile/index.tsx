@@ -24,6 +24,9 @@ import { UserProfileIcon } from '@/icons/UserProfileIcon';
 const StyledSafeAreaView = withUniwind(SafeAreaView);
 const StyledScrollView = withUniwind(ScrollView);
 
+const { PAYMENT_HISTORY: _paymentHistory, ...ADMIN_SETTING_ITEMS } =
+  SETTING_ITEMS;
+
 enum SettingKey {
   Edit = 'edit',
   PaymentHistory = 'payment_history',
@@ -36,10 +39,11 @@ enum SettingKey {
 
 const MyProfileScreen = () => {
   const { data: profile, isLoading: isProfileLoading } = useProfile();
-  const { signOut } = useAuth();
+  const { signOut, isAdmin } = useAuth();
 
-  // Every account is email/password now, so every setting is visible.
-  const visibleSettings = SETTING_ITEMS;
+  const visibleSettings = Object.values(
+    isAdmin ? ADMIN_SETTING_ITEMS : SETTING_ITEMS,
+  );
 
   const SETTING_ACTIONS: Record<SettingKey, () => void> = useMemo(
     () => ({
