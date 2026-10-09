@@ -76,7 +76,10 @@ const MovieScreen = () => {
     genre = [],
     rating,
     synopsis = '',
+    status,
   } = movie || {};
+
+  const isBookable = status === 'now_playing';
 
   const contentItems = useMemo<ContentItem[]>(() => {
     if (activeTab === DETAIL_MOVIE_TABS[0]?.id) {
@@ -247,15 +250,17 @@ const MovieScreen = () => {
       />
 
       {/* Floating Button */}
-      <View className="absolute bottom-0 left-0 right-0 px-6 pb-16.5 pt-4 bg-linear-to-t from-bg-quaternary via-bg-quaternary to-transparent">
-        <Button
-          onPress={handleNavigateToSelectCinema}
-          title="Booking Movie"
-          testID="booking-button"
-          accessibilityLabel="Booking Movie"
-          accessibilityHint="Navigate to select cinema screen"
-        />
-      </View>
+      {isBookable && (
+        <View className="absolute bottom-0 left-0 right-0 px-6 pb-16.5 pt-4 bg-linear-to-t from-bg-quaternary via-bg-quaternary to-transparent">
+          <Button
+            onPress={handleNavigateToSelectCinema}
+            title="Booking Movie"
+            testID="booking-button"
+            accessibilityLabel="Booking Movie"
+            accessibilityHint="Navigate to select cinema screen"
+          />
+        </View>
+      )}
     </StyledSafeAreaView>
   );
 };
