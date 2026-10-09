@@ -49,8 +49,6 @@ import { AddIcon } from '@/icons/AddIcon';
 
 const StyledSafeAreaView = withUniwind(SafeAreaView);
 
-// The holds these seats rested on are gone — the customer has to pick seats
-// again, so checkout sends them back rather than letting them retry.
 const SEATS_LOST_CODES = new Set(['SEAT_HOLD_EXPIRED', 'PAYMENT_REFUNDED']);
 
 const CheckoutScreen = () => {

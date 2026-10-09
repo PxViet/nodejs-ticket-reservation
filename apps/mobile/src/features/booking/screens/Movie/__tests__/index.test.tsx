@@ -21,6 +21,7 @@ const baseMovie = {
   genre: ['Action', 'Drama'],
   rating: 4.5,
   synopsis: 'A test movie synopsis',
+  status: 'now_playing',
 };
 
 let mockMovieData: any = { ...baseMovie };
@@ -204,6 +205,36 @@ describe('MovieScreen', () => {
       });
       expect(getByTestId('tabs')).toBeTruthy();
       expect(getByTestId('booking-button')).toBeTruthy();
+    });
+  });
+
+  describe('Booking availability', () => {
+    it('hides the booking button for a coming soon movie', () => {
+      mockMovieData = { ...baseMovie, status: 'coming_soon' };
+      const { queryByTestId } = render(<MovieScreen />, {
+        wrapper: createWrapper(),
+      });
+      expect(queryByTestId('booking-button')).toBeNull();
+    });
+
+    it('still shows the details of a coming soon movie', () => {
+      mockMovieData = { ...baseMovie, status: 'coming_soon' };
+      const { getByTestId } = render(<MovieScreen />, {
+        wrapper: createWrapper(),
+      });
+      expect(getByTestId('horizontal-card-title').props.children).toBe(
+        'Test Movie',
+      );
+      expect(getByTestId('expandable-container')).toBeTruthy();
+    });
+
+    it('hides the booking button while the movie is loading', () => {
+      mockIsLoading = true;
+      mockMovieData = null;
+      const { queryByTestId } = render(<MovieScreen />, {
+        wrapper: createWrapper(),
+      });
+      expect(queryByTestId('booking-button')).toBeNull();
     });
   });
 
