@@ -1,7 +1,7 @@
 import { effectTsResolver } from '@hookform/resolvers/effect-ts';
 import { memo, useCallback, useRef } from 'react';
 import { Controller, useForm, type Resolver } from 'react-hook-form';
-import { TextInput, View } from 'react-native';
+import { type TextInputInstance, View } from 'react-native';
 
 // Components
 import { Button } from '@/components/Button';
@@ -27,11 +27,11 @@ interface EditProfileProps {
 
 export const EditProfileForm = memo(
   ({ isPending, userInfo, onSubmit }: EditProfileProps) => {
-    const firstNameRef = useRef<TextInput>(null);
-    const lastNameRef = useRef<TextInput>(null);
-    const emailRef = useRef<TextInput>(null);
-    const addressRef = useRef<TextInput>(null);
-    const phoneNumberRef = useRef<TextInput>(null);
+    const firstNameRef = useRef<TextInputInstance>(null);
+    const lastNameRef = useRef<TextInputInstance>(null);
+    const emailRef = useRef<TextInputInstance>(null);
+    const addressRef = useRef<TextInputInstance>(null);
+    const phoneNumberRef = useRef<TextInputInstance>(null);
 
     const {
       control,

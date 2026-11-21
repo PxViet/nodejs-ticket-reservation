@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
-import { Dimensions, FlexStyle, View } from 'react-native';
+import { Dimensions, View, type ViewStyle } from 'react-native';
 import Animated, { useSharedValue } from 'react-native-reanimated';
 import Carousel from 'react-native-reanimated-carousel';
 
@@ -33,7 +33,7 @@ const VARIANTS_MAP: Record<
     offset: number;
     width: number;
     height: number;
-    justifyContent: FlexStyle['justifyContent'];
+    justifyContent: ViewStyle['justifyContent'];
   }
 > = {
   vertical: {

@@ -14,6 +14,7 @@ import {
   View,
   type NativeSyntheticEvent,
   type TargetedEvent,
+  type TextInputInstance,
   type TextInputProps,
 } from 'react-native';
 
@@ -37,7 +38,7 @@ export interface InputProps extends Omit<TextInputProps, 'placeholder'> {
   onChangeText: (text: string) => void;
   containerClassName?: string;
   innerClassName?: string;
-  ref?: Ref<TextInput>;
+  ref?: Ref<TextInputInstance>;
 }
 
 export const Input = memo(
@@ -55,7 +56,7 @@ export const Input = memo(
     ref,
     ...rest
   }: InputProps) => {
-    const inputRef = useRef<TextInput>(null);
+    const inputRef = useRef<TextInputInstance>(null);
     const [isFocused, setIsFocused] = useState(false);
 
     // animated value for the label position and size

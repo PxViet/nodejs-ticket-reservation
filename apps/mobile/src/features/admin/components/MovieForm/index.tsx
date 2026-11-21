@@ -2,7 +2,7 @@ import { effectTsResolver } from '@hookform/resolvers/effect-ts';
 import { Image } from 'expo-image';
 import { memo, useRef } from 'react';
 import { Controller, useForm, type Resolver } from 'react-hook-form';
-import { TextInput, TouchableOpacity, View } from 'react-native';
+import { type TextInputInstance, TouchableOpacity, View } from 'react-native';
 import { withUniwind } from 'uniwind';
 
 // Components
@@ -52,10 +52,10 @@ export const MovieForm = memo(
   }: MovieFormProps) => {
     const { data: genres = [] } = useGenres();
 
-    const durationRef = useRef<TextInput>(null);
-    const languageRef = useRef<TextInput>(null);
-    const releaseDateRef = useRef<TextInput>(null);
-    const ratingRef = useRef<TextInput>(null);
+    const durationRef = useRef<TextInputInstance>(null);
+    const languageRef = useRef<TextInputInstance>(null);
+    const releaseDateRef = useRef<TextInputInstance>(null);
+    const ratingRef = useRef<TextInputInstance>(null);
 
     const {
       control,
