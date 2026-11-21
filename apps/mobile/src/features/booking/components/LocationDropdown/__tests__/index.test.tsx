@@ -21,7 +21,7 @@ jest.mock('expo-location', () => ({
 // Mock uniwind
 jest.mock('uniwind', () => ({
   useResolveClassNames: (classNames: string) => ({ className: classNames }),
-  withUniwind: (Component: typeof Text) => Component,
+  withUniwind: <T,>(Component: T) => Component,
 }));
 
 describe('LocationDropdown Component', () => {
