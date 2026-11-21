@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Expo
 import { router } from 'expo-router';
@@ -19,7 +20,6 @@ import { useProfile } from '@/features/setting/hooks/useProfile';
 
 // Utils
 import { cn } from '@/utils/cn';
-import { STATUS_BAR_HEIGHT } from '@/utils/platform';
 import { Skeleton } from '@/components/Skeleton';
 
 export interface MainHeaderProps {
@@ -32,9 +32,11 @@ export interface MainHeaderProps {
 export const MainHeader = ({
   isLeftTitle,
   isRenderUserProfile = true,
-  topInset = STATUS_BAR_HEIGHT,
+  topInset,
   ...props
 }: MainHeaderProps) => {
+  // Live safe-area inset, not Constants.statusBarHeight (see ScreenHeader).
+  const insets = useSafeAreaInsets();
   const { data: user, isLoading } = useProfile();
 
   const title = useMemo(
@@ -50,7 +52,7 @@ export const MainHeader = ({
     <View
       className="bg-bg-primary"
       style={{
-        paddingTop: topInset,
+        paddingTop: topInset ?? insets.top,
       }}
     >
       <View className="flex-row items-center justify-between px-6 py-8">

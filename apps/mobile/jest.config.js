@@ -3,7 +3,16 @@ module.exports = {
   // SDK 57 / reanimated 4.5: without this, Jest resolves worklets' native
   // module bindings (NativeWorklets.native.ts) instead of a jest-safe
   // variant, which crashes on import outside a real native runtime.
-  resolver: 'react-native-worklets/jest/resolver.js',
+  // SDK 58 / reanimated 4.7: reanimated's resolver wraps the worklets one and
+  // also serves reanimated's web-only initializers, which JSReanimated needs.
+  resolver: 'react-native-reanimated/jest/resolver.js',
+  // jest-expo's default list, plus @shopify/flash-list: since 2.3 its dist is
+  // ESM, which Jest cannot require untransformed.
+  transformIgnorePatterns: [
+    '/node_modules/(?!(.pnpm|react-native|@react-native|@react-native-community|expo|@expo|@expo-google-fonts|react-navigation|@react-navigation|@sentry/react-native|native-base|standard-navigation|@shopify/flash-list))',
+    '/node_modules/react-native-reanimated/plugin/',
+    '/node_modules/@react-native/babel-preset/',
+  ],
   // Raised from Jest's 5s default when this app moved into the workspace
   // (ADR-015). Workers now share a root node_modules holding both apps' trees,
   // and under full parallelism the slowest test here (TopUp, Effect validation

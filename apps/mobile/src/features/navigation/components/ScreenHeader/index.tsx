@@ -1,5 +1,6 @@
 import { ComponentType } from 'react';
 import { TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SvgProps } from 'react-native-svg';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -18,7 +19,6 @@ import { ROUTES, SCREENS } from '@/constants';
 // Utils
 import { cn } from '@/utils/cn';
 import { getHeaderTitle, isScreenPathname } from '@/utils/convert';
-import { STATUS_BAR_HEIGHT } from '@/utils/platform';
 
 // Stores
 import { useBookingStore } from '@/features/booking/store/booking';
@@ -37,8 +37,12 @@ export const ScreenHeader = ({
   showBackButton = true,
   rightIcon,
   leftIcon,
-  topInset = STATUS_BAR_HEIGHT,
+  topInset,
 }: ScreenHeaderProps) => {
+  // SDK 58: Constants.statusBarHeight is read once at launch from a deprecated
+  // iOS API and comes back 0 under iOS 26 scenes, putting the header under the
+  // status bar. The safe-area inset is measured live.
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -92,7 +96,10 @@ export const ScreenHeader = ({
   const RightIcon = rightIcon;
 
   return (
-    <View className="bg-bg-primary" style={{ paddingTop: topInset }}>
+    <View
+      className="bg-bg-primary"
+      style={{ paddingTop: topInset ?? insets.top }}
+    >
       <View className="flex-row justify-between px-6 py-6">
         {/* Left Section */}
         <View className={cn('flex-1 items-start')}>

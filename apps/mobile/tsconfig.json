@@ -15,7 +15,7 @@
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "noUncheckedIndexedAccess": true,
-    "baseUrl": ".",
+    "types": ["node", "jest"],
     "plugins": [
       {
         "name": "@effect/language-service"

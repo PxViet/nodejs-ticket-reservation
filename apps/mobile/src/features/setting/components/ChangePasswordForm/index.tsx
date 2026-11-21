@@ -2,7 +2,7 @@ import { effectTsResolver } from '@hookform/resolvers/effect-ts';
 import { useRouter } from 'expo-router';
 import { memo, useCallback, useRef } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
-import { TextInput, View } from 'react-native';
+import { type TextInputInstance, View } from 'react-native';
 
 // Components
 import { Button } from '@/components/Button';
@@ -26,9 +26,9 @@ export const ChangePasswordForm = memo(() => {
   const router = useRouter();
   const { mutate: updatePassword, isPending } = useUpdatePassword();
 
-  const currentPasswordRef = useRef<TextInput>(null);
-  const newPasswordRef = useRef<TextInput>(null);
-  const confirmPasswordRef = useRef<TextInput>(null);
+  const currentPasswordRef = useRef<TextInputInstance>(null);
+  const newPasswordRef = useRef<TextInputInstance>(null);
+  const confirmPasswordRef = useRef<TextInputInstance>(null);
 
   const {
     control,

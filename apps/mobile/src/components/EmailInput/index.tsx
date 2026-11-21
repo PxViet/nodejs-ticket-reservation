@@ -5,7 +5,7 @@ import {
   type FieldValues,
   type Path,
 } from 'react-hook-form';
-import { type TextInput } from 'react-native';
+import { type TextInputInstance } from 'react-native';
 
 // Components
 import { Input, type InputReturnType } from '@/components/Input';
@@ -15,7 +15,7 @@ interface EmailInputProps<T extends FieldValues> {
   name: Path<T>;
   label?: string;
   testID: string;
-  ref?: Ref<TextInput>;
+  ref?: Ref<TextInputInstance>;
   returnKeyType?: InputReturnType;
   onSubmitEditing?: () => void;
 }

@@ -1,7 +1,7 @@
 import { effectTsResolver } from '@hookform/resolvers/effect-ts';
 import { useCallback, useRef } from 'react';
 import { Resolver, useForm } from 'react-hook-form';
-import { TextInput, View } from 'react-native';
+import { type TextInputInstance, View } from 'react-native';
 
 // Components
 import { Button } from '@/components/Button';
@@ -22,8 +22,8 @@ import { useToastAlert } from '@/hooks/useToast';
 export const ResetPasswordForm = () => {
   const toast = useToastAlert();
 
-  const newPasswordRef = useRef<TextInput>(null);
-  const confirmPasswordRef = useRef<TextInput>(null);
+  const newPasswordRef = useRef<TextInputInstance>(null);
+  const confirmPasswordRef = useRef<TextInputInstance>(null);
 
   const {
     control,

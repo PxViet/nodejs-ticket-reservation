@@ -1,4 +1,4 @@
-import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { memo } from 'react';
 import { View } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
@@ -30,7 +30,8 @@ export const NavigationTabBar = memo(
     disabledRoutes,
     state,
     descriptors,
-    navigation,
+    emitter,
+    navigateToTab,
     bottomInset = 24,
     bottomTabs = NAVIGATION_BOTTOM_TABS,
   }: CustomTabBarProps) => {
@@ -58,7 +59,8 @@ export const NavigationTabBar = memo(
               options={options || {}}
               isFocused={isFocused}
               isDisabled={isDisabled}
-              navigation={navigation}
+              emitter={emitter}
+              navigateToTab={navigateToTab}
               colorActive={colorActive.color}
               colorInactive={colorIconInActive.color}
               bottomTabs={bottomTabs}

@@ -1,6 +1,6 @@
 import { memo, useCallback, useRef } from 'react';
 import { Controller, Resolver, useForm } from 'react-hook-form';
-import { TextInput, View } from 'react-native';
+import { type TextInputInstance, View } from 'react-native';
 import { effectTsResolver } from '@hookform/resolvers/effect-ts';
 
 // Components
@@ -25,11 +25,11 @@ interface SignUpFormProps {
 }
 
 export const SignUpForm = memo(({ isPending, onSubmit }: SignUpFormProps) => {
-  const firstNameRef = useRef<TextInput>(null);
-  const lastNameRef = useRef<TextInput>(null);
-  const emailRef = useRef<TextInput>(null);
-  const passwordRef = useRef<TextInput>(null);
-  const confirmPasswordRef = useRef<TextInput>(null);
+  const firstNameRef = useRef<TextInputInstance>(null);
+  const lastNameRef = useRef<TextInputInstance>(null);
+  const emailRef = useRef<TextInputInstance>(null);
+  const passwordRef = useRef<TextInputInstance>(null);
+  const confirmPasswordRef = useRef<TextInputInstance>(null);
 
   const {
     control,

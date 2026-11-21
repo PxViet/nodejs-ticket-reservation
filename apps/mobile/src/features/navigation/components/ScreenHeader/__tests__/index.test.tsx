@@ -48,8 +48,9 @@ jest.mock('@/utils/convert', () => ({
   ),
 }));
 
-jest.mock('@/utils/platform', () => ({
-  STATUS_BAR_HEIGHT: 44,
+// Mock react-native-safe-area-context
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 44, bottom: 0, left: 0, right: 0 }),
 }));
 
 // Mock constants

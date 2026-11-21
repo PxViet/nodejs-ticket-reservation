@@ -115,6 +115,10 @@ const AdminReportsScreen = () => {
     (active.data?.pages ?? []) as { data: ReportRow[] }[]
   ).flatMap(page => page.data);
 
+  const handleRefresh = useCallback(() => {
+    active.refetch();
+  }, [active]);
+
   const handleReachEnd = useCallback(() => {
     if (active.hasNextPage && !active.isFetchingNextPage) {
       active.fetchNextPage();
@@ -169,7 +173,7 @@ const AdminReportsScreen = () => {
           refreshControl={
             <RefreshControl
               refreshing={active.isRefetching}
-              onRefresh={active.refetch}
+              onRefresh={handleRefresh}
               accessibilityLabel="Pull to refresh report"
             />
           }

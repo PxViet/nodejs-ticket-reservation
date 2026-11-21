@@ -18,7 +18,7 @@ jest.mock('react-native-reanimated', () => ({
 // Mock uniwind
 jest.mock('uniwind', () => ({
   useResolveClassNames: (classNames: string) => ({ className: classNames }),
-  withUniwind: (Component: typeof Text) => Component,
+  withUniwind: <T>(Component: T) => Component,
   useUniwind: () => ({
     theme: 'dark',
   }),
