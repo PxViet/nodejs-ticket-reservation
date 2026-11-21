@@ -74,6 +74,10 @@ const SearchScreen = () => {
     });
   }, [movies, selectedRating]);
 
+  const handleRefresh = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
   const handleMoviePress = useCallback(
     (movieId: string) => {
       router.push(ROUTES.MOVIE_DETAILS(movieId));
@@ -287,6 +291,7 @@ const SearchScreen = () => {
       </View>
 
       <FlashList
+        testID="search-movies-list"
         data={displayedMovies}
         renderItem={renderMovie}
         keyExtractor={keyExtractor}
@@ -302,7 +307,7 @@ const SearchScreen = () => {
         refreshControl={
           <RefreshControl
             refreshing={isRefetching}
-            onRefresh={refetch}
+            onRefresh={handleRefresh}
             accessibilityLabel="Pull to refresh movies"
           />
         }

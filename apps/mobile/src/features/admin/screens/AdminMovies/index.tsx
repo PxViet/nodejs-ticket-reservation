@@ -41,6 +41,10 @@ const AdminMoviesScreen = () => {
 
   const movies = data?.pages.flatMap(page => page.data) ?? [];
 
+  const handleRefresh = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
   const handleReachEnd = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
@@ -111,7 +115,7 @@ const AdminMoviesScreen = () => {
           refreshControl={
             <RefreshControl
               refreshing={isRefetching}
-              onRefresh={refetch}
+              onRefresh={handleRefresh}
               accessibilityLabel="Pull to refresh movies"
             />
           }

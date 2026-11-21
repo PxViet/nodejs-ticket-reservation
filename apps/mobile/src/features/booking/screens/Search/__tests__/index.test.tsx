@@ -381,10 +381,8 @@ describe('SearchScreen', () => {
         wrapper: createWrapper(),
       });
 
-      const flashList = getByTestId('search-input').parent?.parent;
-
       // Simulate end reached
-      fireEvent(flashList!, 'onEndReached');
+      fireEvent(getByTestId('search-movies-list'), 'onEndReached');
 
       expect(mockFetchNextPage).toHaveBeenCalled();
     });
@@ -397,10 +395,8 @@ describe('SearchScreen', () => {
         wrapper: createWrapper(),
       });
 
-      const flashList = getByTestId('search-input').parent?.parent;
-
       // Simulate end reached
-      fireEvent(flashList!, 'onEndReached');
+      fireEvent(getByTestId('search-movies-list'), 'onEndReached');
 
       expect(mockFetchNextPage).not.toHaveBeenCalled();
     });
@@ -422,8 +418,7 @@ describe('SearchScreen', () => {
         wrapper: createWrapper(),
       });
 
-      const flashList = getByTestId('search-input').parent?.parent;
-      fireEvent(flashList!, 'onEndReached');
+      fireEvent(getByTestId('search-movies-list'), 'onEndReached');
 
       expect(mockFetchNextPage).toHaveBeenCalled();
     });

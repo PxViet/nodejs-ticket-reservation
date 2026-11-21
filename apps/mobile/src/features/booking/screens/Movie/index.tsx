@@ -85,6 +85,10 @@ const MovieScreen = () => {
     return [];
   }, [activeTab, synopsis]);
 
+  const handleRefresh = useCallback(() => {
+    refetchMovie();
+  }, [refetchMovie]);
+
   const handleTabChange = useCallback((tabId: string) => {
     setActiveTab(tabId);
   }, []);
@@ -231,7 +235,7 @@ const MovieScreen = () => {
           <RefreshControl
             testID="refresh-control"
             refreshing={isMovieLoading}
-            onRefresh={refetchMovie}
+            onRefresh={handleRefresh}
             accessibilityLabel="Pull to refresh movie"
           />
         }

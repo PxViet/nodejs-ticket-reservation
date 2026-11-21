@@ -46,6 +46,10 @@ const PaymentHistoryScreen = () => {
     return data.pages.flatMap(page => page.data);
   }, [data]);
 
+  const handleRefresh = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
   const handleLoadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
@@ -195,7 +199,7 @@ const PaymentHistoryScreen = () => {
         refreshControl={
           <RefreshControl
             refreshing={isRefetching}
-            onRefresh={refetch}
+            onRefresh={handleRefresh}
             accessibilityLabel="Pull to refresh payments"
           />
         }
