@@ -1,7 +1,3 @@
-import {
-  BottomTabNavigationEventMap,
-  BottomTabNavigationOptions,
-} from '@react-navigation/bottom-tabs';
 import { ComponentType, memo, useCallback } from 'react';
 import { ColorValue, Pressable, View } from 'react-native';
 import { SvgProps } from 'react-native-svg';
@@ -16,20 +12,25 @@ import {
 // Utils
 import { cn } from '@/utils/cn';
 
+// Expo
+import type {
+  BottomTabBarProps,
+  BottomTabNavigationOptions,
+  BottomTabViewRoute,
+} from 'expo-router/js-tabs';
+
 // Components
 import { Typo } from '@/components/Typo';
-import {
-  NavigationHelpers,
-  NavigationRoute,
-  ParamListBase,
-} from '@react-navigation/native';
 
 interface TabBarItemProps {
-  route: NavigationRoute<ParamListBase, string>;
+  route: BottomTabViewRoute;
   options: BottomTabNavigationOptions;
   isFocused: boolean;
   isDisabled?: boolean;
-  navigation: NavigationHelpers<ParamListBase, BottomTabNavigationEventMap>;
+  // SDK 58: expo-router's bundled bottom-tabs passes the tab bar an event
+  // emitter and a navigateToTab(routeKey) helper, no longer `navigation`.
+  emitter: BottomTabBarProps['emitter'];
+  navigateToTab: BottomTabBarProps['navigateToTab'];
   colorActive?: ColorValue;
   colorInactive?: ColorValue;
   bottomTabs?: BottomTabConfig[];
@@ -41,7 +42,8 @@ export const TabBarItem = memo(
     options,
     isFocused,
     isDisabled,
-    navigation,
+    emitter,
+    navigateToTab,
     colorActive,
     colorInactive,
     bottomTabs = NAVIGATION_BOTTOM_TABS,
@@ -81,24 +83,24 @@ export const TabBarItem = memo(
 
     const onPress = useCallback(() => {
       if (isDisabled) return;
-      const event = navigation.emit({
+      const event = emitter.emit({
         type: 'tabPress',
         target: route.key,
         canPreventDefault: true,
       });
 
       if (!isFocused && !event.defaultPrevented) {
-        navigation.navigate(route.name);
+        navigateToTab(route.key);
       }
-    }, [isDisabled, isFocused, navigation, route.key, route.name]);
+    }, [isDisabled, isFocused, emitter, navigateToTab, route.key]);
 
     const onLongPress = useCallback(() => {
       if (isDisabled) return;
-      navigation.emit({
+      emitter.emit({
         type: 'tabLongPress',
         target: route.key,
       });
-    }, [isDisabled, navigation, route.key]);
+    }, [isDisabled, emitter, route.key]);
 
     if (!tabConfig) return null;
 

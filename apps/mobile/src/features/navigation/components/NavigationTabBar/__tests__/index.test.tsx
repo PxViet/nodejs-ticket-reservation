@@ -1,5 +1,5 @@
 import { TAB_BAR_THEME } from '@/constants';
-import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { fireEvent, render } from '@testing-library/react-native';
 import React from 'react';
 import { NavigationTabBar } from '..';
@@ -100,7 +100,7 @@ jest.mock('@/constants', () => {
 });
 
 describe('NavigationTabBar', () => {
-  const mockNavigate = jest.fn();
+  const mockNavigateToTab = jest.fn();
   const mockEmit = jest.fn(event => ({
     ...event,
     defaultPrevented: false,
@@ -155,10 +155,8 @@ describe('NavigationTabBar', () => {
         route: { key: 'my-ticket-key', name: 'my-ticket', params: undefined },
       },
     } as any,
-    navigation: {
-      navigate: mockNavigate,
-      emit: mockEmit,
-    } as any,
+    emitter: { emit: mockEmit } as any,
+    navigateToTab: mockNavigateToTab,
     insets: { top: 0, right: 0, bottom: 0, left: 0 },
     ...overrides,
   });
@@ -267,7 +265,7 @@ describe('NavigationTabBar', () => {
         target: 'wallet-key',
         canPreventDefault: true,
       });
-      expect(mockNavigate).toHaveBeenCalledWith('wallet');
+      expect(mockNavigateToTab).toHaveBeenCalledWith('wallet-key');
     });
 
     it('should not navigate when tab is already focused', () => {
@@ -282,7 +280,7 @@ describe('NavigationTabBar', () => {
         target: 'index-key',
         canPreventDefault: true,
       });
-      expect(mockNavigate).not.toHaveBeenCalled();
+      expect(mockNavigateToTab).not.toHaveBeenCalled();
     });
 
     it('should not navigate when event is prevented', () => {
@@ -299,7 +297,7 @@ describe('NavigationTabBar', () => {
       fireEvent.press(walletTab);
 
       expect(mockEmit).toHaveBeenCalled();
-      expect(mockNavigate).not.toHaveBeenCalled();
+      expect(mockNavigateToTab).not.toHaveBeenCalled();
     });
 
     it('should emit tab long press event', () => {
@@ -327,7 +325,7 @@ describe('NavigationTabBar', () => {
       fireEvent.press(walletTab);
 
       expect(mockEmit).not.toHaveBeenCalled();
-      expect(mockNavigate).not.toHaveBeenCalled();
+      expect(mockNavigateToTab).not.toHaveBeenCalled();
     });
 
     it('should not emit long press event when tab is disabled', () => {
@@ -352,7 +350,7 @@ describe('NavigationTabBar', () => {
       fireEvent.press(myTicketTab);
 
       expect(mockEmit).toHaveBeenCalled();
-      expect(mockNavigate).toHaveBeenCalledWith('my-ticket');
+      expect(mockNavigateToTab).toHaveBeenCalledWith('my-ticket-key');
     });
   });
 
@@ -437,7 +435,7 @@ describe('NavigationTabBar', () => {
       const walletTab = getByText('Wallet');
       fireEvent.press(walletTab);
 
-      expect(mockNavigate).toHaveBeenCalledWith('wallet');
+      expect(mockNavigateToTab).toHaveBeenCalledWith('wallet-key');
     });
 
     it('should handle empty disabledRoutes array', () => {
@@ -449,7 +447,7 @@ describe('NavigationTabBar', () => {
       const walletTab = getByText('Wallet');
       fireEvent.press(walletTab);
 
-      expect(mockNavigate).toHaveBeenCalledWith('wallet');
+      expect(mockNavigateToTab).toHaveBeenCalledWith('wallet-key');
     });
   });
 

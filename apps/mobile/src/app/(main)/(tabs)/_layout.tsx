@@ -1,8 +1,9 @@
-import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Expo
-import { Tabs } from 'expo-router';
+// SDK 58: `Tabs` from 'expo-router' is deprecated; js-tabs is the same
+// navigator and also exports its tab bar types.
+import { Tabs } from 'expo-router/js-tabs';
 
 // Constants
 import {
@@ -39,7 +40,7 @@ const TabLayout = () => {
         <NavigationTabBar
           bottomInset={insets.bottom}
           bottomTabs={BOTTOM_TAB}
-          {...(props as unknown as BottomTabBarProps)}
+          {...props}
         />
       )}
       screenOptions={{
